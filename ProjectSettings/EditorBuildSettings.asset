@@ -53,7 +53,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Game/Scenes/Maps/Buraco 2.unity
     guid: 755fb27ad072813478441d0ee14e6150
-  - enabled: 1
+  - enabled: 0
     path: Assets/Game/Scenes/Maps/teste.unity
     guid: ef06c3534652fb7408bf28c0499a1161
   m_configObjects:

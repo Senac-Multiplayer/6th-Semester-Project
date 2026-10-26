@@ -8,6 +8,7 @@ namespace PiGame.Gameplay
     {
         [SerializeField] private Vector3 _localPosition = new Vector3(0f, 1.45f, 0f);
         [SerializeField] private Vector3 _labelLocalPosition = new Vector3(0f, 2f, 0f);
+        [SerializeField] private Material _labelMaterial;
 
         private NetworkPlayerState _playerState;
         private MeshRenderer _renderer;
@@ -41,11 +42,30 @@ namespace PiGame.Gameplay
                 name = "PlayerIndicatorTriangle",
                 vertices = new[]
                 {
+                    new Vector3(-0.28f, 0.23f, 0f),
+                    new Vector3(0.28f, 0.23f, 0f),
+                    new Vector3(0f, -0.25f, 0f),
+                    new Vector3(-0.22f, 0.18f, 0f),
+                    new Vector3(0.22f, 0.18f, 0f),
+                    new Vector3(0f, -0.18f, 0f),
                     new Vector3(-0.22f, 0.18f, 0f),
                     new Vector3(0.22f, 0.18f, 0f),
                     new Vector3(0f, -0.18f, 0f)
                 },
-                triangles = new[] { 0, 1, 2 }
+                // Black border and tinted fill share the existing mesh and renderer.
+                colors = new[]
+                {
+                    Color.black, Color.black, Color.black,
+                    Color.black, Color.black, Color.black,
+                    Color.white, Color.white, Color.white
+                },
+                triangles = new[]
+                {
+                    0, 1, 4, 0, 4, 3,
+                    1, 2, 5, 1, 5, 4,
+                    2, 0, 3, 2, 3, 5,
+                    6, 7, 8
+                }
             };
 
             indicator.AddComponent<MeshFilter>().sharedMesh = mesh;
@@ -65,6 +85,7 @@ namespace PiGame.Gameplay
             labelObject.transform.localPosition = _labelLocalPosition;
 
             _playerLabel = labelObject.AddComponent<TextMeshPro>();
+            _playerLabel.fontSharedMaterial = _labelMaterial;
             _playerLabel.alignment = TextAlignmentOptions.Center;
             _playerLabel.enableAutoSizing = false;
             _playerLabel.fontSize = 5f;
@@ -72,7 +93,7 @@ namespace PiGame.Gameplay
             _playerLabel.textWrappingMode = TextWrappingModes.NoWrap;
             _playerLabel.overflowMode = TextOverflowModes.Overflow;
             _playerLabel.outlineColor = Color.black;
-            _playerLabel.outlineWidth = 0.2f;
+            _playerLabel.outlineWidth = 0.3f;
             _playerLabel.rectTransform.sizeDelta = new Vector2(2.2f, 0.8f);
             _playerLabel.renderer.sortingLayerID = _renderer.sortingLayerID;
             _playerLabel.renderer.sortingOrder = 31;

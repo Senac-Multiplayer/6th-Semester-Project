@@ -11,7 +11,7 @@ namespace PiGame.Gameplay
 {
     public class MatchController : NetworkBehaviour
     {
-        [SerializeField] private int _killLimit = 2;
+        [SerializeField] private int _killLimit = 3;
         [SerializeField] private float _respawnDelaySeconds = 2f;
         private bool _returningToLobby;
 

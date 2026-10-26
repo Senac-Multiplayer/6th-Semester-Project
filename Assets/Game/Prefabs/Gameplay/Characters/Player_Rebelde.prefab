@@ -919,6 +919,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.PlayerIndicator
   _localPosition: {x: 0, y: 2.05, z: 0}
   _labelLocalPosition: {x: 0, y: 2.6, z: 0}
+  _labelMaterial: {fileID: 2100000, guid: 79459efec17a4d00a321bdcc27bbc385, type: 2}
 --- !u!114 &750885784796070611
 MonoBehaviour:
   m_ObjectHideFlags: 0
