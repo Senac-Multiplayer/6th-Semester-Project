@@ -110,7 +110,7 @@ namespace PiGame.Gameplay
             }
 
             Vector2 aim = ReadAimDirection();
-            if (aim.sqrMagnitude >= 0.04f)
+            if (aim.sqrMagnitude > 0.0001f)
             {
                 _aimDirection = SnapAimToEightDirections(aim);
                 RefreshAimIndicator();
@@ -330,7 +330,7 @@ namespace PiGame.Gameplay
             _previousPointerPosition = pointerPosition;
 
             if (_aimDirectionAction.action.WasPerformedThisFrame()
-                && directionalAim.sqrMagnitude >= 0.04f)
+                && directionalAim.sqrMagnitude > 0.0001f)
             {
                 _localAimInputDevice = LobbyInputDeviceKind.Gamepad;
             }

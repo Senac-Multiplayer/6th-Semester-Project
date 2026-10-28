@@ -93,7 +93,11 @@ namespace PiGame.UI
 
             if (Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame)
             {
-                if (_view.IsControlsVisible)
+                if (_view.IsOptionsVisible)
+                {
+                    _view.HandleOptionsBack();
+                }
+                else if (_view.IsControlsVisible)
                 {
                     if (!_view.BlocksControlsBackShortcut)
                     {
@@ -122,6 +126,12 @@ namespace PiGame.UI
             if (_view.IsConfirmationVisible)
             {
                 HideExitConfirmation();
+                return;
+            }
+
+            if (_view.IsOptionsVisible)
+            {
+                _view.HandleOptionsBack();
                 return;
             }
 
