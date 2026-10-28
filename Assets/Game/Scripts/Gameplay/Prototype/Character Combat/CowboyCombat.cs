@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using PiGame.Sound;
 using Unity.Netcode;
 using UnityEngine;
@@ -22,6 +23,8 @@ namespace PiGame.Gameplay
             0, NetworkVariableReadPermission.Owner);
         private readonly NetworkVariable<float> _rollDirectionX = new NetworkVariable<float>(1f);
         private readonly NetworkVariable<bool> _isRolling = new NetworkVariable<bool>();
+        private readonly NetworkVariable<bool> _passThroughPlayers = new NetworkVariable<bool>();
+        private readonly List<Collider2D> _rollOverlaps = new List<Collider2D>();
 
         private NetworkPlayerState _playerState;
         private PlayerMove _playerMove;
@@ -30,6 +33,7 @@ namespace PiGame.Gameplay
         private Color _colorBeforeRoll;
         private CowboySoundManager _cowboySound;
         private bool _visualRollActive;
+        private bool _playerCollisionRestoreRequested;
         private LayerMask _originalExcludedLayers;
         private bool _isReloading;
         private bool _couldActLastFrame;
@@ -78,6 +82,7 @@ namespace PiGame.Gameplay
             _ammo.OnValueChanged += HandleAmmoChanged;
             _rollDirectionX.OnValueChanged += HandleRollDirectionChanged;
             _isRolling.OnValueChanged += HandleRollingChanged;
+            _passThroughPlayers.OnValueChanged += HandlePlayerCollisionChanged;
             _playerState.StateChanged += RefreshAmmoIndicators;
 
             if (IsServer)
@@ -100,6 +105,7 @@ namespace PiGame.Gameplay
             _ammo.OnValueChanged -= HandleAmmoChanged;
             _rollDirectionX.OnValueChanged -= HandleRollDirectionChanged;
             _isRolling.OnValueChanged -= HandleRollingChanged;
+            _passThroughPlayers.OnValueChanged -= HandlePlayerCollisionChanged;
             _playerState.StateChanged -= RefreshAmmoIndicators;
 
             if (IsServer)
@@ -108,6 +114,7 @@ namespace PiGame.Gameplay
             }
 
             _bodyCollider.excludeLayers = _originalExcludedLayers;
+            _playerCollisionRestoreRequested = false;
             if (_visualRollActive)
             {
                 _bodySprite.color = _colorBeforeRoll;
@@ -116,6 +123,65 @@ namespace PiGame.Gameplay
             if (IsOwner)
             {
                 _playerMove.EndHorizontalMovementOverride();
+            }
+        }
+
+        private void FixedUpdate()
+        {
+            if (!IsSpawned || _isRolling.Value) return;
+            if (IsOwner && _passThroughPlayers.Value) UpdatePlayerCollisionState();
+            if (!_passThroughPlayers.Value
+                && _bodyCollider.excludeLayers.value != _originalExcludedLayers.value)
+                ApplyRollCollisions();
+        }
+
+        private void UpdatePlayerCollisionState()
+        {
+            if (_playerCollisionRestoreRequested || OverlapsPlayer()) return;
+
+            _playerCollisionRestoreRequested = true;
+            RestorePlayerCollisionsRpc();
+        }
+
+        private bool OverlapsPlayer()
+        {
+            var filter = new ContactFilter2D();
+            filter.SetLayerMask(_rollPassThroughLayers.value & (1 << gameObject.layer));
+            filter.useTriggers = false;
+            _bodyCollider.Overlap(filter, _rollOverlaps);
+
+            foreach (Collider2D other in _rollOverlaps)
+            {
+                if (other.attachedRigidbody == _bodyCollider.attachedRigidbody) continue;
+                if (other.TryGetComponent<NetworkPlayerState>(out _)
+                    && _bodyCollider.Distance(other).isOverlapped)
+                {
+                    // Não reativar contato dentro de outro jogador: a separação física
+                    // pode empurrar o Cowboy contra o piso ou a parede da quina.
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        [Rpc(SendTo.Server, RequireOwnership = true)]
+        private void RestorePlayerCollisionsRpc()
+        {
+            if (!_isRolling.Value) _passThroughPlayers.Value = false;
+        }
+
+        private void ApplyRollCollisions()
+        {
+            int excludedLayers = _originalExcludedLayers.value;
+            if (_isRolling.Value) excludedLayers |= _rollPassThroughLayers.value;
+            else if (_passThroughPlayers.Value
+                || (_bodyCollider.excludeLayers.value != _originalExcludedLayers.value && OverlapsPlayer()))
+                excludedLayers |= _rollPassThroughLayers.value & (1 << gameObject.layer);
+
+            if (_bodyCollider.excludeLayers.value != excludedLayers)
+            {
+                _bodyCollider.excludeLayers = excludedLayers;
             }
         }
 
@@ -239,6 +305,7 @@ namespace PiGame.Gameplay
             _rollDirectionX.Value = moveDirection.x < 0f ? -1f : 1f;
             _rollEndsAt = Time.time + _rollSeconds;
             _playerState.SetInvulnerableServer(true);
+            _passThroughPlayers.Value = true;
             _isRolling.Value = true;
         }
 
@@ -264,6 +331,12 @@ namespace PiGame.Gameplay
         private void HandleRollingChanged(bool previousValue, bool currentValue)
         {
             ApplyRollState();
+        }
+
+        private void HandlePlayerCollisionChanged(bool previousValue, bool currentValue)
+        {
+            if (!currentValue) _playerCollisionRestoreRequested = false;
+            ApplyRollCollisions();
         }
 
         private void HandleAmmoChanged(int previousValue, int currentValue)
@@ -301,9 +374,13 @@ namespace PiGame.Gameplay
                 _bodySprite.color = _colorBeforeRoll;
                 _visualRollActive = false;
             }
-            _bodyCollider.excludeLayers = rolling
-                ? _originalExcludedLayers.value | _rollPassThroughLayers.value
-                : _originalExcludedLayers.value;
+            if (IsOwner)
+            {
+                // O dono avisa ao servidor quando já é seguro restaurar o contato em todas as cópias.
+                if (rolling) _playerCollisionRestoreRequested = false;
+                else if (_passThroughPlayers.Value) UpdatePlayerCollisionState();
+            }
+            ApplyRollCollisions();
 
             if (!IsOwner)
             {
