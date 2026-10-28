@@ -2384,6 +2384,7 @@ MonoBehaviour:
   _shotCooldownSeconds: 0.35
   _projectileSpawnDistance: 0.5
   _rollSeconds: 0.2
+  _rollCooldownSeconds: 6
   _rollSpeed: 16
   _rollPassThroughLayers:
     serializedVersion: 2

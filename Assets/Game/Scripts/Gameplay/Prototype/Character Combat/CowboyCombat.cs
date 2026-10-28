@@ -14,6 +14,7 @@ namespace PiGame.Gameplay
         [SerializeField, Min(0f)] private float _shotCooldownSeconds = 0.35f;
         [SerializeField, Min(0f)] private float _projectileSpawnDistance = 0.5f;
         [SerializeField, Min(0.01f)] private float _rollSeconds = 0.2f;
+        [SerializeField, Min(0f)] private float _rollCooldownSeconds = 6f;
         [SerializeField, Min(0f)] private float _rollSpeed = 16f;
         [SerializeField] private LayerMask _rollPassThroughLayers;
         [SerializeField] private SpriteRenderer[] _ammoIndicators;
@@ -30,6 +31,7 @@ namespace PiGame.Gameplay
         private PlayerMove _playerMove;
         private Collider2D _bodyCollider;
         private SpriteRenderer _bodySprite;
+        private Animator _animator;
         private Color _colorBeforeRoll;
         private CowboySoundManager _cowboySound;
         private bool _visualRollActive;
@@ -39,6 +41,7 @@ namespace PiGame.Gameplay
         private bool _couldActLastFrame;
         private float _reloadEndsAt;
         private float _rollEndsAt;
+        private float _nextRollAt;
         private float _nextShotAt;
 
         private void Awake()
@@ -47,6 +50,7 @@ namespace PiGame.Gameplay
             _playerMove = GetComponent<PlayerMove>();
             _bodyCollider = GetComponent<Collider2D>();
             _bodySprite = GetComponent<SpriteRenderer>();
+            _animator = GetComponent<Animator>();
             _cowboySound = GetComponent<CowboySoundManager>();
             _originalExcludedLayers = _bodyCollider.excludeLayers;
 
@@ -290,7 +294,7 @@ namespace PiGame.Gameplay
 
         public void BeginAbilityServer(Vector2 aimDirection, Vector2 moveDirection)
         {
-            if (!IsServer || !enabled || !_playerState.CanAct || _isRolling.Value
+            if (!IsServer || !enabled || !_playerState.CanAct || _isRolling.Value || Time.time < _nextRollAt
                 || !_playerMove.CanBeginWallRestrictedAbility())
             {
                 return;
@@ -304,6 +308,7 @@ namespace PiGame.Gameplay
             _isReloading = false;
             _rollDirectionX.Value = moveDirection.x < 0f ? -1f : 1f;
             _rollEndsAt = Time.time + _rollSeconds;
+            _nextRollAt = Time.time + _rollCooldownSeconds;
             _playerState.SetInvulnerableServer(true);
             _passThroughPlayers.Value = true;
             _isRolling.Value = true;
@@ -376,6 +381,7 @@ namespace PiGame.Gameplay
             }
             if (IsOwner)
             {
+                _animator.SetBool("isSkill", rolling);
                 // O dono avisa ao servidor quando já é seguro restaurar o contato em todas as cópias.
                 if (rolling) _playerCollisionRestoreRequested = false;
                 else if (_passThroughPlayers.Value) UpdatePlayerCollisionState();
