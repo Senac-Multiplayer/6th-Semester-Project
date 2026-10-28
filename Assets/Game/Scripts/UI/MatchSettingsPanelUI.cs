@@ -215,7 +215,8 @@ namespace PiGame.UI
 
         private void RefreshValues(float value = 0)
         {
-            _durationValue.text = SelectedDurationMinutes == 0 ? "INFINITO" : $"{SelectedDurationMinutes} MIN";
+            _durationValue.text = SelectedDurationMinutes == 0
+                ? $"<size={_durationValue.fontSize * 2}>∞</size>" : $"{SelectedDurationMinutes} MIN";
             _killLimitValue.text = ((int)_killLimitSlider.value).ToString();
         }
 
@@ -266,7 +267,7 @@ namespace PiGame.UI
 
             string modeName = _confirmedSettings.Mode == LobbyMatchMode.Team ? "EQUIPE" : "SOLO";
             string repeatedCharacters = _requireUniqueCharacters ? "NÃO" : "SIM";
-            string duration = _confirmedSettings.DurationMinutes == 0 ? "INFINITO" : $"{_confirmedSettings.DurationMinutes} MIN";
+            string duration = _confirmedSettings.DurationMinutes == 0 ? "∞" : $"{_confirmedSettings.DurationMinutes} MIN";
             _summaryText.text =
                 $"PARTIDA: {duration}  |  {modeName}\n"
                 + $"VITÓRIA: {_confirmedSettings.KillLimit} KILLS\n"
