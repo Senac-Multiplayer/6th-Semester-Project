@@ -17,11 +17,19 @@ namespace PiGame.UI
         [Header("Panels")]
         [SerializeField] private Button _menuButton;
         [SerializeField] private GameObject _overlay;
-        [SerializeField] private Button _confirmButton;
         [SerializeField] private Button _closeButton;
 
         [Header("Duration")]
-        [SerializeField] private Button[] _durationButtons;
+        [SerializeField] private Slider _durationSlider;
+        [SerializeField] private Text _durationValue;
+        [SerializeField] private Button _decreaseDuration;
+        [SerializeField] private Button _increaseDuration;
+
+        [Header("Kills to win")]
+        [SerializeField] private Slider _killLimitSlider;
+        [SerializeField] private Text _killLimitValue;
+        [SerializeField] private Button _decreaseKills;
+        [SerializeField] private Button _increaseKills;
 
         [Header("Mode")]
         [SerializeField] private Button[] _modeButtons;
@@ -44,11 +52,12 @@ namespace PiGame.UI
 
         public event Action Opened;
         public event Action Closed;
-        public event Action<int, LobbyMatchMode> SettingsConfirmed;
+        public event Action<int, LobbyMatchMode, int> SettingsApplied;
 
         public bool IsOpen => _overlay != null && _overlay.activeSelf;
 
-        private int _selectedDurationMinutes = DefaultDurationMinutes;
+        // A última posição do seletor (11) representa duração infinita, enviada como 0.
+        private int SelectedDurationMinutes => _durationSlider.value > 10 ? 0 : (int)_durationSlider.value;
         private LobbyMatchMode _selectedMode = DefaultMode;
         private int _minimumPlayers = DefaultMinimumPlayers;
         private bool _requireUniqueCharacters;
@@ -63,6 +72,7 @@ namespace PiGame.UI
                 DefaultMinimumPlayers,
                 false);
             _menuShortcutIcon.sprite = _promptCatalog.GetSprite("<Keyboard>/tab");
+            LoadDraftFromConfirmedSettings();
             RefreshSelectionVisuals();
             RefreshSummary();
         }
@@ -70,13 +80,14 @@ namespace PiGame.UI
         private void OnEnable()
         {
             _menuButton.onClick.AddListener(Show);
-            _confirmButton.onClick.AddListener(ConfirmSelection);
             _closeButton.onClick.AddListener(Hide);
 
-            _durationButtons[0].onClick.AddListener(SelectTwoMinutes);
-            _durationButtons[1].onClick.AddListener(SelectThreeMinutes);
-            _durationButtons[2].onClick.AddListener(SelectFourMinutes);
-            _durationButtons[3].onClick.AddListener(SelectFiveMinutes);
+            _decreaseDuration.onClick.AddListener(DecreaseDuration);
+            _increaseDuration.onClick.AddListener(IncreaseDuration);
+            _decreaseKills.onClick.AddListener(DecreaseKills);
+            _increaseKills.onClick.AddListener(IncreaseKills);
+            _durationSlider.onValueChanged.AddListener(RefreshValues);
+            _killLimitSlider.onValueChanged.AddListener(RefreshValues);
 
             _modeButtons[1].onClick.AddListener(SelectSoloMode);
         }
@@ -84,13 +95,14 @@ namespace PiGame.UI
         private void OnDisable()
         {
             _menuButton.onClick.RemoveListener(Show);
-            _confirmButton.onClick.RemoveListener(ConfirmSelection);
             _closeButton.onClick.RemoveListener(Hide);
 
-            _durationButtons[0].onClick.RemoveListener(SelectTwoMinutes);
-            _durationButtons[1].onClick.RemoveListener(SelectThreeMinutes);
-            _durationButtons[2].onClick.RemoveListener(SelectFourMinutes);
-            _durationButtons[3].onClick.RemoveListener(SelectFiveMinutes);
+            _decreaseDuration.onClick.RemoveListener(DecreaseDuration);
+            _increaseDuration.onClick.RemoveListener(IncreaseDuration);
+            _decreaseKills.onClick.RemoveListener(DecreaseKills);
+            _increaseKills.onClick.RemoveListener(IncreaseKills);
+            _durationSlider.onValueChanged.RemoveListener(RefreshValues);
+            _killLimitSlider.onValueChanged.RemoveListener(RefreshValues);
 
             _modeButtons[1].onClick.RemoveListener(SelectSoloMode);
         }
@@ -113,19 +125,6 @@ namespace PiGame.UI
                 {
                     _menuShortcutIcon.sprite = _promptCatalog.GetSprite("<Keyboard>/tab");
                 }
-            }
-
-            if (!IsOpen)
-            {
-                return;
-            }
-
-            bool keyboardCanceled = Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
-            bool gamepadCanceled = Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame;
-
-            if (keyboardCanceled || gamepadCanceled)
-            {
-                Hide();
             }
         }
 
@@ -151,10 +150,9 @@ namespace PiGame.UI
                 return;
             }
 
+            SettingsApplied?.Invoke(SelectedDurationMinutes, _selectedMode, (int)_killLimitSlider.value);
             _overlay.SetActive(false);
             _menuButton.interactable = true;
-            LoadDraftFromConfirmedSettings();
-            RefreshSelectionVisuals();
             EventSystem.current?.SetSelectedGameObject(_menuButton.gameObject);
             Closed?.Invoke();
         }
@@ -193,35 +191,9 @@ namespace PiGame.UI
             _menuButton.gameObject.SetActive(isVisible);
         }
 
-        private void SelectTwoMinutes()
-        {
-            SelectDuration(2);
-        }
-
-        private void SelectThreeMinutes()
-        {
-            SelectDuration(3);
-        }
-
-        private void SelectFourMinutes()
-        {
-            SelectDuration(4);
-        }
-
-        private void SelectFiveMinutes()
-        {
-            SelectDuration(5);
-        }
-
         private void SelectSoloMode()
         {
             SelectMode(LobbyMatchMode.Solo);
-        }
-
-        private void SelectDuration(int durationMinutes)
-        {
-            _selectedDurationMinutes = durationMinutes;
-            RefreshSelectionVisuals();
         }
 
         private void SelectMode(LobbyMatchMode mode)
@@ -230,19 +202,27 @@ namespace PiGame.UI
             RefreshSelectionVisuals();
         }
 
-        private void ConfirmSelection()
+        private void DecreaseDuration() => StepValue(_durationSlider, -1);
+        private void IncreaseDuration() => StepValue(_durationSlider, 1);
+        private void DecreaseKills() => StepValue(_killLimitSlider, -1);
+        private void IncreaseKills() => StepValue(_killLimitSlider, 1);
+
+        private static void StepValue(Slider slider, int step)
         {
-            SettingsConfirmed?.Invoke(_selectedDurationMinutes, _selectedMode);
-            Hide();
+            slider.value += step;
+            EventSystem.current?.SetSelectedGameObject(slider.gameObject);
+        }
+
+        private void RefreshValues(float value = 0)
+        {
+            _durationValue.text = SelectedDurationMinutes == 0
+                ? $"<size={_durationValue.fontSize * 2}>∞</size>" : $"{SelectedDurationMinutes} MIN";
+            _killLimitValue.text = ((int)_killLimitSlider.value).ToString();
         }
 
         private void RefreshSelectionVisuals()
         {
-            for (int index = 0; index < _durationButtons.Length; index++)
-            {
-                bool isSelected = _selectedDurationMinutes == index + 2;
-                ApplySelectionVisual(_durationButtons[index], isSelected);
-            }
+            RefreshValues();
 
             for (int index = 0; index < _modeButtons.Length; index++)
             {
@@ -275,8 +255,7 @@ namespace PiGame.UI
 
         private void SelectCurrentOption()
         {
-            int durationIndex = Mathf.Clamp(_selectedDurationMinutes - 2, 0, _durationButtons.Length - 1);
-            EventSystem.current?.SetSelectedGameObject(_durationButtons[durationIndex].gameObject);
+            EventSystem.current?.SetSelectedGameObject(_durationSlider.gameObject);
         }
 
         private void RefreshSummary()
@@ -288,14 +267,17 @@ namespace PiGame.UI
 
             string modeName = _confirmedSettings.Mode == LobbyMatchMode.Team ? "EQUIPE" : "SOLO";
             string repeatedCharacters = _requireUniqueCharacters ? "NÃO" : "SIM";
+            string duration = _confirmedSettings.DurationMinutes == 0 ? "∞" : $"{_confirmedSettings.DurationMinutes} MIN";
             _summaryText.text =
-                $"PARTIDA: {_confirmedSettings.DurationMinutes} MIN  |  MODO: {modeName}\n"
+                $"PARTIDA: {duration}  |  {modeName}\n"
+                + $"VITÓRIA: {_confirmedSettings.KillLimit} KILLS\n"
                 + $"MÍNIMO: {_minimumPlayers}  |  REPETIDOS: {repeatedCharacters}";
         }
 
         private void LoadDraftFromConfirmedSettings()
         {
-            _selectedDurationMinutes = _confirmedSettings.DurationMinutes;
+            _durationSlider.SetValueWithoutNotify(_confirmedSettings.DurationMinutes == 0 ? 11 : _confirmedSettings.DurationMinutes);
+            _killLimitSlider.SetValueWithoutNotify(_confirmedSettings.KillLimit);
             _selectedMode = _confirmedSettings.Mode;
         }
     }

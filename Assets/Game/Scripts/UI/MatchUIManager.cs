@@ -9,6 +9,7 @@ namespace PiGame.Gameplay
         [SerializeField] private MatchController _matchController;
         [SerializeField] private TMP_Text _timerText;
         [SerializeField] private TMP_Text _scoreText;
+        private Vector2 _timerPosition;
         private bool _configured;
 
         private void Awake()
@@ -19,6 +20,7 @@ namespace PiGame.Gameplay
                 enabled = false;
                 return;
             }
+            _timerPosition = _timerText.rectTransform.anchoredPosition;
             _configured = true;
         }
 
@@ -40,7 +42,10 @@ namespace PiGame.Gameplay
         private void Update()
         {
             float time = _matchController.RemainingTime;
-            _timerText.text = $"{Mathf.FloorToInt(time / 60f):00}:{Mathf.FloorToInt(time % 60f):00}";
+            _timerText.rectTransform.anchoredPosition = time < 0f
+                ? _timerPosition + Vector2.up * 24f : _timerPosition;
+            _timerText.text = time < 0f ? "<size=200%>∞</size>"
+                : $"{Mathf.FloorToInt(time / 60f):00}:{Mathf.FloorToInt(time % 60f):00}";
         }
 
         private void RefreshVisibility()
