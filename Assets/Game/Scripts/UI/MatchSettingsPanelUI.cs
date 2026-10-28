@@ -17,11 +17,13 @@ namespace PiGame.UI
         [Header("Panels")]
         [SerializeField] private Button _menuButton;
         [SerializeField] private GameObject _overlay;
-        [SerializeField] private Button _confirmButton;
         [SerializeField] private Button _closeButton;
 
         [Header("Duration")]
         [SerializeField] private Button[] _durationButtons;
+
+        [Header("Kills to win")]
+        [SerializeField] private Button[] _killLimitButtons;
 
         [Header("Mode")]
         [SerializeField] private Button[] _modeButtons;
@@ -44,11 +46,12 @@ namespace PiGame.UI
 
         public event Action Opened;
         public event Action Closed;
-        public event Action<int, LobbyMatchMode> SettingsConfirmed;
+        public event Action<int, LobbyMatchMode, int> SettingsApplied;
 
         public bool IsOpen => _overlay != null && _overlay.activeSelf;
 
         private int _selectedDurationMinutes = DefaultDurationMinutes;
+        private int _selectedKillLimit = 3;
         private LobbyMatchMode _selectedMode = DefaultMode;
         private int _minimumPlayers = DefaultMinimumPlayers;
         private bool _requireUniqueCharacters;
@@ -70,7 +73,6 @@ namespace PiGame.UI
         private void OnEnable()
         {
             _menuButton.onClick.AddListener(Show);
-            _confirmButton.onClick.AddListener(ConfirmSelection);
             _closeButton.onClick.AddListener(Hide);
 
             _durationButtons[0].onClick.AddListener(SelectTwoMinutes);
@@ -78,19 +80,28 @@ namespace PiGame.UI
             _durationButtons[2].onClick.AddListener(SelectFourMinutes);
             _durationButtons[3].onClick.AddListener(SelectFiveMinutes);
 
+            _killLimitButtons[0].onClick.AddListener(SelectTwoKills);
+            _killLimitButtons[1].onClick.AddListener(SelectThreeKills);
+            _killLimitButtons[2].onClick.AddListener(SelectFourKills);
+            _killLimitButtons[3].onClick.AddListener(SelectFiveKills);
+
             _modeButtons[1].onClick.AddListener(SelectSoloMode);
         }
 
         private void OnDisable()
         {
             _menuButton.onClick.RemoveListener(Show);
-            _confirmButton.onClick.RemoveListener(ConfirmSelection);
             _closeButton.onClick.RemoveListener(Hide);
 
             _durationButtons[0].onClick.RemoveListener(SelectTwoMinutes);
             _durationButtons[1].onClick.RemoveListener(SelectThreeMinutes);
             _durationButtons[2].onClick.RemoveListener(SelectFourMinutes);
             _durationButtons[3].onClick.RemoveListener(SelectFiveMinutes);
+
+            _killLimitButtons[0].onClick.RemoveListener(SelectTwoKills);
+            _killLimitButtons[1].onClick.RemoveListener(SelectThreeKills);
+            _killLimitButtons[2].onClick.RemoveListener(SelectFourKills);
+            _killLimitButtons[3].onClick.RemoveListener(SelectFiveKills);
 
             _modeButtons[1].onClick.RemoveListener(SelectSoloMode);
         }
@@ -113,19 +124,6 @@ namespace PiGame.UI
                 {
                     _menuShortcutIcon.sprite = _promptCatalog.GetSprite("<Keyboard>/tab");
                 }
-            }
-
-            if (!IsOpen)
-            {
-                return;
-            }
-
-            bool keyboardCanceled = Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
-            bool gamepadCanceled = Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame;
-
-            if (keyboardCanceled || gamepadCanceled)
-            {
-                Hide();
             }
         }
 
@@ -151,10 +149,9 @@ namespace PiGame.UI
                 return;
             }
 
+            SettingsApplied?.Invoke(_selectedDurationMinutes, _selectedMode, _selectedKillLimit);
             _overlay.SetActive(false);
             _menuButton.interactable = true;
-            LoadDraftFromConfirmedSettings();
-            RefreshSelectionVisuals();
             EventSystem.current?.SetSelectedGameObject(_menuButton.gameObject);
             Closed?.Invoke();
         }
@@ -230,10 +227,15 @@ namespace PiGame.UI
             RefreshSelectionVisuals();
         }
 
-        private void ConfirmSelection()
+        private void SelectTwoKills() => SelectKillLimit(2);
+        private void SelectThreeKills() => SelectKillLimit(3);
+        private void SelectFourKills() => SelectKillLimit(4);
+        private void SelectFiveKills() => SelectKillLimit(5);
+
+        private void SelectKillLimit(int killLimit)
         {
-            SettingsConfirmed?.Invoke(_selectedDurationMinutes, _selectedMode);
-            Hide();
+            _selectedKillLimit = killLimit;
+            RefreshSelectionVisuals();
         }
 
         private void RefreshSelectionVisuals()
@@ -242,6 +244,11 @@ namespace PiGame.UI
             {
                 bool isSelected = _selectedDurationMinutes == index + 2;
                 ApplySelectionVisual(_durationButtons[index], isSelected);
+            }
+
+            for (int index = 0; index < _killLimitButtons.Length; index++)
+            {
+                ApplySelectionVisual(_killLimitButtons[index], _selectedKillLimit == index + 2);
             }
 
             for (int index = 0; index < _modeButtons.Length; index++)
@@ -289,13 +296,15 @@ namespace PiGame.UI
             string modeName = _confirmedSettings.Mode == LobbyMatchMode.Team ? "EQUIPE" : "SOLO";
             string repeatedCharacters = _requireUniqueCharacters ? "NÃO" : "SIM";
             _summaryText.text =
-                $"PARTIDA: {_confirmedSettings.DurationMinutes} MIN  |  MODO: {modeName}\n"
+                $"PARTIDA: {_confirmedSettings.DurationMinutes} MIN  |  {modeName}\n"
+                + $"VITÓRIA: {_confirmedSettings.KillLimit} KILLS\n"
                 + $"MÍNIMO: {_minimumPlayers}  |  REPETIDOS: {repeatedCharacters}";
         }
 
         private void LoadDraftFromConfirmedSettings()
         {
             _selectedDurationMinutes = _confirmedSettings.DurationMinutes;
+            _selectedKillLimit = _confirmedSettings.KillLimit;
             _selectedMode = _confirmedSettings.Mode;
         }
     }

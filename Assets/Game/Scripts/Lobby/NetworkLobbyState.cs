@@ -342,17 +342,17 @@ namespace PiGame.Lobby
             ReturnToCharacterSelectionRpc();
         }
 
-        public void RequestMatchSettings(int durationMinutes, LobbyMatchMode mode)
+        public void RequestMatchSettings(int durationMinutes, LobbyMatchMode mode, int killLimit)
         {
             if (!IsSpawned
                 || _stage.Value != LobbyStage.CharacterSelection
                 || !LocalClientIsHost
-                || !AreValidMatchSettings(durationMinutes, mode))
+                || !AreValidMatchSettings(durationMinutes, mode, killLimit))
             {
                 return;
             }
 
-            SetMatchSettingsRpc(durationMinutes, mode);
+            SetMatchSettingsRpc(durationMinutes, mode, killLimit);
         }
 
         [Rpc(SendTo.Server)]
@@ -543,12 +543,13 @@ namespace PiGame.Lobby
         private void SetMatchSettingsRpc(
             int durationMinutes,
             LobbyMatchMode mode,
+            int killLimit,
             RpcParams rpcParams = default)
         {
             if (_stage.Value != LobbyStage.CharacterSelection
                 || NetworkManager == null
                 || rpcParams.Receive.SenderClientId != NetworkManager.ServerClientId
-                || !AreValidMatchSettings(durationMinutes, mode))
+                || !AreValidMatchSettings(durationMinutes, mode, killLimit))
             {
                 return;
             }
@@ -558,7 +559,8 @@ namespace PiGame.Lobby
                 durationMinutes,
                 mode,
                 currentSettings.MinimumPlayers,
-                currentSettings.RequireUniqueCharacters);
+                currentSettings.RequireUniqueCharacters,
+                killLimit);
         }
 
         private void HandlePlayersChanged(NetworkListEvent<LobbyPlayerData> changeEvent)
@@ -610,11 +612,12 @@ namespace PiGame.Lobby
             MatchSettingsChanged?.Invoke();
         }
 
-        private static bool AreValidMatchSettings(int durationMinutes, LobbyMatchMode mode)
+        private static bool AreValidMatchSettings(int durationMinutes, LobbyMatchMode mode, int killLimit)
         {
             return durationMinutes >= 2
                 && durationMinutes <= 5
-                && mode == LobbyMatchMode.Solo;
+                && mode == LobbyMatchMode.Solo
+                && killLimit >= 2 && killLimit <= 5;
         }
 
         private LobbyMatchSettingsData CreateInitialMatchSettings()

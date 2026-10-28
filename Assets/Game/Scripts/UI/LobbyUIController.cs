@@ -164,6 +164,12 @@ namespace PiGame.UI
             bool gamepadBack = Gamepad.current != null
                 && Gamepad.current.buttonEast.wasPressedThisFrame;
 
+            if (_matchSettingsPanel.IsOpen && (keyboardBack || gamepadBack || gamepadMenu))
+            {
+                _matchSettingsPanel.Hide();
+                return;
+            }
+
             if (_playerNamePanel.IsVisible)
             {
                 if (keyboardBack || gamepadMenu || gamepadBack)
