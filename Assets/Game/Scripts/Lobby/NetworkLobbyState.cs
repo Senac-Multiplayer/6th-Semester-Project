@@ -614,10 +614,9 @@ namespace PiGame.Lobby
 
         private static bool AreValidMatchSettings(int durationMinutes, LobbyMatchMode mode, int killLimit)
         {
-            return durationMinutes >= 2
-                && durationMinutes <= 5
+            return (durationMinutes == 0 || (durationMinutes >= 2 && durationMinutes <= 10))
                 && mode == LobbyMatchMode.Solo
-                && killLimit >= 2 && killLimit <= 5;
+                && killLimit >= 2 && killLimit <= 100;
         }
 
         private LobbyMatchSettingsData CreateInitialMatchSettings()
@@ -630,7 +629,7 @@ namespace PiGame.Lobby
             }
 
             return new LobbyMatchSettingsData(
-                Mathf.Clamp(_rules.DefaultDurationMinutes, 2, 5),
+                Mathf.Clamp(_rules.DefaultDurationMinutes, 2, 10),
                 initialMode,
                 Mathf.Clamp(_rules.MinimumPlayers, 1, _rules.MaximumPlayers),
                 _rules.RequireUniqueCharacters);

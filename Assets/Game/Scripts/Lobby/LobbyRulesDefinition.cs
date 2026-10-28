@@ -21,7 +21,7 @@ namespace PiGame.Lobby
         };
 
         [Header("Match defaults")]
-        [SerializeField, Range(2, 5)] private int _defaultDurationMinutes = 3;
+        [SerializeField, Range(2, 10)] private int _defaultDurationMinutes = 3;
         [SerializeField] private LobbyMatchMode _defaultMatchMode = LobbyMatchMode.Solo;
 
         public int MinimumPlayers => _minimumPlayers;
@@ -58,7 +58,7 @@ namespace PiGame.Lobby
         {
             _minimumPlayers = Mathf.Clamp(_minimumPlayers, 1, 4);
             _maximumPlayers = Mathf.Clamp(_maximumPlayers, _minimumPlayers, 4);
-            _defaultDurationMinutes = Mathf.Clamp(_defaultDurationMinutes, 2, 5);
+            _defaultDurationMinutes = Mathf.Clamp(_defaultDurationMinutes, 2, 10);
 
             if (_availableCharacters == null || _availableCharacters.Length == 0)
             {

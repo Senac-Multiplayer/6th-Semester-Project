@@ -40,7 +40,8 @@ namespace PiGame.Gameplay
         private void Update()
         {
             float time = _matchController.RemainingTime;
-            _timerText.text = $"{Mathf.FloorToInt(time / 60f):00}:{Mathf.FloorToInt(time % 60f):00}";
+            _timerText.text = time < 0f ? "INFINITO"
+                : $"{Mathf.FloorToInt(time / 60f):00}:{Mathf.FloorToInt(time % 60f):00}";
         }
 
         private void RefreshVisibility()

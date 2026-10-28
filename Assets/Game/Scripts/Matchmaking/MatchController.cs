@@ -86,9 +86,10 @@ namespace PiGame.Gameplay
                 return;
             }
 
-            int durationMinutes = Mathf.Max(1, settings.DurationMinutes);
-            _killLimit.Value = Mathf.Clamp(settings.KillLimit, 2, 5);
-            _remainingTime.Value = durationMinutes * 60f;
+            _killLimit.Value = Mathf.Clamp(settings.KillLimit, 2, 100);
+            // Valor negativo identifica partida sem limite de tempo também nos clients.
+            _remainingTime.Value = settings.DurationMinutes == 0
+                ? -1f : Mathf.Clamp(settings.DurationMinutes, 2, 10) * 60f;
             _winningPlayerSlot.Value = -1;
             _phase.Value = MatchPhase.Playing;
         }
@@ -112,7 +113,7 @@ namespace PiGame.Gameplay
 
         private void Update()
         {
-            if (!IsServer || _phase.Value != MatchPhase.Playing)
+            if (!IsServer || _phase.Value != MatchPhase.Playing || _remainingTime.Value < 0f)
             {
                 return;
             }
