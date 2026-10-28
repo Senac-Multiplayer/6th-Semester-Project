@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 2110000003}
   - component: {fileID: 2110000004}
   - component: {fileID: -2925241279235662125}
+  - component: {fileID: 810000000000000033}
   m_Layer: 0
   m_Name: ui_confirmation_panel
   m_TagString: Untagged
@@ -770,3 +771,16 @@ MonoBehaviour:
     m_VerticalOverflow: 0
     m_LineSpacing: 1
   m_Text: "N\xC3O"
+--- !u!114 &810000000000000033
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2110000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d05df859f91425e97dfe357b6d57233, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _firstSelection: {fileID: 2110000044}

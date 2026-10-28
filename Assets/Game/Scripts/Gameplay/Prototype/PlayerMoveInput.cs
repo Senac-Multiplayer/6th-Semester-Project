@@ -85,7 +85,7 @@ namespace PiGame.Gameplay
 
             _movement.ProcessInput(Direction, jumpPressed, jumpReleased,
                 crouchRequested: _crouchAction.action.IsPressed(),
-                dropRequested: _dropThroughAction.action.WasPerformedThisFrame(),
+                dropRequested: _dropThroughAction.action.IsPressed() && jumpPressed,
                 actionHeld: _aimFireAction.action.IsPressed() || _abilityAction.action.IsPressed());
         }
 
