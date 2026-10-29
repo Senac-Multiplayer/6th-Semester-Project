@@ -103,7 +103,7 @@ namespace PiGame.Gameplay
             _phase.Value = MatchPhase.WaitingForPlayers;
         }
 
-        [Rpc(SendTo.Server, RequireOwnership = false)]
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void ReadyForIntroRpc(RpcParams rpcParams = default)
         {
             ulong sender = rpcParams.Receive.SenderClientId;
