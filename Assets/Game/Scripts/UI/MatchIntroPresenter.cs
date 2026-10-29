@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Linq;
 using TMPro;
+using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Rendering.Universal;
@@ -11,6 +12,9 @@ namespace PiGame.Gameplay
     {
         [SerializeField] private MatchController _matchController;
         [SerializeField] private Camera _sceneCamera;
+        [SerializeField] private CinemachineBrain _brain;
+        [SerializeField] private CinemachineCamera _mapCamera;
+        [SerializeField] private CinemachineCamera[] _playerCameras;
         [SerializeField] private TMP_Text _countdownLabel;
         [SerializeField, Min(0.5f)] private float _closeupSize = 2.2f;
         [SerializeField, Min(0f)] private float _panDistance = 0.6f;
@@ -18,34 +22,38 @@ namespace PiGame.Gameplay
         [SerializeField] private UnityEvent<int> _countdownStepChanged = new UnityEvent<int>();
 
         private Vector3 _normalPosition;
+        private Quaternion _normalRotation;
         private float _normalSize;
         private Vector3[] _playerPositions;
         private int _lastStep = -1;
+        private int _selectedCamera = -1;
         private bool _configured;
+        private bool _prepared;
         private bool _cameraRestored = true;
         private PixelPerfectCamera _pixelPerfect;
         private bool _pixelPerfectWasEnabled;
+        private float _presentationElapsed = -1f;
+        private float _approachSeconds;
 
         private void Awake()
         {
-            if (!_matchController || !_sceneCamera || !_countdownLabel || !_sceneCamera.orthographic)
+            if (!_matchController || !_sceneCamera || !_brain || !_mapCamera || !_countdownLabel
+                || !_sceneCamera.orthographic || _playerCameras == null || _playerCameras.Length != 4
+                || _playerCameras.Any(c => !c))
             {
-                Debug.LogError("Configure MatchController, câmera ortográfica e texto da contagem no MatchIntroPresenter.", this);
+                Debug.LogError("Configure MatchController, câmera ortográfica, Brain, câmera do mapa, quatro câmeras dos jogadores e contagem no MatchIntroPresenter.", this);
                 enabled = false;
                 return;
             }
             _configured = true;
-            _normalPosition = _sceneCamera.transform.position;
-            _normalSize = _sceneCamera.orthographicSize;
+            _brain.enabled = false;
             _pixelPerfect = _sceneCamera.GetComponent<PixelPerfectCamera>();
-            _pixelPerfectWasEnabled = _pixelPerfect && _pixelPerfect.enabled;
             _countdownLabel.enabled = false;
         }
 
         private IEnumerator Start()
         {
             if (!_configured) yield break;
-            // Cada client confirma apenas quando já recebeu os personagens e seus slots.
             while (!_matchController.IsSpawned || _matchController.ScoreCount == 0
                 || FindObjectsByType<NetworkPlayerState>(FindObjectsSortMode.None)
                     .Count(p => p.IsSpawned && p.PlayerSlot >= 0) != _matchController.ScoreCount)
@@ -54,16 +62,54 @@ namespace PiGame.Gameplay
             _playerPositions = FindObjectsByType<NetworkPlayerState>(FindObjectsSortMode.None)
                 .Where(p => p.IsSpawned && p.PlayerSlot >= 0).OrderBy(p => p.PlayerSlot)
                 .Select(p => p.transform.position).ToArray();
+            _normalPosition = _sceneCamera.transform.position;
+            _normalRotation = _sceneCamera.transform.rotation;
+            _pixelPerfectWasEnabled = _pixelPerfect && _pixelPerfect.enabled;
+            _approachSeconds = _brain.DefaultBlend.BlendTime;
+            ConfigureCamera(_mapCamera, _normalPosition, CurrentMapSize());
+            _mapCamera.Priority = 10;
+            for (int i = 0; i < _playerCameras.Length; i++)
+            {
+                ConfigureCamera(_playerCameras[i], i < _playerPositions.Length ? Focus(i, 0f) : _normalPosition, _closeupSize);
+                _playerCameras[i].Priority = 0;
+            }
+            _normalSize = CurrentMapSize();
+            _brain.enabled = true;
+            _prepared = true;
+            _cameraRestored = false;
+            // Deixar o Brain assumir o mesmo enquadramento do mapa antes de iniciar qualquer blend.
+            yield return null;
             _matchController.ReadyForIntroRpc();
+        }
+
+        private float CurrentMapSize() => _pixelPerfectWasEnabled
+            ? _pixelPerfect.orthographicSize : _sceneCamera.orthographicSize;
+
+        private void ConfigureCamera(CinemachineCamera camera, Vector3 position, float size)
+        {
+            camera.transform.SetPositionAndRotation(position, _normalRotation);
+            var lens = LensSettings.FromCamera(_sceneCamera);
+            lens.OrthographicSize = size;
+            camera.Lens = lens;
         }
 
         private void LateUpdate()
         {
-            if (!_matchController.IsSpawned || _playerPositions == null) return;
+            if (!_matchController.IsSpawned || !_prepared) return;
             float elapsed = _matchController.IntroElapsed;
-            if (_matchController.Phase == MatchPhase.PresentingPlayers && elapsed >= 0f)
+            if (_matchController.Phase == MatchPhase.WaitingForPlayers
+                || (_matchController.Phase == MatchPhase.PresentingPlayers && elapsed < 0f && _presentationElapsed < 0f))
             {
-                PresentPlayers(elapsed);
+                _normalSize = CurrentMapSize();
+                ConfigureCamera(_mapCamera, _normalPosition, _normalSize);
+                _brain.ManualUpdate(Time.frameCount, 0f);
+                return;
+            }
+            if (_matchController.Phase == MatchPhase.PresentingPlayers)
+            {
+                float previous = Mathf.Max(0f, _presentationElapsed);
+                _presentationElapsed = Mathf.Max(previous, elapsed);
+                PresentPlayers(_presentationElapsed, _presentationElapsed - previous);
                 return;
             }
 
@@ -79,8 +125,7 @@ namespace PiGame.Gameplay
             {
                 _lastStep = step;
                 _countdownLabel.text = step == 0 ? "JÁ" : step.ToString();
-                _countdownLabel.color = step == 0 ? new Color(0.4f, 0.95f, 0.55f)
-                    : new Color(0.95f, 0.74f, 0.37f);
+                _countdownLabel.color = step == 0 ? new Color(0.4f, 0.95f, 0.55f) : new Color(0.95f, 0.74f, 0.37f);
                 // O Prado pode conectar seus métodos de áudio pelo Inspector, sem alterar o fluxo de rede.
                 _countdownStepChanged.Invoke(step);
             }
@@ -88,28 +133,29 @@ namespace PiGame.Gameplay
             _countdownLabel.rectTransform.localScale = Vector3.one * pop;
         }
 
-        private void PresentPlayers(float elapsed)
+        private void PresentPlayers(float elapsed, float delta)
         {
-            _cameraRestored = false;
-            // O Pixel Perfect controla o tamanho da câmera durante o render; liberar apenas o zoom da apresentação.
             if (_pixelPerfect && _pixelPerfect.enabled) _pixelPerfect.enabled = false;
             _countdownLabel.enabled = false;
             float visitsDuration = _playerPositions.Length * _matchController.SecondsPerPlayer;
-            if (elapsed >= visitsDuration)
+            int index = elapsed >= visitsDuration ? -1
+                : Mathf.Min((int)(elapsed / _matchController.SecondsPerPlayer), _playerPositions.Length - 1);
+            if (index != _selectedCamera)
             {
-                float t = Mathf.SmoothStep(0f, 1f, (elapsed - visitsDuration) / _matchController.CameraReturnSeconds);
-                _sceneCamera.transform.position = Vector3.Lerp(Focus(_playerPositions.Length - 1, 1f), _normalPosition, t);
-                _sceneCamera.orthographicSize = Mathf.Lerp(_closeupSize, _normalSize, t);
-                return;
+                _selectedCamera = index;
+                _brain.DefaultBlend.Time = index < 0 ? _matchController.CameraReturnSeconds : _approachSeconds;
+                _mapCamera.Priority = index < 0 ? 20 : 0;
+                for (int i = 0; i < _playerCameras.Length; i++) _playerCameras[i].Priority = i == index ? 20 : 0;
+                (index < 0 ? _mapCamera : _playerCameras[index]).Prioritize();
             }
-
-            int index = Mathf.Min((int)(elapsed / _matchController.SecondsPerPlayer), _playerPositions.Length - 1);
-            float localTime = elapsed - index * _matchController.SecondsPerPlayer;
-            float approach = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(localTime / 0.65f));
-            Vector3 previous = index == 0 ? _normalPosition : Focus(index - 1, 1f);
-            float pan = Mathf.Clamp01((localTime - 0.65f) / Mathf.Max(0.1f, _matchController.SecondsPerPlayer - 0.65f));
-            _sceneCamera.transform.position = Vector3.Lerp(previous, Focus(index, pan), approach);
-            _sceneCamera.orthographicSize = Mathf.Lerp(index == 0 ? _normalSize : _closeupSize, _closeupSize, approach);
+            if (index >= 0)
+            {
+                float localTime = elapsed - index * _matchController.SecondsPerPlayer;
+                float pan = Mathf.Clamp01((localTime - _approachSeconds) / Mathf.Max(0.1f, _matchController.SecondsPerPlayer - _approachSeconds));
+                _playerCameras[index].transform.position = Focus(index, pan);
+            }
+            // O Cinemachine faz os blends; o delta vem do relógio da partida e nunca volta para trás.
+            _brain.ManualUpdate(Time.frameCount, delta);
         }
 
         private Vector3 Focus(int index, float pan)
@@ -123,7 +169,8 @@ namespace PiGame.Gameplay
         private void RestoreCamera()
         {
             if (_cameraRestored || !_sceneCamera) return;
-            _sceneCamera.transform.position = _normalPosition;
+            if (_brain) _brain.enabled = false;
+            _sceneCamera.transform.SetPositionAndRotation(_normalPosition, _normalRotation);
             _sceneCamera.orthographicSize = _normalSize;
             if (_pixelPerfect) _pixelPerfect.enabled = _pixelPerfectWasEnabled;
             _cameraRestored = true;

@@ -7065,6 +7065,7 @@ GameObject:
   - component: {fileID: 2057708606}
   - component: {fileID: 2057708605}
   - component: {fileID: 2057708604}
+  - component: {fileID: 870799999000000002}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -7818,11 +7819,37 @@ PrefabInstance:
       propertyPath: _sceneCamera
       value:
       objectReference: {fileID: 2057708607}
+    - target: {fileID: 8707000000000005, guid: 54571335d26740de8aa176b0624a4eb0, type: 3}
+      propertyPath: _brain
+      value:
+      objectReference: {fileID: 870799999000000002}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 54571335d26740de8aa176b0624a4eb0, type: 3}
+--- !u!114 &870799999000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2057708602}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 72ece51f2901e7445ab60da3685d6b5f, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineBrain
+  ShowDebugText: 0
+  ShowCameraFrustum: 0
+  IgnoreTimeScale: 1
+  ChannelMask: -1
+  UpdateMethod: 3
+  BlendUpdateMethod: 1
+  DefaultBlend:
+    Style: 1
+    Time: 0.65
+  CustomBlends: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
