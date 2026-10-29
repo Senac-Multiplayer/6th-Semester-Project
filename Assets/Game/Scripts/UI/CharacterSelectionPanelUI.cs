@@ -32,6 +32,8 @@ namespace PiGame.UI
         [SerializeField] private Text[] _slotLabels;
         [SerializeField] private Text[] _playerNameTexts;
         [SerializeField] private Text[] _statusTexts;
+        [SerializeField] private Image[] _characterNameplates = Array.Empty<Image>();
+        [SerializeField] private Image[] _readyChecks = Array.Empty<Image>();
 
         [Header("Ready banners")]
         [SerializeField] private Animator[] _readyBanners = Array.Empty<Animator>();
@@ -69,9 +71,11 @@ namespace PiGame.UI
         private void Awake()
         {
             if (_readyBanners.Length != _slotRoots.Length || _readyBannerCloths.Length != _slotRoots.Length
-                || Array.Exists(_readyBanners, banner => !banner) || Array.Exists(_readyBannerCloths, cloth => !cloth))
+                || _characterNameplates.Length != _slotRoots.Length || _readyChecks.Length != _slotRoots.Length
+                || Array.Exists(_readyBanners, banner => !banner) || Array.Exists(_readyBannerCloths, cloth => !cloth)
+                || Array.Exists(_characterNameplates, plate => !plate) || Array.Exists(_readyChecks, check => !check))
             {
-                Debug.LogError("Configure um Animator e uma imagem de bandeira para cada slot no CharacterSelectionPanelUI.", this);
+                Debug.LogError("Configure bandeira, placa do personagem e ícone de pronto para cada slot no CharacterSelectionPanelUI.", this);
                 enabled = false;
                 return;
             }
@@ -305,12 +309,14 @@ namespace PiGame.UI
             _playerNameTexts[slot].text = player.PlayerName.ToString();
             _slotRoots[slot].localScale = Vector3.one;
             _readyBanners[slot].gameObject.SetActive(true);
-            _readyBannerCloths[slot].color = Color.Lerp(character != null ? character.Color : Color.gray, Color.black, 0.25f);
+            Color characterColor = character != null ? character.Color : Color.gray;
+            _readyBannerCloths[slot].color = Color.Lerp(characterColor, Color.black, 0.18f);
             _readyBanners[slot].SetBool(ReadyParameter, player.IsReady);
+            _readyChecks[slot].gameObject.SetActive(player.IsReady);
 
-            Color slotColor = PlayerSlotColors.Get(slot);
-            slotColor.a = isCharacterLocked ? 0.38f : isLocalPlayer ? 1f : 0.88f;
-            _slotBackgrounds[slot].color = slotColor;
+            _slotBackgrounds[slot].color = characterColor;
+            _characterNameplates[slot].gameObject.SetActive(true);
+            _characterNameplates[slot].color = Color.Lerp(characterColor, Color.black, 0.35f);
 
             Image portrait = _characterPortraits[slot];
             portrait.gameObject.SetActive(true);
@@ -336,8 +342,8 @@ namespace PiGame.UI
             if (player.IsReady)
             {
                 statusText.text = "PRONTO";
-                statusText.fontSize = 28;
-                statusText.color = new Color(0.42f, 1f, 0.58f, 1f);
+                statusText.fontSize = 24;
+                statusText.color = Color.white;
             }
             else
             {
@@ -353,25 +359,25 @@ namespace PiGame.UI
         private void RenderEmptySlot(int slot)
         {
             _readyBanners[slot].gameObject.SetActive(false);
+            _readyChecks[slot].gameObject.SetActive(false);
+            _characterNameplates[slot].gameObject.SetActive(false);
             _playerNameTexts[slot].text = string.Empty;
             _slotRoots[slot].localScale = Vector3.one;
-            Color emptyColor = PlayerSlotColors.Get(slot);
-            emptyColor.a = 0.28f;
-            _slotBackgrounds[slot].color = emptyColor;
+            _slotBackgrounds[slot].color = new Color(0.12f, 0.14f, 0.18f, 1f);
             _characterPortraits[slot].gameObject.SetActive(false);
             _deviceIcons[slot].gameObject.SetActive(false);
-            _slotLabels[slot].text = "AGUARDANDO";
+            _slotLabels[slot].text = string.Empty;
             _slotLabels[slot].color = new Color(1f, 1f, 1f, 0.65f);
-            _statusTexts[slot].text = "AGUARDANDO";
-            _statusTexts[slot].fontSize = 16;
-            _statusTexts[slot].color = new Color(0.58f, 0.58f, 0.64f, 1f);
+            _statusTexts[slot].text = "AGUARDANDO JOGADOR";
+            _statusTexts[slot].fontSize = 15;
+            _statusTexts[slot].color = new Color(0.8f, 0.8f, 0.84f, 1f);
         }
 
         private void RenderChoosingStatus(int slot, bool isLocalPlayer)
         {
             Text statusText = _statusTexts[slot];
             statusText.text = "ESCOLHENDO...";
-            statusText.fontSize = isLocalPlayer ? 18 : 16;
+            statusText.fontSize = 16;
             statusText.color = isLocalPlayer
                 ? Color.white
                 : new Color(0.78f, 0.78f, 0.84f, 1f);
