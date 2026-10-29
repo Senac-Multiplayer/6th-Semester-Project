@@ -68,6 +68,7 @@ namespace PiGame.UI
         private Vector2 _blockedSlotOriginalPosition;
         private Coroutine _blockedFeedbackRoutine;
         private Coroutine _browsePulseRoutine;
+        private Vector2[] _statusPositions;
 
         private void Awake()
         {
@@ -82,6 +83,10 @@ namespace PiGame.UI
             }
             DisableAutomaticNavigation(_previousCharacterButton);
             DisableAutomaticNavigation(_nextCharacterButton);
+
+            _statusPositions = new Vector2[_statusTexts.Length];
+            for (int slot = 0; slot < _statusTexts.Length; slot++)
+                _statusPositions[slot] = _statusTexts[slot].rectTransform.anchoredPosition;
 
             RefreshLegend();
         }
@@ -192,6 +197,7 @@ namespace PiGame.UI
 
             for (int slot = 0; slot < _slotRoots.Length; slot++)
             {
+                _statusTexts[slot].rectTransform.anchoredPosition = _statusPositions[slot];
                 if (TryFindPlayerInSlot(players, slot, out LobbyPlayerData player))
                 {
                     bool isLocalPlayer = player.ClientId == localClientId;
@@ -417,6 +423,9 @@ namespace PiGame.UI
         private void RenderChoosingStatus(int slot, bool isLocalPlayer)
         {
             Text statusText = _statusTexts[slot];
+            Vector2 position = _statusPositions[slot];
+            position.x = _slotRoots[slot].InverseTransformPoint(_characterNameplates[slot].transform.position).x + 6f;
+            statusText.rectTransform.anchoredPosition = position;
             statusText.text = "ESCOLHENDO...";
             statusText.fontSize = 16;
             statusText.color = isLocalPlayer
