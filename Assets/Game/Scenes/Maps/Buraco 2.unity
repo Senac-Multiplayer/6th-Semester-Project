@@ -9396,6 +9396,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d88bfa9699de9c41b0dc623acc62d8a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PiGame.Lobby.MatchSession
+--- !u!1001 &870799999000000001
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 8707000000000005, guid: 54571335d26740de8aa176b0624a4eb0, type: 3}
+      propertyPath: _matchController
+      value:
+      objectReference: {fileID: 491186895}
+    - target: {fileID: 8707000000000005, guid: 54571335d26740de8aa176b0624a4eb0, type: 3}
+      propertyPath: _sceneCamera
+      value:
+      objectReference: {fileID: 2057708607}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 54571335d26740de8aa176b0624a4eb0, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -9411,3 +9432,4 @@ SceneRoots:
   - {fileID: 8600000000}
   - {fileID: 474996607}
   - {fileID: 1475564555}
+  - {fileID: 870799999000000001}

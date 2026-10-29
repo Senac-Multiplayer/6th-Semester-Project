@@ -76,7 +76,8 @@ namespace PiGame.Gameplay
 
         private void Refresh()
         {
-            bool visible = _playerState.IsSpawned && _playerState.IsAlive && _playerState.PlayerSlot >= 0;
+            bool visible = _playerState.IsSpawned && _playerState.IsAlive && _playerState.PlayerSlot >= 0
+                && _playerState.IndicatorsVisible;
             if (visible && !_wasVisible && _playerState.IsOwner)
             {
                 _showLocalHint = true;
