@@ -2,6 +2,7 @@ using System.Collections;
 using System;
 using PiGame.Lobby;
 using Unity.Netcode;
+using Unity.Collections;
 using UnityEngine;
 using PiGame.Sound;
 
@@ -22,6 +23,11 @@ namespace PiGame.Gameplay
         private readonly NetworkVariable<int> _currentHealth = new NetworkVariable<int>();
         private readonly NetworkVariable<bool> _isAlive = new NetworkVariable<bool>(true);
         private readonly NetworkVariable<bool> _matchActive = new NetworkVariable<bool>(true);
+        private readonly NetworkVariable<FixedString64Bytes> _playerName = new NetworkVariable<FixedString64Bytes>();
+        private readonly NetworkVariable<double> _abilityReadyAt = new NetworkVariable<double>(-1d);
+        private readonly NetworkVariable<float> _abilityCooldownDuration = new NetworkVariable<float>();
+        // -1: sem indicador; 0: indisponível; 1: disponível; 2: em uso (habilidade sem timer).
+        private readonly NetworkVariable<int> _abilityAvailability = new NetworkVariable<int>(-1);
 
         private SpriteRenderer[] _spriteRenderers;
         private SpriteRenderer _bodySpriteRenderer;
@@ -45,6 +51,14 @@ namespace PiGame.Gameplay
         public bool IsAlive => _isAlive.Value;
         public bool CanAct => _isAlive.Value && _matchActive.Value;
         public bool IsInvulnerable => _isInvulnerable;
+        public string PlayerName => _playerName.Value.ToString();
+        // Negativo indica que a habilidade atual não tem recarga por tempo.
+        public float AbilityCooldownRemaining => _abilityReadyAt.Value < 0d ? -1f
+            : IsSpawned ? Mathf.Max(0f, (float)(_abilityReadyAt.Value - NetworkManager.ServerTime.Time)) : 0f;
+
+        public float AbilityCooldownProgress => _abilityCooldownDuration.Value <= 0f ? 1f
+            : 1f - Mathf.Clamp01(AbilityCooldownRemaining / _abilityCooldownDuration.Value);
+        public int AbilityAvailability => _abilityAvailability.Value;
 
         private void Awake()
         {
@@ -65,6 +79,7 @@ namespace PiGame.Gameplay
             _currentHealth.OnValueChanged += HandleIntChanged;
             _isAlive.OnValueChanged += HandleAliveChanged;
             _matchActive.OnValueChanged += HandleBoolChanged;
+            _playerName.OnValueChanged += HandleNameChanged;
 
             ApplyAlivePresentation(_isAlive.Value);
             ApplyHealthPresentation();
@@ -81,6 +96,7 @@ namespace PiGame.Gameplay
             _currentHealth.OnValueChanged -= HandleIntChanged;
             _isAlive.OnValueChanged -= HandleAliveChanged;
             _matchActive.OnValueChanged -= HandleBoolChanged;
+            _playerName.OnValueChanged -= HandleNameChanged;
         }
 
         public void InitializeServer(LobbyPlayerData playerData, Color indicatorColor)
@@ -91,6 +107,7 @@ namespace PiGame.Gameplay
             }
 
             _playerSlot.Value = playerData.PlayerSlot;
+            _playerName.Value = playerData.PlayerName;
             _characterId.Value = playerData.CharacterId;
             _inputDevice.Value = playerData.InputDevice;
             _indicatorColor.Value = indicatorColor;
@@ -106,6 +123,23 @@ namespace PiGame.Gameplay
             {
                 _isInvulnerable = isInvulnerable;
             }
+        }
+
+        public void SetAbilityCooldownServer(float seconds)
+        {
+            if (!IsServer) return;
+            _abilityCooldownDuration.Value = Mathf.Max(0f, seconds);
+            _abilityReadyAt.Value = NetworkManager.ServerTime.Time + _abilityCooldownDuration.Value;
+        }
+
+        public void SetAbilityAvailabilityServer(bool available, bool active)
+        {
+            if (IsServer) _abilityAvailability.Value = active ? 2 : available ? 1 : 0;
+        }
+
+        private void HandleNameChanged(FixedString64Bytes previousValue, FixedString64Bytes currentValue)
+        {
+            StateChanged?.Invoke();
         }
 
         [Rpc(SendTo.Owner)]

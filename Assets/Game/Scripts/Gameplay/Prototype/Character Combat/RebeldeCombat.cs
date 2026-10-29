@@ -42,7 +42,7 @@ namespace PiGame.Gameplay
 
         private AmmoIndicatorsView _ammoIndicatorsView;
 
-        private NetworkVariable<int> _ammo = new NetworkVariable<int>(1,NetworkVariableReadPermission.Owner);
+        private NetworkVariable<int> _ammo = new NetworkVariable<int>(1,NetworkVariableReadPermission.Everyone);
             
         private NetworkPlayerState _playerState;
         private NetworkVariable<bool> _hasShot = new NetworkVariable<bool>(true);
@@ -143,6 +143,7 @@ namespace PiGame.Gameplay
                 {
                     _abilityActive = false;
                     _abilityCooldownUntil = Time.time + _abilityCooldownSeconds;
+                    _playerState.SetAbilityCooldownServer(_abilityCooldownSeconds);
                 }
 
 
@@ -177,6 +178,7 @@ namespace PiGame.Gameplay
             {
                 _ammo.Value = 1;
                 _hasShot.Value = true;
+                _playerState.SetAbilityCooldownServer(0f);
             }
 
             RefreshAmmoIndicators();
@@ -204,7 +206,7 @@ namespace PiGame.Gameplay
 
             _ammoIndicatorsView.SetCount(
                 _ammo.Value,
-                IsOwner && _playerState.CanAct,
+                _playerState.CanAct,
                 _playerState.IndicatorColor
             );
         }
@@ -282,11 +284,13 @@ namespace PiGame.Gameplay
             if (heldTime >= _maxAbilityHoldSeconds)
             {
                 _abilityCooldownUntil = Time.time + _abilityCooldownSeconds;
+                _playerState.SetAbilityCooldownServer(_abilityCooldownSeconds);
 
                 return;
             }
 
             _abilityCooldownUntil = Time.time + _abilityCooldownSeconds;
+            _playerState.SetAbilityCooldownServer(_abilityCooldownSeconds);
             _abilityForward = GetFacingDirection(aimDirection, moveDirection);
 
             _abilityHitWindowActive = true;

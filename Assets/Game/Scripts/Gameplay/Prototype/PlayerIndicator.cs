@@ -6,18 +6,31 @@ namespace PiGame.Gameplay
     [RequireComponent(typeof(NetworkPlayerState))]
     public class PlayerIndicator : MonoBehaviour
     {
-        [SerializeField] private Vector3 _localPosition = new Vector3(0f, 1.45f, 0f);
-        [SerializeField] private Vector3 _labelLocalPosition = new Vector3(0f, 2f, 0f);
-        [SerializeField] private Material _labelMaterial;
+        [SerializeField] private SpriteRenderer _marker;
+        [SerializeField] private TextMeshPro _playerLabel;
+        [SerializeField] private SpriteRenderer _abilityBackground;
+        [SerializeField] private SpriteRenderer _abilityFill;
+        [SerializeField] private TextMeshPro _localHintLabel;
+        [SerializeField, Min(0f)] private float _localHintSeconds = 3f;
 
         private NetworkPlayerState _playerState;
-        private MeshRenderer _renderer;
-        private TextMeshPro _playerLabel;
+        private bool _wasVisible;
+        private bool _showLocalHint;
+        private float _localHintEndsAt;
+        private Vector3 _abilityFillScale;
+        private Vector3 _abilityFillPosition;
 
         private void Awake()
         {
             _playerState = GetComponent<NetworkPlayerState>();
-            CreateIndicator();
+            if (_marker == null || _playerLabel == null || _abilityBackground == null || _abilityFill == null || _localHintLabel == null)
+            {
+                Debug.LogError("Configure marcador, nome, barra de habilidade e aviso local no PlayerIndicator do prefab.", this);
+                enabled = false;
+                return;
+            }
+            _abilityFillScale = _abilityFill.transform.localScale;
+            _abilityFillPosition = _abilityFill.transform.localPosition;
         }
 
         private void OnEnable()
@@ -31,97 +44,57 @@ namespace PiGame.Gameplay
             _playerState.StateChanged -= Refresh;
         }
 
-        private void CreateIndicator()
+        private void Update()
         {
-            GameObject indicator = new GameObject("PlayerIndicator");
-            indicator.transform.SetParent(transform, false);
-            indicator.transform.localPosition = _localPosition;
-
-            Mesh mesh = new Mesh
+            if (_showLocalHint && Time.unscaledTime >= _localHintEndsAt)
             {
-                name = "PlayerIndicatorTriangle",
-                vertices = new[]
-                {
-                    new Vector3(-0.28f, 0.23f, 0f),
-                    new Vector3(0.28f, 0.23f, 0f),
-                    new Vector3(0f, -0.25f, 0f),
-                    new Vector3(-0.22f, 0.18f, 0f),
-                    new Vector3(0.22f, 0.18f, 0f),
-                    new Vector3(0f, -0.18f, 0f),
-                    new Vector3(-0.22f, 0.18f, 0f),
-                    new Vector3(0.22f, 0.18f, 0f),
-                    new Vector3(0f, -0.18f, 0f)
-                },
-                // Black border and tinted fill share the existing mesh and renderer.
-                colors = new[]
-                {
-                    Color.black, Color.black, Color.black,
-                    Color.black, Color.black, Color.black,
-                    Color.white, Color.white, Color.white
-                },
-                triangles = new[]
-                {
-                    0, 1, 4, 0, 4, 3,
-                    1, 2, 5, 1, 5, 4,
-                    2, 0, 3, 2, 3, 5,
-                    6, 7, 8
-                }
-            };
-
-            indicator.AddComponent<MeshFilter>().sharedMesh = mesh;
-            _renderer = indicator.AddComponent<MeshRenderer>();
-            _renderer.material = new Material(Shader.Find("Sprites/Default"));
-            SpriteRenderer playerRenderer = GetComponentInChildren<SpriteRenderer>();
-            if (playerRenderer != null)
-            {
-                _renderer.sortingLayerID = playerRenderer.sortingLayerID;
+                _showLocalHint = false;
+                _localHintLabel.enabled = false;
             }
-            _renderer.sortingOrder = 30;
 
-            GameObject labelObject = new GameObject(
-                "PlayerSlotLabel",
-                typeof(RectTransform));
-            labelObject.transform.SetParent(transform, false);
-            labelObject.transform.localPosition = _labelLocalPosition;
+            RefreshAbility();
+        }
 
-            _playerLabel = labelObject.AddComponent<TextMeshPro>();
-            _playerLabel.fontSharedMaterial = _labelMaterial;
-            _playerLabel.alignment = TextAlignmentOptions.Center;
-            _playerLabel.enableAutoSizing = false;
-            _playerLabel.fontSize = 5f;
-            _playerLabel.fontStyle = FontStyles.Bold;
-            _playerLabel.textWrappingMode = TextWrappingModes.NoWrap;
-            _playerLabel.overflowMode = TextOverflowModes.Overflow;
-            _playerLabel.outlineColor = Color.black;
-            _playerLabel.outlineWidth = 0.3f;
-            _playerLabel.rectTransform.sizeDelta = new Vector2(2.2f, 0.8f);
-            _playerLabel.renderer.sortingLayerID = _renderer.sortingLayerID;
-            _playerLabel.renderer.sortingOrder = 31;
+        private void RefreshAbility()
+        {
+            float remaining = _playerState.AbilityCooldownRemaining;
+            int availability = _playerState.AbilityAvailability;
+            bool visible = _wasVisible && (remaining >= 0f || availability >= 0);
+            _abilityBackground.enabled = visible;
+            _abilityFill.enabled = visible;
+            if (!visible) return;
+
+            float progress = remaining >= 0f ? _playerState.AbilityCooldownProgress : 1f;
+            _abilityFill.transform.localScale = new Vector3(_abilityFillScale.x * progress, _abilityFillScale.y, _abilityFillScale.z);
+            _abilityFill.transform.localPosition = _abilityFillPosition
+                + Vector3.left * (_abilityFillScale.x * (1f - progress) * 0.5f);
+            _abilityFill.color = availability == 2 ? new Color(0.3f, 0.85f, 1f)
+                : remaining > 0f ? new Color(0.95f, 0.74f, 0.37f)
+                : availability == 0 ? new Color(0.32f, 0.32f, 0.32f)
+                : new Color(0.4f, 0.95f, 0.55f);
         }
 
         private void Refresh()
         {
-            if (_renderer == null)
+            bool visible = _playerState.IsSpawned && _playerState.IsAlive && _playerState.PlayerSlot >= 0;
+            if (visible && !_wasVisible && _playerState.IsOwner)
             {
-                return;
+                _showLocalHint = true;
+                _localHintEndsAt = Time.unscaledTime + _localHintSeconds;
             }
+            _wasVisible = visible;
+            _marker.enabled = visible;
+            _playerLabel.enabled = visible;
+            RefreshAbility();
+            _localHintLabel.enabled = visible && _showLocalHint;
+            _marker.color = _playerState.IndicatorColor;
+            _playerLabel.color = _playerState.IndicatorColor;
+            RefreshName();
+        }
 
-            bool shouldShow = _playerState.IsAlive && _playerState.PlayerSlot >= 0;
-            Color playerColor = _playerState.IndicatorColor;
-
-            _renderer.enabled = shouldShow;
-            _renderer.material.color = playerColor;
-
-            if (_playerLabel == null)
-            {
-                return;
-            }
-
-            _playerLabel.enabled = shouldShow;
-            _playerLabel.text = shouldShow
-                ? $"P{_playerState.PlayerSlot + 1}"
-                : string.Empty;
-            _playerLabel.color = playerColor;
+        private void RefreshName()
+        {
+            _playerLabel.text = $"P{_playerState.PlayerSlot + 1}\n<size=75%>{_playerState.PlayerName}</size>";
         }
     }
 }
