@@ -38,7 +38,8 @@ namespace PiGame.Gameplay
 
         private void Refresh()
         {
-            _root.SetActive(_playerState.IsSpawned && _playerState.IsAlive && _playerState.PlayerSlot >= 0);
+            _root.SetActive(_playerState.IsSpawned && _playerState.IsAlive && _playerState.PlayerSlot >= 0
+                && _playerState.IndicatorsVisible);
             Color filledColor = _playerState.CurrentHealth == 1 ? _lowHealthColor : _healthyColor;
             for (int i = 0; i < _segments.Length; i++)
                 _segments[i].color = i < _playerState.CurrentHealth ? filledColor : _emptyColor;
