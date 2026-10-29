@@ -19,7 +19,7 @@ namespace PiGame.Gameplay
         [SerializeField] private Color _rollTint = new Color(0.45f, 0.45f, 0.45f, 0.65f);
 
         private readonly NetworkVariable<int> _ammo = new NetworkVariable<int>(
-            0, NetworkVariableReadPermission.Owner);
+            0, NetworkVariableReadPermission.Everyone);
         private readonly NetworkVariable<float> _rollDirectionX = new NetworkVariable<float>(1f);
         private readonly NetworkVariable<bool> _isRolling = new NetworkVariable<bool>();
 
@@ -88,7 +88,7 @@ namespace PiGame.Gameplay
 
             foreach (SpriteRenderer indicator in _ammoIndicators)
             {
-                indicator.gameObject.SetActive(IsOwner);
+                indicator.gameObject.SetActive(true);
             }
 
             ApplyRollState();
@@ -275,7 +275,7 @@ namespace PiGame.Gameplay
         {
             for (int index = 0; index < _ammoIndicators.Length; index++)
             {
-                bool visible = IsOwner && _playerState.CanAct
+                bool visible = _playerState.CanAct
                     && index < _ammo.Value;
                 _ammoIndicators[index].color = _playerState.IndicatorColor;
                 _ammoIndicators[index].enabled = visible;

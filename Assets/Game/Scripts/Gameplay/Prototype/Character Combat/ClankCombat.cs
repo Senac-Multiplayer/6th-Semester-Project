@@ -108,6 +108,7 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
         {
             _ammo.Value = _maximumAmmo;
             _abilityCharges.Value = _maxAbilityCharges;
+            _playerState.SetAbilityCooldownServer(0f);
         }
 
         foreach (SpriteRenderer indicator in _ammoIndicators)
@@ -171,6 +172,8 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
             {
                 _abilityCharges.Value++;
                 _abilityCooldownTimer = 0f;
+                _playerState.SetAbilityCooldownServer(_abilityCharges.Value < _maxAbilityCharges
+                    ? _abilityCooldownSeconds : 0f);
             }
         }
         else
@@ -242,6 +245,8 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
             return;
         }
 
+        if (_abilityCooldownTimer == 0f)
+            _playerState.SetAbilityCooldownServer(_abilityCooldownSeconds);
         _abilityCharges.Value--;
 
         Vector2 launchVelocity = Vector2.up * _hammerLaunchForce;
@@ -342,7 +347,7 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
     {
         for (int index = 0; index < _ammoIndicators.Length; index++)
         {
-            bool visible = IsOwner && _playerState != null && _playerState.CanAct
+            bool visible = _playerState != null && _playerState.CanAct
                 && index < _ammo.Value;
             _ammoIndicators[index].enabled = visible;
             _ammoIndicators[index].gameObject.SetActive(visible);
@@ -354,6 +359,7 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
         if (!IsServer) return;
         _ammo.Value = _maximumAmmo;
         _abilityCharges.Value = _maxAbilityCharges;
+        _playerState.SetAbilityCooldownServer(0f);
     }
     private void OnDrawGizmosSelected()
     {
