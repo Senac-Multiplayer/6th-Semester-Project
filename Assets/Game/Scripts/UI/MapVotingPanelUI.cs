@@ -63,11 +63,13 @@ namespace PiGame.UI
         private readonly List<LobbyMapId> _tiedOptions = new();
         private int _drawPhase = -1;
         private int _soundPhase = -1;
-        private LobbyMapId _displayedResultMap = LobbyMapId.None;
         private bool _isDrawingMap;
         private bool _interactionEnabled = true;
         private bool _localVoteConfirmed;
         private UnityAction[] _optionButtonActions;
+
+        private bool HasFinalMap => _stage == LobbyStage.MatchStarting
+            && !_isDrawingMap && _selectedMapId == _draw.MapId;
 
         private void Awake()
         {
@@ -201,19 +203,14 @@ namespace PiGame.UI
             _stage = stage;
             _draw = draw;
             _localVoteConfirmed = false;
-            if (stage == LobbyStage.MatchStarting) RenderDraw(serverTime);
-            else
-            {
-                _isDrawingMap = false;
-                _displayedResultMap = LobbyMapId.None;
-            }
-            RefreshLegend();
-
-            if (TryFindVote(votes, localClientId, out LobbyMapVoteData localVote))
+            if (stage == LobbyStage.MapVoting && TryFindVote(votes, localClientId, out LobbyMapVoteData localVote))
             {
                 _selectedMapId = localVote.MapId;
                 _localVoteConfirmed = localVote.IsConfirmed;
             }
+            if (stage == LobbyStage.MatchStarting) RenderDraw(serverTime);
+            else _isDrawingMap = false;
+            RefreshLegend();
 
             RenderVoters(players, votes);
             RefreshStatus();
@@ -366,10 +363,10 @@ namespace PiGame.UI
             {
                 _statusText.text = _isDrawingMap
                     ? (_drawPhase == 0 ? "DESEMPATANDO VOTOS..." : "SORTEANDO MAPA...")
-                    : $"MAPA ESCOLHIDO: {GetMapDisplayName(_displayedResultMap)}\nINICIANDO PARTIDA...";
-                if (!_isDrawingMap && _displayedResultMap == LobbyMapId.Random)
+                    : $"MAPA ESCOLHIDO: {GetMapDisplayName(_selectedMapId)}\nINICIANDO PARTIDA...";
+                if (!_isDrawingMap && _selectedMapId == LobbyMapId.Random)
                     _statusText.text = "ALEATÓRIO VENCEU O DESEMPATE...";
-                _statusText.color = _winnerColor;
+                _statusText.color = HasFinalMap ? _winnerColor : _selectedColor;
                 return;
             }
 
@@ -390,7 +387,7 @@ namespace PiGame.UI
             {
                 LobbyMapId optionMapId = GetOptionMapId(i);
                 bool isWinner = _stage == LobbyStage.MatchStarting
-                    && optionMapId == _displayedResultMap;
+                    && optionMapId == _selectedMapId;
                 bool isSelected = _stage == LobbyStage.MapVoting && optionMapId == _selectedMapId;
                 Button button = _optionButtons[i];
 
@@ -400,15 +397,15 @@ namespace PiGame.UI
                 button.transform.localScale = isSelected || isWinner
                     ? Vector3.one * _selectedScale
                     : Vector3.one;
-                button.targetGraphic.color = isWinner
-                    ? _winnerColor
-                    : isSelected ? _selectedColor : _normalColor;
+                button.targetGraphic.color = isWinner || isSelected
+                    ? (HasFinalMap ? _winnerColor : _selectedColor)
+                    : _normalColor;
             }
         }
 
         private void AnimateSelectedCard()
         {
-            float pulse = 1f
+            float pulse = HasFinalMap ? 1f : 1f
                 + Mathf.Sin(Time.unscaledTime * Mathf.PI * _selectedPulseSpeed)
                     * _selectedPulseAmount;
 
@@ -416,7 +413,7 @@ namespace PiGame.UI
             {
                 LobbyMapId optionMapId = GetOptionMapId(i);
                 bool isWinner = _stage == LobbyStage.MatchStarting
-                    && optionMapId == _displayedResultMap;
+                    && optionMapId == _selectedMapId;
                 bool isSelected = _stage == LobbyStage.MapVoting
                     && optionMapId == _selectedMapId;
                 _optionButtons[i].transform.localScale = isSelected || isWinner
@@ -455,10 +452,10 @@ namespace PiGame.UI
                     if (_uiAudioManager != null) _uiAudioManager.PlayDrawRoullete();
                 }
             }
-            if (_drawPhase == phase && _displayedResultMap == displayed && _isDrawingMap == spinning)
+            if (_drawPhase == phase && _selectedMapId == displayed && _isDrawingMap == spinning)
                 return;
             _drawPhase = phase;
-            _displayedResultMap = displayed;
+            _selectedMapId = displayed;
             _isDrawingMap = spinning;
             RefreshStatus();
             RefreshSelectionVisuals();
