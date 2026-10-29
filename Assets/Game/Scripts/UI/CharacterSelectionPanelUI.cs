@@ -292,7 +292,7 @@ namespace PiGame.UI
             {
                 float pulse = Mathf.Sin(elapsed / duration * Mathf.PI);
                 arrow.localScale = Vector3.one * (1f + 0.25f * pulse);
-                nameplate.localScale = Vector3.one * (1f + 0.08f * pulse);
+                nameplate.localScale = Vector3.one * (1f + 0.15f * pulse);
                 elapsed += Time.unscaledDeltaTime;
                 yield return null;
             }
