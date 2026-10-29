@@ -67,6 +67,7 @@ namespace PiGame.UI
         private int _lockingPlayerSlot = -1;
         private Vector2 _blockedSlotOriginalPosition;
         private Coroutine _blockedFeedbackRoutine;
+        private Coroutine _browsePulseRoutine;
 
         private void Awake()
         {
@@ -98,6 +99,7 @@ namespace PiGame.UI
             _nextCharacterButton.onClick.RemoveListener(HandleNextCharacterClicked);
             ResetNavigationInput();
             StopBlockedFeedback(false);
+            ResetBrowsePulse();
         }
 
         private void Update()
@@ -121,7 +123,7 @@ namespace PiGame.UI
         {
             // O layout pode se mover ao redimensionar a janela; os botoes acompanham o slot local.
             if (_browseControlsRoot.gameObject.activeSelf)
-                _browseControlsRoot.position = _slotRoots[_localPlayerSlot].position;
+                PositionBrowseControls();
         }
 
         public void OnSubmit(BaseEventData eventData)
@@ -275,7 +277,39 @@ namespace PiGame.UI
         private void RequestBrowse(int direction, LobbyInputDeviceKind inputDevice)
         {
             ClearCharacterBlockedFeedback();
+            ResetBrowsePulse();
+            _browsePulseRoutine = StartCoroutine(PulseBrowseFeedback(
+                direction < 0 ? _previousCharacterButton.transform : _nextCharacterButton.transform));
             BrowseRequested?.Invoke(direction, inputDevice);
+        }
+
+        private IEnumerator PulseBrowseFeedback(Transform arrow)
+        {
+            Transform nameplate = _characterNameplates[_localPlayerSlot].transform;
+            const float duration = 0.18f;
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                float pulse = Mathf.Sin(elapsed / duration * Mathf.PI);
+                arrow.localScale = Vector3.one * (1f + 0.25f * pulse);
+                nameplate.localScale = Vector3.one * (1f + 0.08f * pulse);
+                elapsed += Time.unscaledDeltaTime;
+                yield return null;
+            }
+            arrow.localScale = Vector3.one;
+            nameplate.localScale = Vector3.one;
+            _browsePulseRoutine = null;
+        }
+
+        private void ResetBrowsePulse()
+        {
+            if (_browsePulseRoutine != null)
+                StopCoroutine(_browsePulseRoutine);
+            _browsePulseRoutine = null;
+            _previousCharacterButton.transform.localScale = Vector3.one;
+            _nextCharacterButton.transform.localScale = Vector3.one;
+            foreach (Image nameplate in _characterNameplates)
+                nameplate.transform.localScale = Vector3.one;
         }
 
         private void RefreshBrowseControls()
@@ -287,8 +321,15 @@ namespace PiGame.UI
             _browseControlsRoot.gameObject.SetActive(shouldShow);
             if (shouldShow)
             {
-                _browseControlsRoot.position = _slotRoots[_localPlayerSlot].position;
+                PositionBrowseControls();
             }
+        }
+
+        private void PositionBrowseControls()
+        {
+            Vector3 position = _slotRoots[_localPlayerSlot].position;
+            position.x = _slotLabels[_localPlayerSlot].transform.position.x;
+            _browseControlsRoot.position = position;
         }
 
         public void Focus()
@@ -316,7 +357,7 @@ namespace PiGame.UI
 
             _slotBackgrounds[slot].color = characterColor;
             _characterNameplates[slot].gameObject.SetActive(true);
-            _characterNameplates[slot].color = Color.Lerp(characterColor, Color.black, 0.35f);
+            _characterNameplates[slot].color = Color.Lerp(characterColor, Color.white, 0.12f);
 
             Image portrait = _characterPortraits[slot];
             portrait.gameObject.SetActive(true);
@@ -342,7 +383,7 @@ namespace PiGame.UI
             if (player.IsReady)
             {
                 statusText.text = "PRONTO";
-                statusText.fontSize = 24;
+                statusText.fontSize = 28;
                 statusText.color = Color.white;
             }
             else
@@ -369,7 +410,7 @@ namespace PiGame.UI
             _slotLabels[slot].text = string.Empty;
             _slotLabels[slot].color = new Color(1f, 1f, 1f, 0.65f);
             _statusTexts[slot].text = "AGUARDANDO JOGADOR";
-            _statusTexts[slot].fontSize = 15;
+            _statusTexts[slot].fontSize = 18;
             _statusTexts[slot].color = new Color(0.8f, 0.8f, 0.84f, 1f);
         }
 
