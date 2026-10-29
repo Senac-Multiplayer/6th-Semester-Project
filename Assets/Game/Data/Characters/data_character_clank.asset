@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: data_character_clank
   m_EditorClassIdentifier: 
   _id: 2
-  _displayName: CLANK
+  _displayName: FUMACEIRO
   _color: {r: 0.55, g: 0.24, b: 0.08, a: 1}
   _portrait: {fileID: 21300000, guid: c8d1859a7291421185a28c981934d203, type: 3}
   _playerPrefab: {fileID: 5788769337959252140, guid: 8ea18c02167a706428ffb87e2a4590d5, type: 3}
