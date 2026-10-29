@@ -74,7 +74,7 @@ MonoBehaviour:
       pregos de gelo que ficam presos no cen\xE1rio. Recupera a muni\xE7\xE3o e usa
       os pregos para se reposicionar; sua habilidade os atrai de volta."
     Visual: {fileID: 2290000360}
-  - Name: FUMACEIRO
+  - Name: CLANK, FUMACEIRO
     AccentColor: {r: 0.76862746, g: 0.6392157, b: 0.93333334, a: 1}
     Description: "<color=#C4A3EE>ORIGEM</color>\nUma mineradora de ferramentas perigosas
       e um enorme martelo s\xF4nico. Quer transformar a cidade em uma megamina.\n\n<color=#C4A3EE>COMBATE</color>\nDispara
