@@ -1563,9 +1563,25 @@ PrefabInstance:
       propertyPath: m_fontColor32.rgba
       value: 4284262617
       objectReference: {fileID: 0}
+    - target: {fileID: 2280000321, guid: c33981f1453cc72f7e0e325732862077, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 170.5506
+      objectReference: {fileID: 0}
+    - target: {fileID: 2280000321, guid: c33981f1453cc72f7e0e325732862077, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 314
+      objectReference: {fileID: 0}
+    - target: {fileID: 2280000323, guid: c33981f1453cc72f7e0e325732862077, type: 3}
+      propertyPath: m_textAlignment
+      value: 65535
+      objectReference: {fileID: 0}
     - target: {fileID: 2280000323, guid: c33981f1453cc72f7e0e325732862077, type: 3}
       propertyPath: m_fontColor32.rgba
       value: 4292604149
+      objectReference: {fileID: 0}
+    - target: {fileID: 2280000340, guid: c33981f1453cc72f7e0e325732862077, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2280000343, guid: c33981f1453cc72f7e0e325732862077, type: 3}
       propertyPath: m_fontColor32.rgba
