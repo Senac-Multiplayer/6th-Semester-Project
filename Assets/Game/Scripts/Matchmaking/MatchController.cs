@@ -13,7 +13,13 @@ namespace PiGame.Gameplay
     {
         [SerializeField] private int _killLimit = 3;
         [SerializeField] private float _respawnDelaySeconds = 2f;
+        [Header("Tela de resultado")]
+        [Tooltip("Espera para assistir à subida dos pilares antes de liberar o retorno.")]
+        [SerializeField, Min(0f)] private float _resultInputDelaySeconds = 3f;
+        [SerializeField, Min(3f)] private float _resultDisplaySeconds = 15f;
         private bool _returningToLobby;
+        private readonly HashSet<ulong> _returnedPlayers = new();
+        private readonly NetworkVariable<double> _resultStartedAt = new();
 
         private readonly NetworkVariable<float> _remainingTime =
             new NetworkVariable<float>();
@@ -36,6 +42,12 @@ namespace PiGame.Gameplay
         public int WinningPlayerSlot => _winningPlayerSlot.Value;
         public int KillLimit => _killLimit;
         public int ScoreCount => _scores != null ? _scores.Count : 0;
+        public bool CanReturnToLobby => IsSpawned && Phase == MatchPhase.ShowingResult
+            && NetworkManager.ServerTime.Time >= _resultStartedAt.Value + _resultInputDelaySeconds;
+        public float ResultSecondsRemaining => IsSpawned
+            ? Mathf.Max(0f, (float)(_resultStartedAt.Value
+                + Mathf.Max(_resultDisplaySeconds, _resultInputDelaySeconds) - NetworkManager.ServerTime.Time))
+            : 0f;
 
         private SceneOSTManager _sceneOSTManager;
 
@@ -109,6 +121,11 @@ namespace PiGame.Gameplay
 
         private void Update()
         {
+            if (IsServer && _phase.Value == MatchPhase.ShowingResult)
+            {
+                if (!_returningToLobby && ResultSecondsRemaining <= 0f) ReturnToLobbyServer();
+                return;
+            }
             if (!IsServer || _phase.Value != MatchPhase.Playing)
             {
                 return;
@@ -194,7 +211,10 @@ namespace PiGame.Gameplay
             _sceneOSTManager?.PlayVictoryOST();
 
             _winningPlayerSlot.Value = winningPlayerSlot;
+            _resultStartedAt.Value = NetworkManager.ServerTime.Time;
             _phase.Value = MatchPhase.ShowingResult;
+            _returnedPlayers.Clear();
+            LobbySceneFlow.Instance?.PrepareNextMatchServer();
 
             foreach (NetworkPlayerState player in _players.Values)
             {
@@ -207,14 +227,51 @@ namespace PiGame.Gameplay
 
         public bool ReturnToLobbyServer()
         {
-            if (!IsServer || _phase.Value != MatchPhase.ShowingResult || _returningToLobby) return false;
+            if (!IsServer || !CanReturnToLobby || _returningToLobby) return false;
             _returningToLobby = true;
+            if (LobbySceneFlow.Instance != null)
+            {
+                ShowLobbyRpc();
+                LobbySceneFlow.Instance.UnloadMapServer();
+                return true;
+            }
             if (NetworkManager.SceneManager.LoadScene("scene_lobby", LoadSceneMode.Single)
                 == SceneEventProgressStatus.Started) return true;
 
             _returningToLobby = false;
             Debug.LogError("Não foi possível retornar a sala ao lobby.", this);
             return false;
+        }
+
+        public bool RequestReturnToLobby()
+        {
+            if (!CanReturnToLobby) return false;
+            if (LobbySceneFlow.Instance == null) return IsServer && ReturnToLobbyServer();
+            ReturnPlayerToLobbyRpc();
+            LobbySceneFlow.Instance.ShowLobbyLocally();
+            return true;
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        private void ReturnPlayerToLobbyRpc(RpcParams rpcParams = default)
+        {
+            if (!CanReturnToLobby) return;
+            _returnedPlayers.Add(rpcParams.Receive.SenderClientId);
+            TryReturnEveryoneToLobby();
+        }
+
+        private void TryReturnEveryoneToLobby()
+        {
+            if (_phase.Value != MatchPhase.ShowingResult || _returningToLobby) return;
+            foreach (ulong clientId in NetworkManager.ConnectedClientsIds)
+                if (!_returnedPlayers.Contains(clientId)) return;
+            ReturnToLobbyServer();
+        }
+
+        [Rpc(SendTo.ClientsAndHost)]
+        private void ShowLobbyRpc()
+        {
+            LobbySceneFlow.Instance.ShowLobbyLocally();
         }
 
         private void HandleClientDisconnected(ulong clientId)
@@ -232,6 +289,7 @@ namespace PiGame.Gameplay
 
             _players.Remove(clientId);
             _spawnPositions.Remove(clientId);
+            _returnedPlayers.Remove(clientId);
 
             int scoreIndex = FindScoreIndex(clientId);
             // Depois do encerramento, a tela mantém o placar final mesmo se alguém sair.
@@ -241,6 +299,7 @@ namespace PiGame.Gameplay
             }
 
             TryFinishWhenOnePlayerRemains();
+            TryReturnEveryoneToLobby();
         }
 
         private void TryFinishWhenOnePlayerRemains()

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using PiGame.Lobby;
+using PiGame.Networking;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -22,6 +23,11 @@ namespace PiGame.Gameplay
             {
                 return;
             }
+
+            // A reconexão do SDK pode reiniciar o host ainda na cena do mapa.
+            // A sala recuperada volta ao lobby, sem recriar esta partida.
+            if (NetcodeLobbyConnectionService.Instance != null
+                && NetcodeLobbyConnectionService.Instance.IsRecoveringConnection) return;
 
             if (MatchSession.Instance == null || MatchSession.Instance.Snapshot == null)
             {

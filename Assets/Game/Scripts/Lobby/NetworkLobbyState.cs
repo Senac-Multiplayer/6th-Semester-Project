@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using PiGame.Networking;
 
 namespace PiGame.Lobby
 {
@@ -139,6 +140,9 @@ namespace PiGame.Lobby
                 _matchSettings.Value = previousMatch != null
                     ? previousMatch.MatchSettings
                     : CreateInitialMatchSettings();
+                if (NetcodeLobbyConnectionService.Instance != null
+                    && NetcodeLobbyConnectionService.Instance.TryConsumeRecoveredSettings(out var recoveredSettings))
+                    _matchSettings.Value = recoveredSettings;
                 NetworkManager.OnClientConnectedCallback += HandleClientConnected;
                 NetworkManager.OnClientDisconnectCallback += HandleClientDisconnected;
 
@@ -607,6 +611,7 @@ namespace PiGame.Lobby
             LobbyMatchSettingsData previousSettings,
             LobbyMatchSettingsData currentSettings)
         {
+            NetcodeLobbyConnectionService.Instance?.RememberMatchSettings(currentSettings);
             MatchSettingsChanged?.Invoke();
         }
 
@@ -960,6 +965,11 @@ namespace PiGame.Lobby
             {
                 MatchStartRequested?.Invoke(mapId);
             }
+        }
+
+        public void PrepareNextMatchServer()
+        {
+            ReturnToCharacterSelectionServer();
         }
 
         private void ReturnToCharacterSelectionServer()

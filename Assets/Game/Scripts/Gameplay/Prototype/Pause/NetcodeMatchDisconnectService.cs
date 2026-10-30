@@ -107,7 +107,7 @@ namespace PiGame.Gameplay
                 return;
             }
 
-            if (SceneManager.GetActiveScene().name != _lobbySceneName)
+            if (SceneManager.GetActiveScene().name != _lobbySceneName || SceneManager.sceneCount > 1)
             {
                 SceneManager.LoadScene(_lobbySceneName, LoadSceneMode.Single);
             }
