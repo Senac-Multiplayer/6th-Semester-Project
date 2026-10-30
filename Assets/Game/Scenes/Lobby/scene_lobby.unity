@@ -1135,6 +1135,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 42bc70728cab21d7864e0f525fc3715a, type: 2}
   - {fileID: 11400000, guid: c9f2684e64892683498cbff071dc97f3, type: 2}
   _mapResultDisplaySeconds: 2.5
+  _characterReadyDisplaySeconds: 0.7
 --- !u!224 &2130000001 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 2130000001, guid: 8119560d85964b94bd2352e029fad316, type: 3}
@@ -1581,9 +1582,25 @@ PrefabInstance:
       propertyPath: m_fontColor32.rgba
       value: 4284262617
       objectReference: {fileID: 0}
+    - target: {fileID: 2280000321, guid: c33981f1453cc72f7e0e325732862077, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 170.5506
+      objectReference: {fileID: 0}
+    - target: {fileID: 2280000321, guid: c33981f1453cc72f7e0e325732862077, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 314
+      objectReference: {fileID: 0}
+    - target: {fileID: 2280000323, guid: c33981f1453cc72f7e0e325732862077, type: 3}
+      propertyPath: m_textAlignment
+      value: 65535
+      objectReference: {fileID: 0}
     - target: {fileID: 2280000323, guid: c33981f1453cc72f7e0e325732862077, type: 3}
       propertyPath: m_fontColor32.rgba
       value: 4292604149
+      objectReference: {fileID: 0}
+    - target: {fileID: 2280000340, guid: c33981f1453cc72f7e0e325732862077, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2280000343, guid: c33981f1453cc72f7e0e325732862077, type: 3}
       propertyPath: m_fontColor32.rgba

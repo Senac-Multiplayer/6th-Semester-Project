@@ -22,6 +22,7 @@ namespace PiGame.Lobby
         [SerializeField] private LobbyMapDefinition[] _maps;
         
         [SerializeField, Min(0.1f)] private float _mapResultDisplaySeconds = 2.5f;
+        [SerializeField, Min(0f)] private float _characterReadyDisplaySeconds = 0.7f;
 
         private readonly NetworkList<LobbyPlayerData> _players = new();
         private readonly NetworkList<LobbyMapVoteData> _mapVotes = new();
@@ -32,6 +33,7 @@ namespace PiGame.Lobby
             new(InitialMatchSettings);
 
         private Coroutine _matchStartRoutine;
+        private Coroutine _mapVotingRoutine;
         private bool _localNameSubmitted;
 
         public event Action PlayersChanged;
@@ -192,6 +194,7 @@ namespace PiGame.Lobby
             _isRandomMapResult.OnValueChanged -= HandleRandomMapResultChanged;
             _matchSettings.OnValueChanged -= HandleMatchSettingsChanged;
 
+            StopMapVotingRoutine();
             StopMatchStartRoutine();
 
             if (NetworkManager != null && IsServer)
@@ -668,7 +671,9 @@ namespace PiGame.Lobby
                 return;
             }
 
-            if (_stage.Value == LobbyStage.MapVoting)
+            if (_stage.Value == LobbyStage.CharacterSelection)
+                TryBeginMapVotingServer();
+            else if (_stage.Value == LobbyStage.MapVoting)
             {
                 TryResolveMapVoteServer();
             }
@@ -855,18 +860,35 @@ namespace PiGame.Lobby
         {
             if (!IsServer || _stage.Value != LobbyStage.CharacterSelection || !CanStartMatch)
             {
+                StopMapVotingRoutine();
                 return;
             }
+            if (_mapVotingRoutine == null)
+                _mapVotingRoutine = StartCoroutine(BeginMapVotingAfterReady());
+        }
+
+        private IEnumerator BeginMapVotingAfterReady()
+        {
+            // Deixa a ultima bandeira descer antes de trocar a tela; cancelar o pronto interrompe a espera.
+            yield return new WaitForSecondsRealtime(_characterReadyDisplaySeconds);
+            _mapVotingRoutine = null;
+            if (!IsServer || _stage.Value != LobbyStage.CharacterSelection || !CanStartMatch)
+                yield break;
 
             _mapVotes.Clear();
             for (int i = 0; i < _players.Count; i++)
-            {
                 _mapVotes.Add(new LobbyMapVoteData(_players[i].ClientId));
-            }
 
             _winningMap.Value = LobbyMapId.None;
             _isRandomMapResult.Value = false;
             _stage.Value = LobbyStage.MapVoting;
+        }
+
+        private void StopMapVotingRoutine()
+        {
+            if (_mapVotingRoutine == null) return;
+            StopCoroutine(_mapVotingRoutine);
+            _mapVotingRoutine = null;
         }
 
         private void TryResolveMapVoteServer()
@@ -979,6 +1001,7 @@ namespace PiGame.Lobby
                 return;
             }
 
+            StopMapVotingRoutine();
             StopMatchStartRoutine();
             _mapVotes.Clear();
             _winningMap.Value = LobbyMapId.None;
@@ -996,6 +1019,7 @@ namespace PiGame.Lobby
 
         private void ResetReplicatedSessionStateServer()
         {
+            StopMapVotingRoutine();
             StopMatchStartRoutine();
             _players.Clear();
             _mapVotes.Clear();
