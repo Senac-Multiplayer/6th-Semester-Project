@@ -650,6 +650,7 @@ GameObject:
   - component: {fileID: 659634089}
   - component: {fileID: 659634090}
   - component: {fileID: 659634091}
+  - component: {fileID: 659634092}
   m_Layer: 0
   m_Name: MatchLauncher
   m_TagString: Untagged
@@ -724,6 +725,24 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 1690314031, guid: 6a50982072c24dc8a5b47390396c6a99, type: 3}
   m_PrefabInstance: {fileID: 700000000000001}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &659634092
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 659634088}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a9d304ad5164dd394c96f5e4f72a601, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _lobbyState: {fileID: 2121000003}
+  _lobbyPresentation:
+  - {fileID: 436354349}
+  - {fileID: 519420028}
+  - {fileID: 503500256}
+  - {fileID: 1988422706}
 --- !u!114 &1690314032 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 1690314032, guid: 6a50982072c24dc8a5b47390396c6a99, type: 3}

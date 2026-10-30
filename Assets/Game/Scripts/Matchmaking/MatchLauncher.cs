@@ -67,7 +67,7 @@ namespace PiGame.Lobby
                 return;
             }
 
-            NetworkManager.SceneManager.LoadScene(mapDefinition.SceneName,LoadSceneMode.Single);
+            LobbySceneFlow.Instance.LoadMapServer(mapDefinition.SceneName);
         }
 
     }
