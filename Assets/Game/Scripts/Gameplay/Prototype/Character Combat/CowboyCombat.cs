@@ -31,7 +31,7 @@ namespace PiGame.Gameplay
         private PlayerMove _playerMove;
         private Collider2D _bodyCollider;
         private SpriteRenderer _bodySprite;
-        private Animator _animator;
+        private PlayerAnimatorController _presentation;
         private Color _colorBeforeRoll;
         private CowboySoundManager _cowboySound;
         private bool _visualRollActive;
@@ -50,15 +50,15 @@ namespace PiGame.Gameplay
             _playerMove = GetComponent<PlayerMove>();
             _bodyCollider = GetComponent<Collider2D>();
             _bodySprite = GetComponent<SpriteRenderer>();
-            _animator = GetComponent<Animator>();
+            _presentation = GetComponent<PlayerAnimatorController>();
             _cowboySound = GetComponent<CowboySoundManager>();
             _originalExcludedLayers = _bodyCollider.excludeLayers;
 
-            if (_projectile == null || _projectile.Prefab == null
+            if (_presentation == null || _projectile == null || _projectile.Prefab == null
                 || _rollPassThroughLayers.value == 0
                 || _ammoIndicators == null || _ammoIndicators.Length != _maximumAmmo)
             {
-                Debug.LogError("Configure o projétil, as camadas e os indicadores de munição no CowboyCombat.", this);
+                Debug.LogError("Configure PlayerAnimatorController, projétil, camadas e indicadores de munição no CowboyCombat.", this);
                 enabled = false;
                 return;
             }
@@ -381,7 +381,7 @@ namespace PiGame.Gameplay
             }
             if (IsOwner)
             {
-                _animator.SetBool("isSkill", rolling);
+                _presentation.SetSkillActive(rolling);
                 // O dono avisa ao servidor quando já é seguro restaurar o contato em todas as cópias.
                 if (rolling) _playerCollisionRestoreRequested = false;
                 else if (_passThroughPlayers.Value) UpdatePlayerCollisionState();
