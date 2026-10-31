@@ -65,7 +65,10 @@ namespace PiGame.Gameplay
             _normalPosition = _sceneCamera.transform.position;
             _normalRotation = _sceneCamera.transform.rotation;
             _pixelPerfectWasEnabled = _pixelPerfect && _pixelPerfect.enabled;
-            _approachSeconds = _brain.DefaultBlend.BlendTime;
+            _approachSeconds = _brain.CustomBlends != null
+                ? _brain.CustomBlends.GetBlendForVirtualCameras(
+                    _mapCamera.Name, _playerCameras[0].Name, _brain.DefaultBlend).BlendTime
+                : _brain.DefaultBlend.BlendTime;
             ConfigureCamera(_mapCamera, _normalPosition, CurrentMapSize());
             _mapCamera.Priority = 10;
             for (int i = 0; i < _playerCameras.Length; i++)

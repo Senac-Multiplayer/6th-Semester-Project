@@ -7370,7 +7370,7 @@ MonoBehaviour:
   DefaultBlend:
     Style: 1
     Time: 0.65
-  CustomBlends: {fileID: 0}
+  CustomBlends: {fileID: 11400000, guid: 3e6ddb3c52c34703a16bcec76bfb3dfb, type: 2}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
