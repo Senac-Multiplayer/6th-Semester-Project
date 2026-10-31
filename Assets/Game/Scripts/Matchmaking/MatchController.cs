@@ -13,6 +13,17 @@ namespace PiGame.Gameplay
     {
         [SerializeField] private int _killLimit = 3;
         [SerializeField] private float _respawnDelaySeconds = 2f;
+        [Header("Apresentação da partida")]
+        [Tooltip("Desative para mostrar a contagem somente depois de apresentar os jogadores.")]
+        [SerializeField] private bool _countdownDuringPresentation = true;
+        [Tooltip("Duração total da apresentação com contagem. Os dois segundos finais ficam reservados ao mapa inteiro.")]
+        [SerializeField, Min(3f)] private float _presentationSeconds = 6f;
+        [Tooltip("Tempo por jogador no modo de contagem após a apresentação.")]
+        [SerializeField, Min(1f)] private float _secondsPerPlayer = 1f;
+        [SerializeField, Min(0.1f)] private float _cameraReturnSeconds = 1f;
+        private readonly NetworkVariable<double> _introStartsAt = new NetworkVariable<double>();
+        private readonly NetworkVariable<int> _introPlayerCount = new NetworkVariable<int>();
+        private readonly HashSet<ulong> _introReady = new HashSet<ulong>();
         private bool _returningToLobby;
 
         private readonly NetworkVariable<float> _remainingTime =
@@ -31,6 +42,15 @@ namespace PiGame.Gameplay
         public event Action ScoresChanged;
         public event Action PhaseChanged;
 
+        public bool CountdownDuringPresentation => _countdownDuringPresentation;
+        public float SecondsPerPlayer => _countdownDuringPresentation
+            ? (PresentationDuration - 2f) / Mathf.Max(1, _introPlayerCount.Value) : _secondsPerPlayer;
+        public float CameraReturnSeconds => _cameraReturnSeconds;
+        public float PresentationDuration => _countdownDuringPresentation
+            ? Mathf.Max(3f, _presentationSeconds)
+            : _introPlayerCount.Value * _secondsPerPlayer + _cameraReturnSeconds;
+        public float IntroElapsed => _introStartsAt.Value <= 0d || !IsSpawned ? -1f
+            : (float)(NetworkManager.ServerTime.Time - _introStartsAt.Value);
         public float RemainingTime => _remainingTime.Value;
         public MatchPhase Phase => _phase.Value;
         public int WinningPlayerSlot => _winningPlayerSlot.Value;
@@ -87,7 +107,36 @@ namespace PiGame.Gameplay
             int durationMinutes = Mathf.Max(1, settings.DurationMinutes);
             _remainingTime.Value = durationMinutes * 60f;
             _winningPlayerSlot.Value = -1;
-            _phase.Value = MatchPhase.Playing;
+            _introReady.Clear();
+            _introStartsAt.Value = 0d;
+            _phase.Value = MatchPhase.WaitingForPlayers;
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        public void ReadyForIntroRpc(RpcParams rpcParams = default)
+        {
+            ulong sender = rpcParams.Receive.SenderClientId;
+            if (_phase.Value != MatchPhase.WaitingForPlayers || !_players.ContainsKey(sender)) return;
+            _introReady.Add(sender);
+            TryBeginPresentation();
+        }
+
+        private void TryBeginPresentation()
+        {
+            if (_phase.Value != MatchPhase.WaitingForPlayers || _players.Count == 0) return;
+            foreach (ulong clientId in _players.Keys)
+                if (!_introReady.Contains(clientId)) return;
+
+            _introPlayerCount.Value = _players.Count;
+            _introStartsAt.Value = NetworkManager.ServerTime.Time + 0.35d;
+            _phase.Value = MatchPhase.PresentingPlayers;
+        }
+
+        private void SetPlayersActive(bool active, bool indicatorsVisible)
+        {
+            foreach (NetworkPlayerState player in _players.Values)
+                if (player != null && player.IsSpawned)
+                    player.SetMatchActiveServer(active, indicatorsVisible);
         }
 
         public void RegisterPlayer(NetworkPlayerState player, Vector3 spawnPosition, LobbyPlayerData playerData)
@@ -100,6 +149,7 @@ namespace PiGame.Gameplay
             _players[player.OwnerClientId] = player;
             _spawnPositions[player.OwnerClientId] = spawnPosition;
             player.Died += HandlePlayerDied;
+            player.SetMatchActiveServer(false, false);
 
             if (FindScoreIndex(player.OwnerClientId) < 0)
             {
@@ -109,10 +159,18 @@ namespace PiGame.Gameplay
 
         private void Update()
         {
-            if (!IsServer || _phase.Value != MatchPhase.Playing)
+            if (!IsServer) return;
+            if (_phase.Value == MatchPhase.PresentingPlayers && IntroElapsed >= PresentationDuration)
             {
-                return;
+                SetPlayersActive(_countdownDuringPresentation, true);
+                _phase.Value = _countdownDuringPresentation ? MatchPhase.Playing : MatchPhase.Countdown;
             }
+            if (_phase.Value == MatchPhase.Countdown && IntroElapsed >= PresentationDuration + 3f)
+            {
+                SetPlayersActive(true, true);
+                _phase.Value = MatchPhase.Playing;
+            }
+            if (_phase.Value != MatchPhase.Playing) return;
 
             _remainingTime.Value = Mathf.Max(0f, _remainingTime.Value - Time.deltaTime);
             if (_remainingTime.Value <= 0f)
@@ -232,6 +290,7 @@ namespace PiGame.Gameplay
 
             _players.Remove(clientId);
             _spawnPositions.Remove(clientId);
+            _introReady.Remove(clientId);
 
             int scoreIndex = FindScoreIndex(clientId);
             // Depois do encerramento, a tela mantém o placar final mesmo se alguém sair.
@@ -240,6 +299,7 @@ namespace PiGame.Gameplay
                 _scores.RemoveAt(scoreIndex);
             }
 
+            TryBeginPresentation();
             TryFinishWhenOnePlayerRemains();
         }
 
