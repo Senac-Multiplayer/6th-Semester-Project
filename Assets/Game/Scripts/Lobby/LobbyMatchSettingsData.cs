@@ -3,6 +3,7 @@ using Unity.Netcode;
 
 namespace PiGame.Lobby
 {
+    [Serializable]
     public struct LobbyMatchSettingsData :
         INetworkSerializable,
         IEquatable<LobbyMatchSettingsData>

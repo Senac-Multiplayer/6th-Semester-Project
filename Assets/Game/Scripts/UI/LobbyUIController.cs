@@ -98,6 +98,12 @@ namespace PiGame.UI
             _connectionServiceContract.Disconnected += HandleDisconnected;
             _connectionServiceContract.ConnectionFailed += HandleConnectionFailed;
 
+            if (_connectionService.IsRecoveringConnection)
+            {
+                ShowRecoveringConnection();
+                return;
+            }
+
             if (_connectionServiceContract.IsConnected)
             {
                 ShowLobbyPanel();
@@ -152,6 +158,11 @@ namespace PiGame.UI
 
         private void Update()
         {
+            if (_connectionService.IsRecoveringConnection)
+            {
+                if (!_connectionPanel.gameObject.activeSelf) ShowRecoveringConnection();
+                return;
+            }
             if (_lobbyPause == null || Time.frameCount == _ignoreMenuInputFrame)
             {
                 return;
@@ -423,6 +434,12 @@ namespace PiGame.UI
         private void HandleConnected()
         {
             ShowLobbyPanel();
+        }
+
+        private void ShowRecoveringConnection()
+        {
+            ShowConnectionPanel();
+            _connectionPanel.ShowConnecting("RECUPERANDO A SALA...");
         }
 
         private void HandleDisconnected()
