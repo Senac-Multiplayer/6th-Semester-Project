@@ -1492,8 +1492,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -665, y: 310}
-  m_SizeDelta: {x: 450, y: 180}
+  m_AnchoredPosition: {x: -665, y: 305}
+  m_SizeDelta: {x: 450, y: 220}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2280000322
 CanvasRenderer:
@@ -1523,9 +1523,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'MENU
-
-    PRINCIPAL'
+  m_text: "<align=left>THE\nRULERS</align>"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: c29816ef4efed0b4e9c6f612184274fd, type: 2}
   m_sharedMaterial: {fileID: 5376852124497864486, guid: c29816ef4efed0b4e9c6f612184274fd, type: 2}
@@ -1552,8 +1550,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 48
-  m_fontSizeBase: 48
+  m_fontSize: 68
+  m_fontSizeBase: 68
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -1561,7 +1559,7 @@ MonoBehaviour:
   m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
-  m_textAlignment: 65535
+  m_textAlignment: 257
   m_characterSpacing: 0
   m_characterHorizontalScale: 1
   m_wordSpacing: 0
@@ -1614,7 +1612,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2280000341
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1662,7 +1660,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "PROJETO INTEGRADOR \u2022 6\xBA SEMESTRE \u2022 2026"
+  m_text:
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: c29816ef4efed0b4e9c6f612184274fd, type: 2}
   m_sharedMaterial: {fileID: 5376852124497864486, guid: c29816ef4efed0b4e9c6f612184274fd, type: 2}
