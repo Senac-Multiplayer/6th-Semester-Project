@@ -14,7 +14,12 @@ namespace PiGame.Gameplay
         [SerializeField] private int _killLimit = 3;
         [SerializeField] private float _respawnDelaySeconds = 2f;
         [Header("Apresentação da partida")]
-        [SerializeField, Min(1f)] private float _secondsPerPlayer = 2.5f;
+        [Tooltip("Desative para mostrar a contagem somente depois de apresentar os jogadores.")]
+        [SerializeField] private bool _countdownDuringPresentation = true;
+        [Tooltip("Duração total da apresentação com contagem. Os dois segundos finais ficam reservados ao mapa inteiro.")]
+        [SerializeField, Min(3f)] private float _presentationSeconds = 6f;
+        [Tooltip("Tempo por jogador no modo de contagem após a apresentação.")]
+        [SerializeField, Min(1f)] private float _secondsPerPlayer = 1f;
         [SerializeField, Min(0.1f)] private float _cameraReturnSeconds = 1f;
         private readonly NetworkVariable<double> _introStartsAt = new NetworkVariable<double>();
         private readonly NetworkVariable<int> _introPlayerCount = new NetworkVariable<int>();
@@ -37,9 +42,13 @@ namespace PiGame.Gameplay
         public event Action ScoresChanged;
         public event Action PhaseChanged;
 
-        public float SecondsPerPlayer => _secondsPerPlayer;
+        public bool CountdownDuringPresentation => _countdownDuringPresentation;
+        public float SecondsPerPlayer => _countdownDuringPresentation
+            ? (PresentationDuration - 2f) / Mathf.Max(1, _introPlayerCount.Value) : _secondsPerPlayer;
         public float CameraReturnSeconds => _cameraReturnSeconds;
-        public float PresentationDuration => _introPlayerCount.Value * _secondsPerPlayer + _cameraReturnSeconds;
+        public float PresentationDuration => _countdownDuringPresentation
+            ? Mathf.Max(3f, _presentationSeconds)
+            : _introPlayerCount.Value * _secondsPerPlayer + _cameraReturnSeconds;
         public float IntroElapsed => _introStartsAt.Value <= 0d || !IsSpawned ? -1f
             : (float)(NetworkManager.ServerTime.Time - _introStartsAt.Value);
         public float RemainingTime => _remainingTime.Value;
@@ -153,8 +162,8 @@ namespace PiGame.Gameplay
             if (!IsServer) return;
             if (_phase.Value == MatchPhase.PresentingPlayers && IntroElapsed >= PresentationDuration)
             {
-                SetPlayersActive(false, true);
-                _phase.Value = MatchPhase.Countdown;
+                SetPlayersActive(_countdownDuringPresentation, true);
+                _phase.Value = _countdownDuringPresentation ? MatchPhase.Playing : MatchPhase.Countdown;
             }
             if (_phase.Value == MatchPhase.Countdown && IntroElapsed >= PresentationDuration + 3f)
             {

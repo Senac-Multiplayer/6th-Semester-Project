@@ -18,7 +18,7 @@ namespace PiGame.Gameplay
         [SerializeField] private TMP_Text _countdownLabel;
         [SerializeField, Min(0.5f)] private float _closeupSize = 2.2f;
         [SerializeField, Min(0f)] private float _panDistance = 0.6f;
-        [Tooltip("Ligue aqui os sons: o evento recebe 3, 2, 1 e 0 (JÁ). Executado localmente uma vez por etapa.")]
+        [Tooltip("Ligue aqui os sons: recebe de 6 a 1 durante a apresentação, ou de 3 a 1 no modo separado, e 0 para JÁ. Executado localmente uma vez por etapa.")]
         [SerializeField] private UnityEvent<int> _countdownStepChanged = new UnityEvent<int>();
 
         private Vector3 _normalPosition;
@@ -113,33 +113,40 @@ namespace PiGame.Gameplay
                 float previous = Mathf.Max(0f, _presentationElapsed);
                 _presentationElapsed = Mathf.Max(previous, elapsed);
                 PresentPlayers(_presentationElapsed, _presentationElapsed - previous);
-                return;
             }
+            else RestoreCamera();
 
-            RestoreCamera();
-            float countdown = elapsed - _matchController.PresentationDuration;
-            bool counting = _matchController.Phase == MatchPhase.Countdown;
-            bool showGo = _matchController.Phase == MatchPhase.Playing && countdown >= 3f && countdown < 3.65f;
-            _countdownLabel.enabled = counting || showGo;
+            bool duringPresentation = _matchController.CountdownDuringPresentation;
+            float duration = duringPresentation ? _matchController.PresentationDuration : 3f;
+            float countdown = duringPresentation ? Mathf.Max(elapsed, _presentationElapsed)
+                : elapsed - _matchController.PresentationDuration;
+            int initialNumber = duringPresentation ? 6 : 3;
+            float stepSeconds = duration / initialNumber;
+            bool counting = duringPresentation
+                ? _matchController.Phase == MatchPhase.PresentingPlayers
+                : _matchController.Phase == MatchPhase.Countdown;
+            bool showGo = _matchController.Phase == MatchPhase.Playing
+                && countdown >= duration && countdown < duration + 0.65f;
+            bool numberVisible = counting && countdown % stepSeconds < 0.65f;
+            _countdownLabel.enabled = numberVisible || showGo;
             if (!_countdownLabel.enabled) return;
 
-            int step = counting ? Mathf.Clamp(3 - Mathf.FloorToInt(countdown), 1, 3) : 0;
+            int step = counting ? Mathf.Clamp(initialNumber - Mathf.FloorToInt(countdown / stepSeconds), 1, initialNumber) : 0;
             if (step != _lastStep)
             {
                 _lastStep = step;
                 _countdownLabel.text = step == 0 ? "JÁ" : step.ToString();
                 _countdownLabel.color = step == 0 ? new Color(0.4f, 0.95f, 0.55f) : new Color(0.95f, 0.74f, 0.37f);
-                // O Prado pode conectar seus métodos de áudio pelo Inspector, sem alterar o fluxo de rede.
+                // Pode conectar métodos de áudio pelo Inspector, sem alterar o fluxo de rede.
                 _countdownStepChanged.Invoke(step);
             }
-            float pop = Mathf.SmoothStep(1.35f, 1f, Mathf.Clamp01((countdown % 1f) / 0.3f));
+            float pop = Mathf.SmoothStep(1.35f, 1f, Mathf.Clamp01((countdown % stepSeconds) / 0.3f));
             _countdownLabel.rectTransform.localScale = Vector3.one * pop;
         }
 
         private void PresentPlayers(float elapsed, float delta)
         {
             if (_pixelPerfect && _pixelPerfect.enabled) _pixelPerfect.enabled = false;
-            _countdownLabel.enabled = false;
             float visitsDuration = _playerPositions.Length * _matchController.SecondsPerPlayer;
             int index = elapsed >= visitsDuration ? -1
                 : Mathf.Min((int)(elapsed / _matchController.SecondsPerPlayer), _playerPositions.Length - 1);
