@@ -416,7 +416,7 @@ namespace PiGame.UI
             _slotLabels[slot].text = string.Empty;
             _slotLabels[slot].color = new Color(1f, 1f, 1f, 0.65f);
             _statusTexts[slot].text = "AGUARDANDO JOGADOR";
-            _statusTexts[slot].fontSize = 18;
+            _statusTexts[slot].fontSize = slot == 1 || slot == 2 ? 14 : 18;
             _statusTexts[slot].color = new Color(0.8f, 0.8f, 0.84f, 1f);
         }
 
