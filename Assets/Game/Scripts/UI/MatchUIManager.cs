@@ -45,7 +45,7 @@ namespace PiGame.Gameplay
 
         private void RefreshVisibility()
         {
-            bool playing = _matchController.Phase != MatchPhase.ShowingResult;
+            bool playing = _matchController.Phase == MatchPhase.Playing;
             _timerText.gameObject.SetActive(playing);
             _scoreText.gameObject.SetActive(playing);
         }
