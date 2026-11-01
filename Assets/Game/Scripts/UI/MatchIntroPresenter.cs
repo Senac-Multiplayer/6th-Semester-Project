@@ -146,7 +146,13 @@ namespace PiGame.Gameplay
 
         private void PresentPlayers(float elapsed, float delta)
         {
-            if (_pixelPerfect && _pixelPerfect.enabled) _pixelPerfect.enabled = false;
+            if (_pixelPerfect && _pixelPerfect.enabled)
+            {
+                // O Pixel Perfect limpa o viewport ao desativar; manter as mesmas barras durante o blend.
+                Rect viewport = _sceneCamera.rect;
+                _pixelPerfect.enabled = false;
+                _sceneCamera.rect = viewport;
+            }
             float visitsDuration = _playerPositions.Length * _matchController.SecondsPerPlayer;
             int index = elapsed >= visitsDuration ? -1
                 : Mathf.Min((int)(elapsed / _matchController.SecondsPerPlayer), _playerPositions.Length - 1);
