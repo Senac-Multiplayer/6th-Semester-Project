@@ -90,7 +90,7 @@ namespace PiGame.Gameplay
 
         private void RefreshNailIndicators()
         {
-            _nailIndicators.SetCount(_nails.Value, IsOwner && _playerState.CanAct,
+            _nailIndicators.SetCount(_nails.Value, _playerState.CanAct,
                 _playerState.IndicatorColor);
         }
 
@@ -253,6 +253,10 @@ namespace PiGame.Gameplay
             
             UpdateMagnetServer();
             UpdateAbilityServer();
+            // Apenas apresenta as condições existentes; não altera o uso da habilidade.
+            _playerState.SetAbilityAvailabilityServer(
+                _playerState.CanAct && _nails.Value <= _maxNails - 2,
+                _playerState.CanAct && _abilityActive);
         }
 
         private void UpdateMagnetServer()
