@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using PiGame.Sound;
 using Unity.Netcode;
 using UnityEngine;
@@ -13,6 +14,7 @@ namespace PiGame.Gameplay
         [SerializeField, Min(0f)] private float _shotCooldownSeconds = 0.35f;
         [SerializeField, Min(0f)] private float _projectileSpawnDistance = 0.5f;
         [SerializeField, Min(0.01f)] private float _rollSeconds = 0.2f;
+        [SerializeField, Min(0f)] private float _rollCooldownSeconds = 6f;
         [SerializeField, Min(0f)] private float _rollSpeed = 16f;
         [SerializeField] private LayerMask _rollPassThroughLayers;
         [SerializeField] private SpriteRenderer[] _ammoIndicators;
@@ -22,19 +24,24 @@ namespace PiGame.Gameplay
             0, NetworkVariableReadPermission.Owner);
         private readonly NetworkVariable<float> _rollDirectionX = new NetworkVariable<float>(1f);
         private readonly NetworkVariable<bool> _isRolling = new NetworkVariable<bool>();
+        private readonly NetworkVariable<bool> _passThroughPlayers = new NetworkVariable<bool>();
+        private readonly List<Collider2D> _rollOverlaps = new List<Collider2D>();
 
         private NetworkPlayerState _playerState;
         private PlayerMove _playerMove;
         private Collider2D _bodyCollider;
         private SpriteRenderer _bodySprite;
+        private PlayerAnimatorController _presentation;
         private Color _colorBeforeRoll;
         private CowboySoundManager _cowboySound;
         private bool _visualRollActive;
+        private bool _playerCollisionRestoreRequested;
         private LayerMask _originalExcludedLayers;
         private bool _isReloading;
         private bool _couldActLastFrame;
         private float _reloadEndsAt;
         private float _rollEndsAt;
+        private float _nextRollAt;
         private float _nextShotAt;
 
         private void Awake()
@@ -43,14 +50,15 @@ namespace PiGame.Gameplay
             _playerMove = GetComponent<PlayerMove>();
             _bodyCollider = GetComponent<Collider2D>();
             _bodySprite = GetComponent<SpriteRenderer>();
+            _presentation = GetComponent<PlayerAnimatorController>();
             _cowboySound = GetComponent<CowboySoundManager>();
             _originalExcludedLayers = _bodyCollider.excludeLayers;
 
-            if (_projectile == null || _projectile.Prefab == null
+            if (_presentation == null || _projectile == null || _projectile.Prefab == null
                 || _rollPassThroughLayers.value == 0
                 || _ammoIndicators == null || _ammoIndicators.Length != _maximumAmmo)
             {
-                Debug.LogError("Configure o projétil, as camadas e os indicadores de munição no CowboyCombat.", this);
+                Debug.LogError("Configure PlayerAnimatorController, projétil, camadas e indicadores de munição no CowboyCombat.", this);
                 enabled = false;
                 return;
             }
@@ -78,6 +86,7 @@ namespace PiGame.Gameplay
             _ammo.OnValueChanged += HandleAmmoChanged;
             _rollDirectionX.OnValueChanged += HandleRollDirectionChanged;
             _isRolling.OnValueChanged += HandleRollingChanged;
+            _passThroughPlayers.OnValueChanged += HandlePlayerCollisionChanged;
             _playerState.StateChanged += RefreshAmmoIndicators;
 
             if (IsServer)
@@ -100,6 +109,7 @@ namespace PiGame.Gameplay
             _ammo.OnValueChanged -= HandleAmmoChanged;
             _rollDirectionX.OnValueChanged -= HandleRollDirectionChanged;
             _isRolling.OnValueChanged -= HandleRollingChanged;
+            _passThroughPlayers.OnValueChanged -= HandlePlayerCollisionChanged;
             _playerState.StateChanged -= RefreshAmmoIndicators;
 
             if (IsServer)
@@ -108,6 +118,7 @@ namespace PiGame.Gameplay
             }
 
             _bodyCollider.excludeLayers = _originalExcludedLayers;
+            _playerCollisionRestoreRequested = false;
             if (_visualRollActive)
             {
                 _bodySprite.color = _colorBeforeRoll;
@@ -116,6 +127,65 @@ namespace PiGame.Gameplay
             if (IsOwner)
             {
                 _playerMove.EndHorizontalMovementOverride();
+            }
+        }
+
+        private void FixedUpdate()
+        {
+            if (!IsSpawned || _isRolling.Value) return;
+            if (IsOwner && _passThroughPlayers.Value) UpdatePlayerCollisionState();
+            if (!_passThroughPlayers.Value
+                && _bodyCollider.excludeLayers.value != _originalExcludedLayers.value)
+                ApplyRollCollisions();
+        }
+
+        private void UpdatePlayerCollisionState()
+        {
+            if (_playerCollisionRestoreRequested || OverlapsPlayer()) return;
+
+            _playerCollisionRestoreRequested = true;
+            RestorePlayerCollisionsRpc();
+        }
+
+        private bool OverlapsPlayer()
+        {
+            var filter = new ContactFilter2D();
+            filter.SetLayerMask(_rollPassThroughLayers.value & (1 << gameObject.layer));
+            filter.useTriggers = false;
+            _bodyCollider.Overlap(filter, _rollOverlaps);
+
+            foreach (Collider2D other in _rollOverlaps)
+            {
+                if (other.attachedRigidbody == _bodyCollider.attachedRigidbody) continue;
+                if (other.TryGetComponent<NetworkPlayerState>(out _)
+                    && _bodyCollider.Distance(other).isOverlapped)
+                {
+                    // Não reativar contato dentro de outro jogador: a separação física
+                    // pode empurrar o Cowboy contra o piso ou a parede da quina.
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        [Rpc(SendTo.Server, RequireOwnership = true)]
+        private void RestorePlayerCollisionsRpc()
+        {
+            if (!_isRolling.Value) _passThroughPlayers.Value = false;
+        }
+
+        private void ApplyRollCollisions()
+        {
+            int excludedLayers = _originalExcludedLayers.value;
+            if (_isRolling.Value) excludedLayers |= _rollPassThroughLayers.value;
+            else if (_passThroughPlayers.Value
+                || (_bodyCollider.excludeLayers.value != _originalExcludedLayers.value && OverlapsPlayer()))
+                excludedLayers |= _rollPassThroughLayers.value & (1 << gameObject.layer);
+
+            if (_bodyCollider.excludeLayers.value != excludedLayers)
+            {
+                _bodyCollider.excludeLayers = excludedLayers;
             }
         }
 
@@ -224,7 +294,7 @@ namespace PiGame.Gameplay
 
         public void BeginAbilityServer(Vector2 aimDirection, Vector2 moveDirection)
         {
-            if (!IsServer || !enabled || !_playerState.CanAct || _isRolling.Value
+            if (!IsServer || !enabled || !_playerState.CanAct || _isRolling.Value || Time.time < _nextRollAt
                 || !_playerMove.CanBeginWallRestrictedAbility())
             {
                 return;
@@ -238,7 +308,9 @@ namespace PiGame.Gameplay
             _isReloading = false;
             _rollDirectionX.Value = moveDirection.x < 0f ? -1f : 1f;
             _rollEndsAt = Time.time + _rollSeconds;
+            _nextRollAt = Time.time + _rollCooldownSeconds;
             _playerState.SetInvulnerableServer(true);
+            _passThroughPlayers.Value = true;
             _isRolling.Value = true;
         }
 
@@ -264,6 +336,12 @@ namespace PiGame.Gameplay
         private void HandleRollingChanged(bool previousValue, bool currentValue)
         {
             ApplyRollState();
+        }
+
+        private void HandlePlayerCollisionChanged(bool previousValue, bool currentValue)
+        {
+            if (!currentValue) _playerCollisionRestoreRequested = false;
+            ApplyRollCollisions();
         }
 
         private void HandleAmmoChanged(int previousValue, int currentValue)
@@ -301,9 +379,14 @@ namespace PiGame.Gameplay
                 _bodySprite.color = _colorBeforeRoll;
                 _visualRollActive = false;
             }
-            _bodyCollider.excludeLayers = rolling
-                ? _originalExcludedLayers.value | _rollPassThroughLayers.value
-                : _originalExcludedLayers.value;
+            if (IsOwner)
+            {
+                _presentation.SetSkillActive(rolling);
+                // O dono avisa ao servidor quando já é seguro restaurar o contato em todas as cópias.
+                if (rolling) _playerCollisionRestoreRequested = false;
+                else if (_passThroughPlayers.Value) UpdatePlayerCollisionState();
+            }
+            ApplyRollCollisions();
 
             if (!IsOwner)
             {

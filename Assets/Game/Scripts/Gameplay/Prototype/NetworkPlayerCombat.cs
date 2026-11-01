@@ -235,6 +235,9 @@ namespace PiGame.Gameplay
 
         private void SetSkillAnimation(bool isActive)
         {
+            // Rolamento de duração fixa: o Cowboy anima a ativação aceita pelo servidor.
+            if (_characterCombat is CowboyCombat) return;
+
             if (_animator != null && _animator.runtimeAnimatorController != null)
             {
                 _animator.SetBool("isSkill", isActive);
