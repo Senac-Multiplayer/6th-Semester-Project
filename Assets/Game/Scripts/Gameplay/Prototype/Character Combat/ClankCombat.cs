@@ -394,7 +394,11 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
 
         if (Application.isPlaying)
         {
-            Vector3 spawnTarget = transform.position + (Vector3)(_lastShotDirection * _projectileSpawnDistance);
+            float distanceForGizmo = Mathf.Abs(_lastShotDirection.y) > Mathf.Abs(_lastShotDirection.x)
+                ? _verticalSpawnDistance
+                : _projectileSpawnDistance;
+
+            Vector3 spawnTarget = transform.position + (Vector3)(_lastShotDirection * distanceForGizmo);
 
             Gizmos.color = Color.yellow;
             Gizmos.DrawLine(transform.position, spawnTarget);

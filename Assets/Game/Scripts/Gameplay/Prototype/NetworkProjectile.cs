@@ -87,7 +87,25 @@ namespace PiGame.Gameplay
                 return;
             }
 
-            transform.position += (Vector3)(_direction * _speed * Time.deltaTime);
+            float step = _speed * Time.deltaTime;
+
+            // Fazemos um Raycast na direção do movimento para garantir que a bala 
+            var filter = new ContactFilter2D();
+            filter.SetLayerMask(LayerMask.GetMask("Ground", "Wall"));
+            filter.useTriggers = false; // Queremos detetar os colliders sólidos do mapa
+
+            RaycastHit2D[] hits = new RaycastHit2D[1];
+            int count = Physics2D.Raycast(transform.position, _direction, filter, hits, step);
+
+            if (count > 0 && hits[0].collider != null)
+            {
+                // Se o raio bateu em algo no caminho deste frame, movemos a bala exatamente até o ponto de impacto
+                transform.position = hits[0].point;
+                NetworkObject.Despawn();
+                return;
+            }
+
+            transform.position += (Vector3)(_direction * step);
             if (_useLifetime && Time.time >= _despawnAt)
             {
                 NetworkObject.Despawn();
