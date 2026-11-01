@@ -11,7 +11,7 @@ namespace PiGame.Gameplay
 {
     public class MatchController : NetworkBehaviour
     {
-        [SerializeField] private int _killLimit = 3;
+        private readonly NetworkVariable<int> _killLimit = new NetworkVariable<int>(3);
         [SerializeField] private float _respawnDelaySeconds = 2f;
         private bool _returningToLobby;
 
@@ -34,7 +34,7 @@ namespace PiGame.Gameplay
         public float RemainingTime => _remainingTime.Value;
         public MatchPhase Phase => _phase.Value;
         public int WinningPlayerSlot => _winningPlayerSlot.Value;
-        public int KillLimit => _killLimit;
+        public int KillLimit => _killLimit.Value;
         public int ScoreCount => _scores != null ? _scores.Count : 0;
 
         private SceneOSTManager _sceneOSTManager;
@@ -50,6 +50,7 @@ namespace PiGame.Gameplay
             _scores.OnListChanged += HandleScoresChanged;
             _phase.OnValueChanged += HandlePhaseChanged;
             _winningPlayerSlot.OnValueChanged += HandleWinningPlayerChanged;
+            _killLimit.OnValueChanged += HandleKillLimitChanged;
 
             if (IsServer)
             {
@@ -65,6 +66,7 @@ namespace PiGame.Gameplay
             _scores.OnListChanged -= HandleScoresChanged;
             _phase.OnValueChanged -= HandlePhaseChanged;
             _winningPlayerSlot.OnValueChanged -= HandleWinningPlayerChanged;
+            _killLimit.OnValueChanged -= HandleKillLimitChanged;
 
             if (NetworkManager != null)
             {
@@ -84,8 +86,10 @@ namespace PiGame.Gameplay
                 return;
             }
 
-            int durationMinutes = Mathf.Max(1, settings.DurationMinutes);
-            _remainingTime.Value = durationMinutes * 60f;
+            _killLimit.Value = Mathf.Clamp(settings.KillLimit, 2, 100);
+            // Valor negativo identifica partida sem limite de tempo também nos clients.
+            _remainingTime.Value = settings.DurationMinutes == 0
+                ? -1f : Mathf.Clamp(settings.DurationMinutes, 2, 10) * 60f;
             _winningPlayerSlot.Value = -1;
             _phase.Value = MatchPhase.Playing;
         }
@@ -109,7 +113,7 @@ namespace PiGame.Gameplay
 
         private void Update()
         {
-            if (!IsServer || _phase.Value != MatchPhase.Playing)
+            if (!IsServer || _phase.Value != MatchPhase.Playing || _remainingTime.Value < 0f)
             {
                 return;
             }
@@ -135,7 +139,7 @@ namespace PiGame.Gameplay
                 score.Kills++;
                 _scores[attackerIndex] = score;
 
-                if (score.Kills >= _killLimit)
+                if (score.Kills >= _killLimit.Value)
                 {
                     FinishMatch(score.PlayerSlot);
                     return;
@@ -267,6 +271,11 @@ namespace PiGame.Gameplay
         }
 
         private void HandleScoresChanged(NetworkListEvent<MatchPlayerScoreData> changeEvent)
+        {
+            ScoresChanged?.Invoke();
+        }
+
+        private void HandleKillLimitChanged(int previousValue, int currentValue)
         {
             ScoresChanged?.Invoke();
         }

@@ -36,6 +36,6 @@ namespace PiGame.Lobby
         void RequestMapVote(LobbyMapId mapId);
         void RequestMapVoteConfirmation(bool isConfirmed);
         void RequestReturnToCharacterSelection();
-        void RequestMatchSettings(int durationMinutes, LobbyMatchMode mode);
+        void RequestMatchSettings(int durationMinutes, LobbyMatchMode mode, int killLimit);
     }
 }
