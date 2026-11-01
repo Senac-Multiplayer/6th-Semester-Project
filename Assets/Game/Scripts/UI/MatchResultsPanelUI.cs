@@ -103,12 +103,22 @@ namespace PiGame.UI
                 if (score.PlayerSlot == winner) _heading.text = $"{score.PlayerName} VENCEU!";
             }
 
-            _hostHint.text = _match.IsServer
-                ? "Retorne ao lobby para continuar jogando na mesma sala."
-                : "Aguardando o host retornar ao lobby.";
-            _returnButton.interactable = _match.IsServer && !_busy;
+            RefreshReturnHint();
             _exitButton.interactable = !_busy;
             if (opening) QueueSelection();
+        }
+
+        private void Update()
+        {
+            if (_root.activeSelf && !_busy) RefreshReturnHint();
+        }
+
+        private void RefreshReturnHint()
+        {
+            _returnButton.interactable = _match.CanReturnToLobby && !_busy;
+            _hostHint.text = _match.CanReturnToLobby
+                ? $"Retorno automático ao lobby em {Mathf.CeilToInt(_match.ResultSecondsRemaining)}s."
+                : "Aguarde a apresentação do resultado...";
         }
 
         public void OnCancel(BaseEventData eventData)
@@ -118,8 +128,8 @@ namespace PiGame.UI
 
         private void ReturnToLobby()
         {
-            if (_busy || !_match.IsServer) return;
-            _busy = _match.ReturnToLobbyServer();
+            if (_busy) return;
+            _busy = _match.RequestReturnToLobby();
             _content.interactable = !_busy;
         }
 
@@ -129,7 +139,7 @@ namespace PiGame.UI
             _content.interactable = false;
             _content.blocksRaycasts = false;
             _confirmation.Show(_match.IsServer
-                ? "Sair para o menu?\nVocê é o host: a sala será encerrada e todos voltarão ao menu."
+                ? "Sair para o menu?\nOutro jogador assumirá a sala."
                 : "Sair da sala e voltar para o menu?");
         }
 
@@ -166,7 +176,7 @@ namespace PiGame.UI
         {
             yield return null;
             EventSystem.current.SetSelectedGameObject(
-                _match.IsServer ? _returnButton.gameObject : _exitButton.gameObject);
+                _returnButton.interactable ? _returnButton.gameObject : _exitButton.gameObject);
             _selection = null;
         }
     }
