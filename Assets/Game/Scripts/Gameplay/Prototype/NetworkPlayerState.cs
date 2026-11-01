@@ -22,7 +22,8 @@ namespace PiGame.Gameplay
             new NetworkVariable<Color>(Color.white);
         private readonly NetworkVariable<int> _currentHealth = new NetworkVariable<int>();
         private readonly NetworkVariable<bool> _isAlive = new NetworkVariable<bool>(true);
-        private readonly NetworkVariable<bool> _matchActive = new NetworkVariable<bool>(true);
+        private readonly NetworkVariable<bool> _matchActive = new NetworkVariable<bool>(false);
+        private readonly NetworkVariable<bool> _indicatorsVisible = new NetworkVariable<bool>(true);
         private readonly NetworkVariable<FixedString64Bytes> _playerName = new NetworkVariable<FixedString64Bytes>();
         private readonly NetworkVariable<double> _abilityReadyAt = new NetworkVariable<double>(-1d);
         private readonly NetworkVariable<float> _abilityCooldownDuration = new NetworkVariable<float>();
@@ -49,6 +50,7 @@ namespace PiGame.Gameplay
         public int CurrentHealth => _currentHealth.Value;
         public int MaximumHealth => _maximumHealth;
         public bool IsAlive => _isAlive.Value;
+        public bool IndicatorsVisible => _indicatorsVisible.Value;
         public bool CanAct => _isAlive.Value && _matchActive.Value;
         public bool IsInvulnerable => _isInvulnerable;
         public string PlayerName => _playerName.Value.ToString();
@@ -79,6 +81,7 @@ namespace PiGame.Gameplay
             _currentHealth.OnValueChanged += HandleIntChanged;
             _isAlive.OnValueChanged += HandleAliveChanged;
             _matchActive.OnValueChanged += HandleBoolChanged;
+            _indicatorsVisible.OnValueChanged += HandleBoolChanged;
             _playerName.OnValueChanged += HandleNameChanged;
 
             ApplyAlivePresentation(_isAlive.Value);
@@ -96,6 +99,7 @@ namespace PiGame.Gameplay
             _currentHealth.OnValueChanged -= HandleIntChanged;
             _isAlive.OnValueChanged -= HandleAliveChanged;
             _matchActive.OnValueChanged -= HandleBoolChanged;
+            _indicatorsVisible.OnValueChanged -= HandleBoolChanged;
             _playerName.OnValueChanged -= HandleNameChanged;
         }
 
@@ -113,7 +117,7 @@ namespace PiGame.Gameplay
             _indicatorColor.Value = indicatorColor;
             _currentHealth.Value = _maximumHealth;
             _isAlive.Value = true;
-            _matchActive.Value = true;
+            _matchActive.Value = false;
             _isInvulnerable = false;
         }
 
@@ -173,7 +177,7 @@ namespace PiGame.Gameplay
             _knockbackRoutine = null;
         }
 
-        public void SetMatchActiveServer(bool isActive)
+        public void SetMatchActiveServer(bool isActive, bool indicatorsVisible = true)
         {
             if (!IsServer)
             {
@@ -181,6 +185,7 @@ namespace PiGame.Gameplay
             }
 
             _matchActive.Value = isActive;
+            _indicatorsVisible.Value = indicatorsVisible;
             if (!isActive && _rigidbody != null)
             {
                 _rigidbody.linearVelocity = Vector2.zero;
