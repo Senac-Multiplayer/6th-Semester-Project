@@ -507,7 +507,7 @@ namespace PiGame.UI
             _confirmLegendIcon.sprite = _promptCatalog.GetSprite(
                 usesGamepad ? "<Gamepad>/buttonSouth" : "<Keyboard>/enter");
             _backLegendIcon.sprite = _promptCatalog.GetSprite(
-                usesGamepad ? "<Gamepad>/buttonEast" : "<Keyboard>/escape");
+                usesGamepad ? "<Gamepad>/buttonEast" : "<Keyboard>/backspace");
             _confirmLegendText.text = "CONFIRMAR VOTO";
             _backLegendText.text = "VOLTAR";
         }

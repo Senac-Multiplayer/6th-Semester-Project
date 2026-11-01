@@ -2744,6 +2744,7 @@ GameObject:
   - component: {fileID: 905142629}
   - component: {fileID: 905142628}
   - component: {fileID: 3000000020}
+  - component: {fileID: 810000000000000313}
   m_Layer: 0
   m_Name: BindingConflict
   m_TagString: Untagged
@@ -4264,6 +4265,7 @@ GameObject:
   - component: {fileID: 1378543912}
   - component: {fileID: 1378543914}
   - component: {fileID: -6077273634021413176}
+  - component: {fileID: 810000000000000312}
   m_Layer: 0
   m_Name: ui_controls_settings_panel
   m_TagString: Untagged
@@ -6143,7 +6145,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "SELECIONE UM CAMPO E PRESSIONE O NOVO BOT\xC3O"
+  m_text: "DESCER DA PLATAFORMA:
+SEGURE PARA BAIXO E APERTE O BOTÃO DE PULAR."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: c29816ef4efed0b4e9c6f612184274fd, type: 2}
   m_sharedMaterial: {fileID: 5376852124497864486, guid: c29816ef4efed0b4e9c6f612184274fd, type: 2}
@@ -6170,8 +6173,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 17
-  m_fontSizeBase: 17
+  m_fontSize: 16
+  m_fontSizeBase: 16
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -8642,3 +8645,29 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &810000000000000312
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1378543911}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d05df859f91425e97dfe357b6d57233, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _firstSelection: {fileID: 1892241027}
+--- !u!114 &810000000000000313
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 905142626}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d05df859f91425e97dfe357b6d57233, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _firstSelection: {fileID: 226029902}

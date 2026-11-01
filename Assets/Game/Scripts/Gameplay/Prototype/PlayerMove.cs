@@ -169,7 +169,8 @@ namespace PiGame.Gameplay
             }
 
             UpdateCrouch(crouchRequested, actionHeld);
-            if (dropRequested) TryDropThroughPlatform();
+            // O pulo que inicia a descida não deve ficar no buffer e disparar na plataforma de baixo.
+            if (dropRequested && TryDropThroughPlatform()) jumpPressed = false;
             HandleMovement();
             HandleWallSlide();
             HandleJump(jumpPressed, jumpReleased);
@@ -380,11 +381,11 @@ namespace PiGame.Gameplay
             _presentation.SetCrouching(crouching);
         }
 
-        private void TryDropThroughPlatform()
+        private bool TryDropThroughPlatform()
         {
-            if (!_isGrounded || _ignoredPlatform != null) return;
+            if (!_isGrounded || _ignoredPlatform != null) return false;
             Collider2D platform = _groundHit.collider;
-            if (!IsOneWayPlatform(platform)) return;
+            if (!IsOneWayPlatform(platform)) return false;
 
             _playerSound?.PlayDownPlatform();
 
@@ -399,6 +400,7 @@ namespace PiGame.Gameplay
             _stickTimer = 0f;
             _rigidbody.linearVelocity = new Vector2(
                 _rigidbody.linearVelocity.x, Mathf.Min(_rigidbody.linearVelocity.y, -1f));
+            return true;
         }
 
         private void UpdatePlatformCollision()

@@ -564,7 +564,7 @@ namespace PiGame.UI
             if (_backLegendIcon != null)
             {
                 _backLegendIcon.sprite = _promptCatalog.GetSprite(
-                    usesGamepad ? "<Gamepad>/buttonEast" : "<Keyboard>/escape");
+                    usesGamepad ? "<Gamepad>/buttonEast" : "<Keyboard>/backspace");
             }
 
             if (_instructionText != null)
