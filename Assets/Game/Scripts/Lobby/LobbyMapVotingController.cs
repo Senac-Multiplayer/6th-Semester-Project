@@ -53,6 +53,12 @@ namespace PiGame.Lobby
             }
         }
 
+        private void Update()
+        {
+            if (_isVisible && _lobbyState.IsSpawned && _lobbyStateContract.Stage == LobbyStage.MatchStarting)
+                _view.RenderDraw(_lobbyStateContract.ServerTime);
+        }
+
         public void SetInteractionEnabled(bool isEnabled)
         {
             _view.SetInteractionEnabled(isEnabled && _isVisible);
@@ -147,8 +153,8 @@ namespace PiGame.Lobby
                 votes,
                 _lobbyStateContract.LocalClientId,
                 _lobbyStateContract.Stage,
-                _lobbyStateContract.WinningMap,
-                _lobbyStateContract.IsRandomMapResult);
+                _lobbyStateContract.MapDraw,
+                _lobbyStateContract.ServerTime);
         }
 
         private void SetVisible(bool isVisible)

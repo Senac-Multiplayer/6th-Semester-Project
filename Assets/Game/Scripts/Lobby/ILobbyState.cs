@@ -14,8 +14,8 @@ namespace PiGame.Lobby
         int MapVoteCount { get; }
         ulong LocalClientId { get; }
         LobbyStage Stage { get; }
-        LobbyMapId WinningMap { get; }
-        bool IsRandomMapResult { get; }
+        LobbyMapDrawData MapDraw { get; }
+        double ServerTime { get; }
         LobbyMatchSettingsData MatchSettings { get; }
         int SelectableCharacterCount { get; }
         bool RequireUniqueCharacters { get; }
