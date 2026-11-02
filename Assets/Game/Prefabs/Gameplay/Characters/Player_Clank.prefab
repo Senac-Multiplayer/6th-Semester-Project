@@ -1405,9 +1405,6 @@ MonoBehaviour:
   _groundLayer:
     serializedVersion: 2
     m_Bits: 8
-  _wallLayer:
-    serializedVersion: 2
-    m_Bits: 72
   _knockbackWireColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!114 &890000000000000002
 MonoBehaviour:

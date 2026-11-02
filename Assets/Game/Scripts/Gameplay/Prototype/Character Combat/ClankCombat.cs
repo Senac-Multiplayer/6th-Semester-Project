@@ -54,9 +54,6 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
     [SerializeField, Tooltip("Layer de colis�o utilizada para identificar plataformas e o ch�o.")]
     private LayerMask _groundLayer;
 
-    [SerializeField, Tooltip("Layer de colis�o utilizada para identificar paredes.")]
-    private LayerMask _wallLayer;
-
     [Header("Gizmo Settings")]
     [SerializeField, Tooltip("Cor do contorno do Gizmo do raio de repuls�o no Editor.")]
     private Color _knockbackWireColor = Color.red;
@@ -214,27 +211,13 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
             ? _verticalSpawnDistance
             : _projectileSpawnDistance;
 
-        Vector2 origin = (Vector2)transform.position + (shotDirection * 0.15f);
-        float castDistance = Mathf.Max(0.01f, distanceToUse - 0.15f);
-
-        RaycastHit2D hit = Physics2D.Raycast(origin, shotDirection, castDistance, _wallLayer);
-        Vector3 spawnPosition;
-
-        if (hit.collider != null)
-        {
-            spawnPosition = (Vector3)(hit.point - (shotDirection * 0.1f));
-        }
-        else
-        {
-            spawnPosition = transform.position + (Vector3)(shotDirection * distanceToUse);
-        }
-
         if (_fumaceiroSound != null)
         {
             _fumaceiroSound.PlayFumaceiroThrow();
         }
 
-        NetworkProjectile projectile = Instantiate(_projectile.Prefab, spawnPosition, Quaternion.identity);
+        NetworkProjectile projectile = Instantiate(_projectile.Prefab, transform.position, Quaternion.identity);
+        projectile.PlaceAtMuzzle(shotDirection, distanceToUse);
         projectile.NetworkObject.Spawn(true);
         projectile.InitializeServer(OwnerClientId, shotDirection, _playerState.IndicatorColor, _projectile);
 
