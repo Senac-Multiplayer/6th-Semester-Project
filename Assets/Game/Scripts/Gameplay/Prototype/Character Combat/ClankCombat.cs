@@ -19,6 +19,9 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
     [SerializeField, Min(0f), Tooltip("Dist�ncia � frente do jogador onde o proj�til � instanciado.")]
     private float _projectileSpawnDistance = 0.5f;
 
+    [SerializeField, Min(0f)]
+    private float _verticalSpawnDistance = 0.7f;
+
     [SerializeField, Tooltip("Indicadores visuais da muni��o na interface ou sobre o jogador.")]
     private SpriteRenderer[] _ammoIndicators;
 
@@ -44,6 +47,7 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
     [SerializeField, Min(0.01f), Tooltip("Dist�ncia do Raycast para verificar se o jogador est� em contato com o ch�o.")]
     private float _groundCheckDistance = 0.2f;
 
+
     [SerializeField, Tooltip("Layer de colis�o utilizada para identificar outros jogadores no alcance.")]
     private LayerMask _playerLayer;
 
@@ -68,6 +72,7 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
     private float _nextShotAt;
     private float _crouchTimer;
     private float _abilityCooldownTimer;
+    private Vector2 _lastShotDirection = Vector2.right;
 
     private void Awake()
     {
@@ -185,32 +190,37 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
     #region Metodo Do ICharacterCombat
     public void ShootServer(Vector2 direction)
     {
-        if (!IsServer || !enabled || !_playerState.CanAct ||  Time.time < _nextShotAt)
+        if (!IsServer || !enabled || !_playerState.CanAct || Time.time < _nextShotAt)
         {
             return;
         }
 
-        if(_ammo.Value <= 0 )
+        if (_ammo.Value <= 0)
         {
-            if(_fumaceiroSound != null)
+            if (_fumaceiroSound != null)
             {
                 _fumaceiroSound.PlayFumaceiroEmpty();
             }
             return;
         }
 
-
         Vector2 shotDirection = direction.sqrMagnitude > 0.01f
             ? direction.normalized
             : Vector2.right;
-        Vector3 spawnPosition = transform.position + (Vector3)(shotDirection * _projectileSpawnDistance);
 
-        if(_fumaceiroSound != null)
+        _lastShotDirection = shotDirection;
+
+        float distanceToUse = Mathf.Abs(shotDirection.y) > Mathf.Abs(shotDirection.x)
+            ? _verticalSpawnDistance
+            : _projectileSpawnDistance;
+
+        if (_fumaceiroSound != null)
         {
             _fumaceiroSound.PlayFumaceiroThrow();
         }
 
-        NetworkProjectile projectile = Instantiate(_projectile.Prefab, spawnPosition, Quaternion.identity);
+        NetworkProjectile projectile = Instantiate(_projectile.Prefab, transform.position, Quaternion.identity);
+        projectile.PlaceAtMuzzle(shotDirection, distanceToUse);
         projectile.NetworkObject.Spawn(true);
         projectile.InitializeServer(OwnerClientId, shotDirection, _playerState.IndicatorColor, _projectile);
 
@@ -370,5 +380,18 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
         Vector3 origin = col != null ? new Vector3(col.bounds.center.x, col.bounds.min.y, 0f) : transform.position;
         Gizmos.color = Color.green;
         Gizmos.DrawLine(origin, origin + Vector3.down * _groundCheckDistance);
+
+        if (Application.isPlaying)
+        {
+            float distanceForGizmo = Mathf.Abs(_lastShotDirection.y) > Mathf.Abs(_lastShotDirection.x)
+                ? _verticalSpawnDistance
+                : _projectileSpawnDistance;
+
+            Vector3 spawnTarget = transform.position + (Vector3)(_lastShotDirection * distanceForGizmo);
+
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawLine(transform.position, spawnTarget);
+            Gizmos.DrawWireSphere(spawnTarget, 0.1f);
+        }
     }
 }

@@ -11,6 +11,9 @@ namespace PiGame.Gameplay
             new NetworkVariable<Color>(Color.white);
 
         private SpriteRenderer _spriteRenderer;
+        private Collider2D _projectileCollider;
+        private readonly RaycastHit2D[] _surfaceHits = new RaycastHit2D[8];
+        private ContactFilter2D _surfaceFilter;
         protected Vector2 _direction;
         protected ulong _shooterClientId;
         public ulong ShooterClientId => _shooterClientId;
@@ -24,6 +27,10 @@ namespace PiGame.Gameplay
         private void Awake()
         {
             _spriteRenderer = GetComponent<SpriteRenderer>();
+            _projectileCollider = GetComponent<Collider2D>();
+            _surfaceFilter = new ContactFilter2D();
+            _surfaceFilter.SetLayerMask(LayerMask.GetMask("Ground", "Wall"));
+            _surfaceFilter.useTriggers = false;
         }
 
         public override void OnNetworkSpawn()
@@ -87,7 +94,35 @@ namespace PiGame.Gameplay
                 return;
             }
 
-            transform.position += (Vector3)(_direction * _speed * Time.deltaTime);
+            float step = _speed * Time.deltaTime;
+
+            if (step > 0f)
+            {
+                Physics2D.SyncTransforms();
+                int count = _projectileCollider.Cast(_direction, _surfaceFilter, _surfaceHits, step);
+                float closestDistance = step;
+                bool hitSurface = false;
+                for (int i = 0; i < count; i++)
+                {
+                    if (_surfaceHits[i].collider == null || _surfaceHits[i].distance > closestDistance)
+                    {
+                        continue;
+                    }
+
+                    closestDistance = _surfaceHits[i].distance;
+                    hitSurface = true;
+                }
+
+                if (hitSurface)
+                {
+                    transform.position += (Vector3)(_direction * Mathf.Max(0f,
+                        closestDistance - Physics2D.defaultContactOffset));
+                    NetworkObject.Despawn();
+                    return;
+                }
+            }
+
+            transform.position += (Vector3)(_direction * step);
             if (_useLifetime && Time.time >= _despawnAt)
             {
                 NetworkObject.Despawn();
