@@ -87,6 +87,7 @@ namespace PiGame.Gameplay
         private readonly ContactPoint2D[] _wallContacts = new ContactPoint2D[8];
 
         public bool IsCrouching => _crouching.Value;
+        public bool IsGrounded => _isGrounded;
 
         private void Awake()
         {
@@ -152,7 +153,8 @@ namespace PiGame.Gameplay
                 _jumpBufferCounter = 0f;
                 if (!_playerState.CanAct) RestorePlatformCollision();
                 _rigidbody.linearVelocity = new Vector2(0f,
-                    _playerState.CanAct ? _rigidbody.linearVelocity.y : 0f);
+                    _playerState.IsAlive ? _rigidbody.linearVelocity.y : 0f);
+                if (_playerState.IsAlive) CheckGround();
                 return;
             }
 

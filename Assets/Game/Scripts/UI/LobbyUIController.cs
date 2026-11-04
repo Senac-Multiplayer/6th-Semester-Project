@@ -160,9 +160,10 @@ namespace PiGame.UI
         {
             if (_connectionService.IsRecoveringConnection)
             {
-                if (!_connectionPanel.gameObject.activeSelf) ShowRecoveringConnection();
+                if (!LoadingScreenUI.Instance.IsVisible) ShowRecoveringConnection();
                 return;
             }
+            if (LoadingScreenUI.Instance.IsVisible) return;
             if (_lobbyPause == null || Time.frameCount == _ignoreMenuInputFrame)
             {
                 return;
@@ -287,6 +288,7 @@ namespace PiGame.UI
 
         private void ShowMainMenu()
         {
+            LoadingScreenUI.Instance.Hide();
             _playerNamePanel.Hide();
             _lobbyPause.SetVisible(false);
             _confirmationPanel.Hide();
@@ -322,6 +324,7 @@ namespace PiGame.UI
             }
 
             _connectionPanel.ShowConnecting("CRIANDO SALA...");
+            LoadingScreenUI.Instance.Show();
             await _connectionServiceContract.StartHostAsync();
         }
 
@@ -334,6 +337,7 @@ namespace PiGame.UI
             }
 
             _connectionPanel.ShowConnecting("ENTRANDO NA SALA...");
+            LoadingScreenUI.Instance.Show();
             await _connectionServiceContract.StartClientAsync(joinCode);
         }
 
@@ -404,6 +408,7 @@ namespace PiGame.UI
             _confirmationPanel.Hide();
             ShowConnectionPanel();
             _connectionPanel.ShowConnecting("ENCERRANDO SALA...");
+            LoadingScreenUI.Instance.Show();
             if (_connectionServiceContract != null)
             {
                 await _connectionServiceContract.ShutdownAsync();
@@ -439,6 +444,7 @@ namespace PiGame.UI
 
         private void HandleConnected()
         {
+            LoadingScreenUI.Instance.Hide();
             ShowLobbyPanel();
         }
 
@@ -446,6 +452,7 @@ namespace PiGame.UI
         {
             ShowConnectionPanel();
             _connectionPanel.ShowConnecting("RECUPERANDO A SALA...");
+            LoadingScreenUI.Instance.Show(message: "RECUPERANDO A SALA...");
         }
 
         private void HandleDisconnected()
@@ -538,6 +545,7 @@ namespace PiGame.UI
 
         private void ShowConnectionError(string message)
         {
+            LoadingScreenUI.Instance.Hide();
             ShowConnectionPanel();
             _connectionPanel.ShowError(message);
         }
@@ -631,6 +639,7 @@ namespace PiGame.UI
             _lobbyPause.SetVisible(false);
             ShowConnectionPanel();
             _connectionPanel.ShowConnecting("ENCERRANDO SALA...");
+            LoadingScreenUI.Instance.Show();
             if (_connectionServiceContract != null)
             {
                 await _connectionServiceContract.ShutdownAsync();
