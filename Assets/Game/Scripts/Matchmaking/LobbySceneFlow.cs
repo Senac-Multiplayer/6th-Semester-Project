@@ -1,5 +1,6 @@
 using System.Collections;
 using PiGame.Networking;
+using PiGame.UI;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -44,13 +45,14 @@ namespace PiGame.Lobby
         public void LoadMapServer(string sceneName)
         {
             if (!IsServer) return;
-            HideLobbyInputRpc();
+            BeginMapLoadingRpc(MatchSession.Instance.Snapshot.MapId);
             StartCoroutine(LoadMapWhenReady(sceneName));
         }
 
         [Rpc(SendTo.ClientsAndHost)]
-        private void HideLobbyInputRpc()
+        private void BeginMapLoadingRpc(LobbyMapId mapId)
         {
+            LoadingScreenUI.Instance.Show(_lobbyState.FindWinningMap(mapId));
             // O EventSystem do mapa será ativado ao carregar a cena aditiva.
             foreach (GameObject item in _lobbyPresentation)
                 if (item.TryGetComponent<EventSystem>(out _)) item.SetActive(false);
@@ -58,6 +60,8 @@ namespace PiGame.Lobby
 
         private IEnumerator LoadMapWhenReady(string sceneName)
         {
+            // Exibir o painel antes de iniciar o carregamento da cena.
+            yield return null;
             while (_unloading) yield return null;
             SceneEventProgressStatus status;
             do
@@ -67,7 +71,17 @@ namespace PiGame.Lobby
             } while (status == SceneEventProgressStatus.SceneEventInProgress);
 
             if (status != SceneEventProgressStatus.Started)
+            {
+                CancelMapLoadingRpc();
                 Debug.LogError($"Não foi possível carregar o mapa {sceneName}: {status}.", this);
+            }
+        }
+
+        [Rpc(SendTo.ClientsAndHost)]
+        private void CancelMapLoadingRpc()
+        {
+            LoadingScreenUI.Instance.Hide();
+            ShowLobbyLocally();
         }
 
         public void PrepareNextMatchServer()
@@ -77,6 +91,7 @@ namespace PiGame.Lobby
 
         public void ShowLobbyLocally()
         {
+            LoadingScreenUI.Instance.Hide();
             SceneManager.SetActiveScene(gameObject.scene);
             if (_mapScene.IsValid() && _mapScene.isLoaded)
             {

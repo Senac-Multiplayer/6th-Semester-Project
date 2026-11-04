@@ -84,10 +84,6 @@ namespace PiGame.UI
             DisableAutomaticNavigation(_previousCharacterButton);
             DisableAutomaticNavigation(_nextCharacterButton);
 
-            _statusPositions = new Vector2[_statusTexts.Length];
-            for (int slot = 0; slot < _statusTexts.Length; slot++)
-                _statusPositions[slot] = _statusTexts[slot].rectTransform.anchoredPosition;
-
             RefreshLegend();
         }
 
@@ -194,6 +190,9 @@ namespace PiGame.UI
             if (!enabled) return;
             _localPlayerSlot = -1;
             _localPlayerIsReady = true;
+
+            // O controller pode renderizar o painel ainda inativo, antes do Awake da view.
+            _statusPositions ??= Array.ConvertAll(_statusTexts, text => text.rectTransform.anchoredPosition);
 
             for (int slot = 0; slot < _slotRoots.Length; slot++)
             {
