@@ -40,6 +40,8 @@ namespace PiGame.UI
         [SerializeField] private GameObject _audioContent;
         [SerializeField] private GameObject _controlsContent;
         [SerializeField] private GameObject _playerContent;
+        [SerializeField] private Button _displayCategoryButton;
+        [SerializeField] private GameObject _displayContent;
         [SerializeField] private Slider _masterVolume;
         [SerializeField] private AudioMixer _audioMixer;
         [SerializeField] private TMP_Text _masterVolumeValue;
@@ -90,7 +92,8 @@ namespace PiGame.UI
                     || _musicVolume == null || _musicVolumeValue == null
                     || _sfxVolume == null || _sfxVolumeValue == null
                     || _gamepadDeadzone == null || _gamepadDeadzoneValue == null
-                    || _inlinePlayerName == null || _saveNameButton == null)
+                    || _inlinePlayerName == null || _saveNameButton == null
+                    || _displayCategoryButton == null || _displayContent == null)
                 {
                     Debug.LogError("Configure as referências das opções no prefab do lobby.", this);
                     enabled = false;
@@ -98,6 +101,7 @@ namespace PiGame.UI
                 }
 
                 _audioCategoryButton.onClick.AddListener(ShowInlineAudio);
+                _displayCategoryButton.onClick.AddListener(ShowInlineDisplay);
                 GameAudioSettings.UseMixer(_audioMixer);
                 _saveNameButton.onClick.AddListener(SaveInlineName);
                 _inlinePlayerName.onSubmit.AddListener(HandleInlineNameSubmitted);
@@ -121,6 +125,8 @@ namespace PiGame.UI
             if (HasInlineOptions && _masterVolume != null && _saveNameButton != null)
             {
                 _audioCategoryButton.onClick.RemoveListener(ShowInlineAudio);
+                if (_displayCategoryButton != null)
+                    _displayCategoryButton.onClick.RemoveListener(ShowInlineDisplay);
                 _saveNameButton.onClick.RemoveListener(SaveInlineName);
                 _inlinePlayerName.onSubmit.RemoveListener(HandleInlineNameSubmitted);
                 _masterVolume.onValueChanged.RemoveListener(HandleMasterVolumeChanged);
@@ -326,6 +332,7 @@ namespace PiGame.UI
         private void HandlePlayerNameClicked() => PlayerNameRequested?.Invoke();
         private void HandleInlineNameSubmitted(string _) => SaveInlineName();
         private void ShowInlineAudio() => ShowInlineContent(_audioContent);
+        private void ShowInlineDisplay() => ShowInlineContent(_displayContent);
         private void ShowInlinePlayer()
         {
             _inlinePlayerName.SetTextWithoutNotify(LocalPlayerName.Load());
@@ -340,6 +347,7 @@ namespace PiGame.UI
             _audioContent.SetActive(content == _audioContent);
             _controlsContent.SetActive(content == _controlsContent);
             _playerContent.SetActive(content == _playerContent);
+            _displayContent.SetActive(content == _displayContent);
         }
 
         private void SaveInlineName()

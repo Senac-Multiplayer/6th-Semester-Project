@@ -11,7 +11,7 @@ namespace PiGame.Gameplay
             new NetworkVariable<Color>(Color.white);
 
         private SpriteRenderer _spriteRenderer;
-        private Collider2D _projectileCollider;
+        private Collider2D _projectileBodyCollider;
         private readonly RaycastHit2D[] _surfaceHits = new RaycastHit2D[8];
         private ContactFilter2D _surfaceFilter;
         protected Vector2 _direction;
@@ -27,7 +27,7 @@ namespace PiGame.Gameplay
         private void Awake()
         {
             _spriteRenderer = GetComponent<SpriteRenderer>();
-            _projectileCollider = GetComponent<Collider2D>();
+            _projectileBodyCollider = GetComponent<Collider2D>();
             _surfaceFilter = new ContactFilter2D();
             _surfaceFilter.SetLayerMask(LayerMask.GetMask("Ground", "Wall"));
             _surfaceFilter.useTriggers = false;
@@ -99,7 +99,7 @@ namespace PiGame.Gameplay
             if (step > 0f)
             {
                 Physics2D.SyncTransforms();
-                int count = _projectileCollider.Cast(_direction, _surfaceFilter, _surfaceHits, step);
+                int count = _projectileBodyCollider.Cast(_direction, _surfaceFilter, _surfaceHits, step);
                 float closestDistance = step;
                 bool hitSurface = false;
                 for (int i = 0; i < count; i++)
