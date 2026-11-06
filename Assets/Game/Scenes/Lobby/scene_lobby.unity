@@ -715,16 +715,6 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _lobbyState: {fileID: 2121000003}
   _matchSession: {fileID: 2074266680}
---- !u!224 &1378543913 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 1378543913, guid: f0c90b1178a64c4ba0b29925e54bdf87, type: 3}
-  m_PrefabInstance: {fileID: 700000000000005}
-  m_PrefabAsset: {fileID: 0}
---- !u!224 &1690314031 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 1690314031, guid: 6a50982072c24dc8a5b47390396c6a99, type: 3}
-  m_PrefabInstance: {fileID: 700000000000001}
-  m_PrefabAsset: {fileID: 0}
 --- !u!114 &659634092
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -735,14 +725,25 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1a9d304ad5164dd394c96f5e4f72a601, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   _lobbyState: {fileID: 2121000003}
   _lobbyPresentation:
   - {fileID: 436354349}
   - {fileID: 519420028}
   - {fileID: 503500256}
   - {fileID: 1988422706}
+--- !u!224 &1378543913 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 1378543913, guid: f0c90b1178a64c4ba0b29925e54bdf87, type: 3}
+  m_PrefabInstance: {fileID: 700000000000005}
+  m_PrefabAsset: {fileID: 0}
+--- !u!224 &1690314031 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 1690314031, guid: 6a50982072c24dc8a5b47390396c6a99, type: 3}
+  m_PrefabInstance: {fileID: 700000000000001}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &1690314032 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 1690314032, guid: 6a50982072c24dc8a5b47390396c6a99, type: 3}
@@ -974,7 +975,7 @@ MonoBehaviour:
     Prefabs:
       NetworkPrefabsLists:
       - {fileID: 11400000, guid: 98bb620c20ef3264dbe051091bae1304, type: 2}
-    TickRate: 30
+    TickRate: 60
     ClientConnectionBufferTimeout: 10
     ConnectionApproval: 0
     ConnectionData: 
@@ -1010,6 +1011,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _networkManager: {fileID: 2101000003}
   _maxPlayers: 4
+  _hostRecoveryTimeoutSeconds: 45
 --- !u!224 &2110000001 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 2110000001, guid: 86df8dd7ec4144dfaa2368ddbdda74ea, type: 3}
