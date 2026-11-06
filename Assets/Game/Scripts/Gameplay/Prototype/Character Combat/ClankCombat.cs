@@ -208,7 +208,7 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
             ? direction.normalized
             : Vector2.right;
 
-        _lastShotDirection = shotDirection;
+        _lastShotDirection = shotDirection; //salva bala
 
         float distanceToUse = Mathf.Abs(shotDirection.y) > Mathf.Abs(shotDirection.x)
             ? _verticalSpawnDistance
