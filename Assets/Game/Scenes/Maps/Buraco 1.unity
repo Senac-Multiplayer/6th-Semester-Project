@@ -1600,7 +1600,7 @@ Transform:
   m_GameObject: {fileID: 289971131}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -3.5, y: 5.79005, z: 0}
+  m_LocalPosition: {x: -3.5, y: 5.50131, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2560,7 +2560,7 @@ Canvas:
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 1379240151
-  m_SortingOrder: 1000
+  m_SortingOrder: 1100
   m_TargetDisplay: 0
 --- !u!1 &1126800581
 GameObject:
@@ -2759,7 +2759,7 @@ Transform:
   m_GameObject: {fileID: 1184260341}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 2.3, y: 5.79005, z: 0}
+  m_LocalPosition: {x: 2.3, y: 5.5013, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -10616,6 +10616,19 @@ MonoBehaviour:
     Style: 1
     Time: 0.65
   CustomBlends: {fileID: 11400000, guid: 3e6ddb3c52c34703a16bcec76bfb3dfb, type: 2}
+--- !u!1001 &870999999000000001
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications: []
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: fccbdba4eb034be795c0e03679627a4f, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -10632,3 +10645,4 @@ SceneRoots:
   - {fileID: 206100838}
   - {fileID: 1203259597}
   - {fileID: 870799999000000001}
+  - {fileID: 870999999000000001}

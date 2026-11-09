@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Linq;
 using TMPro;
+using PiGame.UI;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.Events;
@@ -18,6 +19,8 @@ namespace PiGame.Gameplay
         [SerializeField] private TMP_Text _countdownLabel;
         [SerializeField, Min(0.5f)] private float _closeupSize = 2.2f;
         [SerializeField, Min(0f)] private float _panDistance = 0.6f;
+        [Tooltip("Espera máxima pelo apoio no chão antes de liberar a apresentação.")]
+        [SerializeField, Min(0.5f)] private float _spawnSettleTimeoutSeconds = 5f;
         [Tooltip("Ligue aqui os sons: recebe de 6 a 1 durante a apresentação, ou de 3 a 1 no modo separado, e 0 para JÁ. Executado localmente uma vez por etapa.")]
         [SerializeField] private UnityEvent<int> _countdownStepChanged = new UnityEvent<int>();
 
@@ -34,6 +37,8 @@ namespace PiGame.Gameplay
         private bool _pixelPerfectWasEnabled;
         private float _presentationElapsed = -1f;
         private float _approachSeconds;
+        private NetworkPlayerState[] _players;
+        private bool _loadingDismissed;
 
         private void Awake()
         {
@@ -59,9 +64,24 @@ namespace PiGame.Gameplay
                     .Count(p => p.IsSpawned && p.PlayerSlot >= 0) != _matchController.ScoreCount)
                 yield return null;
 
-            _playerPositions = FindObjectsByType<NetworkPlayerState>(FindObjectsSortMode.None)
+            _players = FindObjectsByType<NetworkPlayerState>(FindObjectsSortMode.None)
                 .Where(p => p.IsSpawned && p.PlayerSlot >= 0).OrderBy(p => p.PlayerSlot)
-                .Select(p => p.transform.position).ToArray();
+                .ToArray();
+            NetworkPlayerState localPlayer = _players.First(p => p.IsOwner);
+            PlayerMove movement = localPlayer.GetComponent<PlayerMove>();
+            Rigidbody2D body = localPlayer.GetComponent<Rigidbody2D>();
+            float deadline = Time.unscaledTime + _spawnSettleTimeoutSeconds;
+            // O proprietário confirma seu apoio; o host espera a confirmação de todos.
+            while (localPlayer && localPlayer.IsSpawned
+                && (!movement.IsGrounded || Mathf.Abs(body.linearVelocity.y) > 0.1f)
+                && Time.unscaledTime < deadline)
+                yield return null;
+            if (!localPlayer || !localPlayer.IsSpawned) yield break;
+            if (!movement.IsGrounded || Mathf.Abs(body.linearVelocity.y) > 0.1f)
+                Debug.LogWarning($"O jogador P{localPlayer.PlayerSlot + 1} não encontrou apoio no spawn antes do limite de espera.", localPlayer);
+
+            _players = _players.Where(p => p && p.IsSpawned).ToArray();
+            _playerPositions = _players.Select(p => p.transform.position).ToArray();
             _normalPosition = _sceneCamera.transform.position;
             _normalRotation = _sceneCamera.transform.rotation;
             _pixelPerfectWasEnabled = _pixelPerfect && _pixelPerfect.enabled;
@@ -100,9 +120,22 @@ namespace PiGame.Gameplay
         {
             if (!_matchController.IsSpawned || !_prepared) return;
             float elapsed = _matchController.IntroElapsed;
+            if (!_loadingDismissed && _matchController.Phase != MatchPhase.WaitingForPlayers)
+            {
+                // O fade termina durante a margem anterior ao primeiro enquadramento.
+                if (LoadingScreenUI.Instance) LoadingScreenUI.Instance.Hide();
+                _loadingDismissed = true;
+            }
             if (_matchController.Phase == MatchPhase.WaitingForPlayers
                 || (_matchController.Phase == MatchPhase.PresentingPlayers && elapsed < 0f && _presentationElapsed < 0f))
             {
+                if (_players.Any(p => !p || !p.IsSpawned))
+                {
+                    _players = _players.Where(p => p && p.IsSpawned).ToArray();
+                    _playerPositions = _players.Select(p => p.transform.position).ToArray();
+                }
+                for (int i = 0; i < _players.Length; i++)
+                    if (_players[i]) _playerPositions[i] = _players[i].transform.position;
                 _normalSize = CurrentMapSize();
                 ConfigureCamera(_mapCamera, _normalPosition, _normalSize);
                 _brain.ManualUpdate(Time.frameCount, 0f);

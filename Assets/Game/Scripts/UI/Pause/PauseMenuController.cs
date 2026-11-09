@@ -69,6 +69,7 @@ namespace PiGame.UI
 
         private void Update()
         {
+            if (LoadingScreenUI.Instance && LoadingScreenUI.Instance.IsVisible) return;
             if (_isExiting)
             {
                 return;
