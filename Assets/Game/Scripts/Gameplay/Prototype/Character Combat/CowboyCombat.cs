@@ -13,6 +13,7 @@ namespace PiGame.Gameplay
         [SerializeField, Min(0.01f)] private float _reloadSeconds = 1.5f;
         [SerializeField, Min(0f)] private float _shotCooldownSeconds = 0.35f;
         [SerializeField, Min(0f)] private float _projectileSpawnDistance = 0.5f;
+        [SerializeField, Min(0f)] private float _verticalSpawnDistance = 0.7f; //Adição do felipe
         [SerializeField, Min(0.01f)] private float _rollSeconds = 0.2f;
         [SerializeField, Min(0f)] private float _rollCooldownSeconds = 6f;
         [SerializeField, Min(0f)] private float _rollSpeed = 16f;
@@ -43,7 +44,7 @@ namespace PiGame.Gameplay
         private float _rollEndsAt;
         private float _nextRollAt;
         private float _nextShotAt;
-
+        private Vector2 _lastShotDirection = Vector2.right;
         private void Awake()
         {
             _playerState = GetComponent<NetworkPlayerState>();
@@ -262,14 +263,20 @@ namespace PiGame.Gameplay
             Vector2 shotDirection = direction.sqrMagnitude > 0.01f
                 ? direction.normalized
                 : Vector2.right;
+
+            _lastShotDirection = shotDirection; 
+
+            float distanceToUse = Mathf.Abs(shotDirection.y) > Mathf.Abs(shotDirection.x)
+                ? _verticalSpawnDistance
+                : _projectileSpawnDistance;
+
             Vector3 spawnPosition = transform.position
                 + (Vector3)(shotDirection * _projectileSpawnDistance);
 
-            NetworkProjectile projectile = Instantiate(
-                _projectile.Prefab, spawnPosition, Quaternion.identity);
+            NetworkProjectile projectile = Instantiate(_projectile.Prefab, transform.position, Quaternion.identity);
+            projectile.PlaceAtMuzzle(shotDirection, distanceToUse);
             projectile.NetworkObject.Spawn(true);
-            projectile.InitializeServer(
-                OwnerClientId, shotDirection, _playerState.IndicatorColor, _projectile);
+            projectile.InitializeServer(OwnerClientId, shotDirection, _playerState.IndicatorColor, _projectile);
 
             _ammo.Value--;
 
