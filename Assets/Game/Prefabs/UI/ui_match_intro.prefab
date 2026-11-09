@@ -109,6 +109,7 @@ MonoBehaviour:
   _countdownLabel: {fileID: 8707000000000013}
   _closeupSize: 2.2
   _panDistance: 0.6
+  _spawnSettleTimeoutSeconds: 5
   _countdownStepChanged:
     m_PersistentCalls:
       m_Calls: []

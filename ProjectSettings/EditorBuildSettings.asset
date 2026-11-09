@@ -8,27 +8,6 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Game/Scenes/Lobby/scene_lobby.unity
     guid: 0fced0c0ea1b22545a52056c07bd74c1
-  - enabled: 0
-    path: Assets/Game/Scenes/Prototype/MatchScene.unity
-    guid: ae946b3d32b83724d9f6793902ff0102
-  - enabled: 0
-    path: Assets/Scenes/SampleScene.unity
-    guid: 8c9cfa26abfee488c85f1582747f6a02
-  - enabled: 0
-    path: Assets/Game/Scenes/Maps/Cidade Sem Nome 1.unity
-    guid: d1ec48727cb115a49a0dde1db0b02e51
-  - enabled: 1
-    path: Assets/Game/Scenes/Prototype/Cidade Sem Nome 2.unity
-    guid: 4cc2bc5682e1e1840ba25d04f325d6af
-  - enabled: 1
-    path: Assets/Game/Scenes/Prototype/Kitezh 1.unity
-    guid: 263ce748393a8f14597d4cf824496bf8
-  - enabled: 1
-    path: Assets/Game/Scenes/Prototype/Kitezh 2.unity
-    guid: e2279e7061a2db949aacfc6cd92f6630
-  - enabled: 1
-    path: Assets/Game/Scenes/Music_tests/Music.unity
-    guid: 7c335fe0e5a6add4dbd6ca79cf2bddba
   - enabled: 1
     path: Assets/Game/Scenes/Maps/Bonanza 2.unity
     guid: ef6155e01f1024940bdfc77d3313ba32
@@ -53,9 +32,6 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Game/Scenes/Maps/Buraco 2.unity
     guid: 755fb27ad072813478441d0ee14e6150
-  - enabled: 0
-    path: Assets/Game/Scenes/Maps/teste.unity
-    guid: ef06c3534652fb7408bf28c0499a1161
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0
