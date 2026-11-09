@@ -1998,7 +1998,7 @@ Rigidbody2D:
   m_ExcludeLayers:
     serializedVersion: 2
     m_Bits: 0
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_SleepingMode: 1
   m_CollisionDetection: 1
   m_Constraints: 4
@@ -2035,10 +2035,9 @@ MonoBehaviour:
     m_Bits: 64
   _wallStickTime: 0.5
   _wallSlideSpeed: 3
-  _fallMultiplier: 4
-  _jumpHoldGravityMultiplier: 1.5
-  _wallJumpHorizontalForce: 6
-  _wallJumpVerticalForce: 7
+  _fallMultiplier: 2
+  _wallJumpHorizontalForce: 10
+  _wallJumpVerticalForce: 12
   _wallJumpControlLockTime: 0.2
   _crouchColliderOffset: -0.35
   _crouchColliderHeightMultiplier: 0.5
