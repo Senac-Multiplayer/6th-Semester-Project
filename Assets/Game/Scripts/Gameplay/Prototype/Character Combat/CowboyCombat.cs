@@ -93,6 +93,7 @@ namespace PiGame.Gameplay
             {
                 _ammo.Value = _maximumAmmo;
                 _couldActLastFrame = _playerState.CanAct;
+                _playerState.SetAbilityCooldownServer(0f);
             }
 
             foreach (SpriteRenderer indicator in _ammoIndicators)
@@ -309,6 +310,7 @@ namespace PiGame.Gameplay
             _rollDirectionX.Value = moveDirection.x < 0f ? -1f : 1f;
             _rollEndsAt = Time.time + _rollSeconds;
             _nextRollAt = Time.time + _rollCooldownSeconds;
+            _playerState.SetAbilityCooldownServer(_rollCooldownSeconds);
             _playerState.SetInvulnerableServer(true);
             _passThroughPlayers.Value = true;
             _isRolling.Value = true;
