@@ -39,6 +39,7 @@ namespace PiGame.Gameplay
         
         [Header("Fall")]
         [SerializeField] private float _fallMultiplier = 2.0f;
+        [SerializeField] private float _jumpHoldGravityMultiplier = 1.5f;
 
         [Header("Wall Jump")]
         [SerializeField] private float _wallJumpHorizontalForce = 10f;
@@ -176,15 +177,38 @@ namespace PiGame.Gameplay
             HandleMovement();
             HandleWallSlide();
             HandleJump(jumpPressed, jumpReleased);
+            
+        }
+        private void FixedUpdate()
+        {
+            if (!IsOwner || !IsSpawned)
+                return;
+
             ApplyExtraFallGravity();
         }
         private void ApplyExtraFallGravity()
         {
             // Gravidade basica da untiy: 1f
             // basico + (_fallMultiplier - 1f) = 2.0f
-            if (_rigidbody.linearVelocity.y < 0f && !_isWallSliding)
+            if (_isWallSliding) return;
+
+            float gravityMultiplier = 1f;
+
+            // Enquanto sobe, aplica uma gravidade adicional para controlar a altura.
+            if (_rigidbody.linearVelocity.y > 0f)
             {
-                _rigidbody.linearVelocity += Vector2.up * Physics2D.gravity.y * (_fallMultiplier - 1f) * Time.fixedDeltaTime;
+                gravityMultiplier = _jumpHoldGravityMultiplier;
+            }
+            // Durante a queda, aplica a gravidade mais forte.
+            else if (_rigidbody.linearVelocity.y < 0f)
+            {
+                gravityMultiplier = _fallMultiplier;
+            }
+
+            if (gravityMultiplier > 1f)
+            {
+                _rigidbody.linearVelocity += Vector2.up * Physics2D.gravity.y
+                    * (gravityMultiplier - 1f) * Time.fixedDeltaTime;
             }
         }
         public void SetGameplayInputBlocked(bool isBlocked)
@@ -264,8 +288,12 @@ namespace PiGame.Gameplay
                 {
                     _playerSound.PlayWallJump();
                 }
-                _rigidbody.linearVelocity = new Vector2(
-                    -_wallDirection * _wallJumpHorizontalForce, _wallJumpVerticalForce);
+                _rigidbody.linearVelocity = new Vector2(0f, 0f);
+
+                Vector2 wallJumpImpulse = new Vector2(-_wallDirection * _wallJumpHorizontalForce, _wallJumpVerticalForce);
+
+                _rigidbody.AddForce(wallJumpImpulse * _rigidbody.mass, ForceMode2D.Impulse);
+
                 _wallJumpControlTimer = _wallJumpControlLockTime;
                 _isWallSliding = false;
                 _coyoteCounter = 0f;
@@ -278,7 +306,8 @@ namespace PiGame.Gameplay
                     _playerSound.PlayJump();
                 }
                 _coyoteCounter = 0f;
-                _rigidbody.linearVelocity = new Vector2(_rigidbody.linearVelocity.x, _jumpForce);
+                _rigidbody.linearVelocity = new Vector2(_rigidbody.linearVelocity.x, 0);
+                ApplyJumpImpulse(_jumpForce);
                 _isGrounded = false;
             }
             else return;
@@ -309,14 +338,31 @@ namespace PiGame.Gameplay
             if (_isGrounded)
             {
                 _isWallSliding = false;
-                _stickTimer = _wallStickTime;
+                _stickTimer = 0f;
                 return;
             }
 
             UpdateWallCheckPosition();
-            Collider2D wall = Physics2D.OverlapCircle(_wallCheck.position, _wallCheckRadius, _wallLayer);
-            _isTouchingWall = wall != null && wall != _ignoredPlatform;
-            _wallDirection = wall == null || Mathf.Abs(_horizontalInput) < 0.01f ? 0 : (_horizontalInput > 0f ? 1 : -1);
+
+            Collider2D wall = Physics2D.OverlapCircle(
+                _wallCheck.position,
+                _wallCheckRadius,
+                _wallLayer);
+
+            bool touchingWall = wall != null && wall != _ignoredPlatform;
+
+            // Detecta o primeiro contato com a parede.
+            if (touchingWall && !_isTouchingWall)
+            {
+                _stickTimer = 0f;
+            }
+
+            _isTouchingWall = touchingWall;
+
+            _wallDirection = wall == null ||
+                            Mathf.Abs(_horizontalInput) < 0.01f
+                ? 0
+                : (_horizontalInput > 0f ? 1 : -1);
 
         }
 
@@ -334,9 +380,11 @@ namespace PiGame.Gameplay
                 _isWallSliding = false;
                 return;
             }
+
             bool pressingWall = _wallDirection * _horizontalInput > 0f;
 
-            if (_isDroppingFromWall || _isGrounded || !_isTouchingWall || !pressingWall)
+            if (_isDroppingFromWall || _isGrounded ||
+                !_isTouchingWall || !pressingWall)
             {
                 _isWallSliding = false;
                 _stickTimer = 0f;
@@ -344,9 +392,20 @@ namespace PiGame.Gameplay
             }
 
             _isWallSliding = true;
-            _stickTimer += Time.deltaTime;
-            _rigidbody.linearVelocity = new Vector2(_rigidbody.linearVelocity.x,
-                _stickTimer < _wallStickTime ? 0f : -_wallSlideSpeed);
+
+            // Durante o tempo de aderência, o personagem fica parado.
+            if (_stickTimer < _wallStickTime)
+            {
+                _rigidbody.linearVelocity = Vector2.zero;
+                _stickTimer += Time.deltaTime;
+            }
+            else
+            {
+                // Após o tempo de aderência, começa a deslizar.
+                _rigidbody.linearVelocity = new Vector2(
+                    _rigidbody.linearVelocity.x,
+                    -_wallSlideSpeed);
+            }
         }
 
         private void UpdateCrouch(bool requested, bool actionHeld)
@@ -489,6 +548,14 @@ namespace PiGame.Gameplay
         {
             _jumpBufferCounter = 0f;
             RestorePlatformCollision();
+        }
+
+        private void ApplyJumpImpulse(float verticalSpeed)
+        {
+            //Converte a velocidade desejada em impulso considerando a massa do Rigidbody
+            float impulse = _rigidbody.mass * verticalSpeed;
+
+            _rigidbody.AddForce(Vector2.up * impulse, ForceMode2D.Impulse);
         }
     }
 }

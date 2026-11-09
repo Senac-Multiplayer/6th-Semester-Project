@@ -32,6 +32,7 @@ namespace PiGame.UI
         [SerializeField] private Text[] _slotLabels;
         [SerializeField] private Text[] _playerNameTexts;
         [SerializeField] private Text[] _statusTexts;
+        [SerializeField] private LobbyConnectionView _connectionView;
         [SerializeField] private Image[] _characterNameplates = Array.Empty<Image>();
         [SerializeField] private Image[] _readyChecks = Array.Empty<Image>();
 
@@ -72,6 +73,12 @@ namespace PiGame.UI
 
         private void Awake()
         {
+            if (!_connectionView)
+            {
+                Debug.LogError("Configure os indicadores de conexão no seletor de personagens.", this);
+                enabled = false;
+                return;
+            }
             if (_readyBanners.Length != _slotRoots.Length || _readyBannerCloths.Length != _slotRoots.Length
                 || _characterNameplates.Length != _slotRoots.Length || _readyChecks.Length != _slotRoots.Length
                 || Array.Exists(_readyBanners, banner => !banner) || Array.Exists(_readyBannerCloths, cloth => !cloth)
@@ -188,6 +195,7 @@ namespace PiGame.UI
             bool requireUniqueCharacters)
         {
             if (!enabled) return;
+            _connectionView.SetPlayers(players);
             _localPlayerSlot = -1;
             _localPlayerIsReady = true;
 
