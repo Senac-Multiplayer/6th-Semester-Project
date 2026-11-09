@@ -170,7 +170,7 @@ namespace PiGame.Gameplay
             return false;
         }
 
-        [Rpc(SendTo.Server, RequireOwnership = true)]
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
         private void RestorePlayerCollisionsRpc()
         {
             if (!_isRolling.Value) _passThroughPlayers.Value = false;
