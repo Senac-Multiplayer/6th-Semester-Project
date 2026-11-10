@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -8,180 +9,83 @@ namespace PiGame.UI
 {
     public class ConnectionPanelUI : MonoBehaviour, ICancelHandler
     {
-        [SerializeField] private Button _hostButton;
-        [SerializeField] private Button _clientButton;
-        [SerializeField] private Button _secondaryButton;
-        [SerializeField] private Button _optionsButton;
-        [SerializeField] private Text _clientButtonLabel;
-        [SerializeField] private Text _secondaryButtonLabel;
-        [SerializeField] private Text _statusText;
+        [Header("Grupos")]
+        [SerializeField] private GameObject _mainActions;
+        [SerializeField] private GameObject _createRoomContent;
+        [SerializeField] private GameObject _joinCodeContent;
+        [SerializeField] private CanvasGroup _interactionGroup;
+
+        [Header("Seleção e campos")]
+        [SerializeField] private Button _createRoomButton;
+        [SerializeField] private InputField _roomNameInput;
         [SerializeField] private InputField _joinCodeInput;
+        [SerializeField] private TMP_Text _statusText;
 
         private Coroutine _selectionRoutine;
-        private GameObject _selectionTarget;
-        private Navigation _hostNavigation;
-        private Navigation _clientNavigation;
-        private Navigation _secondaryNavigation;
-        private bool _initialized;
         private bool _isConnecting;
-        private bool _isEnteringJoinCode;
+        private bool _initialized;
 
-        public event Action HostRequested;
-        public event Action<string> ClientRequested;
         public event Action CancelConnectionRequested;
         public event Action BackRequested;
-        public event Action OptionsRequested;
 
-        private void Awake()
-        {
-            Initialize();
-        }
+        private void Awake() => Initialize();
 
         private void OnEnable()
         {
-            if (!Initialize())
-            {
-                return;
-            }
-
-            _hostButton.onClick.RemoveListener(HandleHostClicked);
-            _clientButton.onClick.RemoveListener(HandleClientClicked);
-            _secondaryButton.onClick.RemoveListener(HandleSecondaryClicked);
-            _optionsButton.onClick.RemoveListener(HandleOptionsClicked);
-            _joinCodeInput.onValueChanged.RemoveListener(HandleJoinCodeChanged);
-            _hostButton.onClick.AddListener(HandleHostClicked);
-            _clientButton.onClick.AddListener(HandleClientClicked);
-            _secondaryButton.onClick.AddListener(HandleSecondaryClicked);
-            _optionsButton.onClick.AddListener(HandleOptionsClicked);
-            _joinCodeInput.onValueChanged.AddListener(HandleJoinCodeChanged);
-            FocusDefaultButton();
+            if (Initialize()) ShowIdle();
         }
 
-        private void OnDisable()
+        private void OnDisable() => StopSelectionRoutine();
+
+        public bool Initialize()
         {
-            if (!_initialized)
+            if (_initialized) return true;
+
+            if (!_mainActions || !_createRoomContent || !_joinCodeContent
+                || !_interactionGroup || !_createRoomButton || !_roomNameInput
+                || !_joinCodeInput || !_statusText)
             {
-                return;
+                Debug.LogError("Configure grupos, CanvasGroup, seleção, campos e status no ConnectionPanelUI.", this);
+                enabled = false;
+                return false;
             }
 
-            _hostButton.onClick.RemoveListener(HandleHostClicked);
-            _clientButton.onClick.RemoveListener(HandleClientClicked);
-            _secondaryButton.onClick.RemoveListener(HandleSecondaryClicked);
-            _optionsButton.onClick.RemoveListener(HandleOptionsClicked);
-            _joinCodeInput.onValueChanged.RemoveListener(HandleJoinCodeChanged);
-            StopSelectionRoutine();
-            RestoreNavigation();
+            _initialized = true;
+            return true;
         }
 
         public void ShowIdle()
         {
             _isConnecting = false;
-            _isEnteringJoinCode = false;
-            _hostButton.gameObject.SetActive(true);
-            _clientButton.gameObject.SetActive(true);
-            _optionsButton.gameObject.SetActive(true);
-            _joinCodeInput.gameObject.SetActive(false);
-            _joinCodeInput.interactable = true;
+            SetInteractionEnabled(true);
+            SetStatus(string.Empty);
             _joinCodeInput.SetTextWithoutNotify(string.Empty);
-            SetButtonsInteractable(true);
-            RestoreNavigation();
-            SetClientButtonLabel("CLIENT");
-            _secondaryButtonLabel.text = "VOLTAR";
-            SetStatus("ESCOLHA HOST OU CLIENTE");
-            FocusDefaultButton();
+            ShowGroup(_mainActions, _createRoomButton.gameObject);
         }
 
-        public void ShowConnecting(string message)
+        public void ShowCreateRoom()
         {
-            _isConnecting = true;
-            SetButtonsInteractable(false);
-            _joinCodeInput.interactable = false;
-            DisableNavigation();
-            _secondaryButtonLabel.text = "CANCELAR";
-            SetStatus(message);
-            SelectButtonNextFrame(_secondaryButton.gameObject);
+            SetStatus(string.Empty);
+            ShowGroup(_createRoomContent, _roomNameInput.gameObject);
         }
 
-        public void ShowError(string message)
+        public void ShowJoinCode()
         {
-            _isConnecting = false;
-            if (_isEnteringJoinCode)
-            {
-                _hostButton.gameObject.SetActive(false);
-                _clientButton.gameObject.SetActive(true);
-                _joinCodeInput.gameObject.SetActive(true);
-                _joinCodeInput.interactable = true;
-                _clientButton.interactable = true;
-                _secondaryButton.interactable = true;
-                SetClientButtonLabel("CONECTAR");
-                _secondaryButtonLabel.text = "CANCELAR";
-                ConfigureJoinCodeNavigation();
-                SetStatus(message);
-                FocusJoinCodeInput();
-                return;
-            }
-
-            SetButtonsInteractable(true);
-            RestoreNavigation();
-            _secondaryButtonLabel.text = "VOLTAR";
-            SetStatus(message);
-            FocusDefaultButton();
+            SetStatus(string.Empty);
+            ShowGroup(_joinCodeContent, _joinCodeInput.gameObject);
         }
 
-        public void FocusDefaultButton()
+        private void ShowGroup(GameObject group, GameObject firstSelection)
         {
-            SelectButtonNextFrame(_hostButton.gameObject);
+            StopSelectionRoutine();
+            EventSystem.current.SetSelectedGameObject(null);
+            _mainActions.SetActive(group == _mainActions);
+            _createRoomContent.SetActive(group == _createRoomContent);
+            _joinCodeContent.SetActive(group == _joinCodeContent);
+            SelectNextFrame(firstSelection);
         }
 
-        public void SetInteractionEnabled(bool enabled)
-        {
-            if (!enabled)
-            {
-                _joinCodeInput.interactable = false;
-                _hostButton.interactable = false;
-                _clientButton.interactable = false;
-                _secondaryButton.interactable = false;
-                _optionsButton.interactable = false;
-                return;
-            }
-
-            _hostButton.interactable = !_isConnecting;
-            _clientButton.interactable = !_isConnecting;
-            _joinCodeInput.interactable = _isEnteringJoinCode && !_isConnecting;
-            _secondaryButton.interactable = true;
-            _optionsButton.interactable = true;
-        }
-
-        public void OnCancel(BaseEventData eventData)
-        {
-            HandleSecondaryClicked();
-        }
-
-        private void HandleHostClicked()
-        {
-            HostRequested?.Invoke();
-        }
-
-        private void HandleClientClicked()
-        {
-            if (!_isEnteringJoinCode)
-            {
-                ShowJoinCodeEntry();
-                return;
-            }
-
-            if (!TryNormalizeJoinCode(_joinCodeInput.text, out string normalizedJoinCode))
-            {
-                SetStatus("CÓDIGO INVÁLIDO");
-                FocusJoinCodeInput();
-                return;
-            }
-
-            _joinCodeInput.SetTextWithoutNotify(normalizedJoinCode);
-            ClientRequested?.Invoke(normalizedJoinCode);
-        }
-
-        private void HandleSecondaryClicked()
+        public void HandleBack()
         {
             if (_isConnecting)
             {
@@ -189,235 +93,70 @@ namespace PiGame.UI
                 return;
             }
 
-            if (_isEnteringJoinCode)
-            {
-                ShowIdle();
-                return;
-            }
-
-            BackRequested?.Invoke();
+            if (_mainActions.activeSelf) BackRequested?.Invoke();
+            else ShowIdle();
         }
 
-        private void HandleOptionsClicked()
+        public void OnCancel(BaseEventData eventData) => HandleBack();
+
+        public void ShowConnecting(string message)
         {
-            if (!_isConnecting && !_isEnteringJoinCode)
-            {
-                OptionsRequested?.Invoke();
-            }
+            _isConnecting = true;
+            StopSelectionRoutine();
+            SetInteractionEnabled(false);
+            SetStatus(message);
+            EventSystem.current.SetSelectedGameObject(null);
         }
 
-        private void ShowJoinCodeEntry()
+        public void ShowError(string message)
         {
-            _isEnteringJoinCode = true;
-            _hostButton.gameObject.SetActive(false);
-            _optionsButton.gameObject.SetActive(false);
-            _clientButton.gameObject.SetActive(true);
-            _joinCodeInput.gameObject.SetActive(true);
-            _joinCodeInput.interactable = true;
-            SetClientButtonLabel("CONECTAR");
-            _secondaryButtonLabel.text = "CANCELAR";
-            SetStatus("DIGITE O CÓDIGO DA SALA");
-            ConfigureJoinCodeNavigation();
-            FocusJoinCodeInput();
+            _isConnecting = false;
+            SetInteractionEnabled(true);
+            SetStatus(message);
+            FocusDefaultButton();
         }
 
-        private void SetButtonsInteractable(bool interactable)
+        public void SetInteractionEnabled(bool value)
         {
-            _hostButton.interactable = interactable;
-            _clientButton.interactable = interactable;
-            _optionsButton.interactable = interactable;
+            _interactionGroup.interactable = value && !_isConnecting;
         }
 
-        private void DisableNavigation()
+        public void FocusDefaultButton()
         {
-            Navigation disabledNavigation = Navigation.defaultNavigation;
-            disabledNavigation.mode = Navigation.Mode.None;
-            _hostButton.navigation = disabledNavigation;
-            _clientButton.navigation = disabledNavigation;
-            _secondaryButton.navigation = disabledNavigation;
-            _optionsButton.navigation = disabledNavigation;
-        }
-
-        private void RestoreNavigation()
-        {
-            _hostButton.navigation = _hostNavigation;
-            _clientButton.navigation = _clientNavigation;
-            _secondaryButton.navigation = _secondaryNavigation;
-            ConfigureIdleNavigation();
-        }
-
-        private void ConfigureJoinCodeNavigation()
-        {
-            Navigation inputNavigation = Navigation.defaultNavigation;
-            inputNavigation.mode = Navigation.Mode.Explicit;
-            inputNavigation.selectOnUp = _secondaryButton;
-            inputNavigation.selectOnDown = _clientButton;
-            _joinCodeInput.navigation = inputNavigation;
-
-            Navigation clientNavigation = Navigation.defaultNavigation;
-            clientNavigation.mode = Navigation.Mode.Explicit;
-            clientNavigation.selectOnUp = _joinCodeInput;
-            clientNavigation.selectOnDown = _secondaryButton;
-            _clientButton.navigation = clientNavigation;
-
-            Navigation secondaryNavigation = Navigation.defaultNavigation;
-            secondaryNavigation.mode = Navigation.Mode.Explicit;
-            secondaryNavigation.selectOnUp = _clientButton;
-            secondaryNavigation.selectOnDown = _joinCodeInput;
-            _secondaryButton.navigation = secondaryNavigation;
+            GameObject target = _createRoomContent.activeSelf ? _roomNameInput.gameObject
+                : _joinCodeContent.activeSelf ? _joinCodeInput.gameObject
+                : _createRoomButton.gameObject;
+            SelectNextFrame(target);
         }
 
         private void SetStatus(string message)
         {
             _statusText.text = message;
+            _statusText.gameObject.SetActive(!string.IsNullOrEmpty(message));
         }
 
-        private void SelectButtonNextFrame(GameObject target)
+        private void SelectNextFrame(GameObject target)
         {
             StopSelectionRoutine();
-            _selectionTarget = target;
-            _selectionRoutine = StartCoroutine(SelectButtonRoutine());
+            _selectionRoutine = StartCoroutine(Select(target));
         }
 
-        private IEnumerator SelectButtonRoutine()
+        private IEnumerator Select(GameObject target)
         {
             yield return null;
-
-            if (_selectionTarget != null && _selectionTarget.activeInHierarchy)
+            if (target.activeInHierarchy && _interactionGroup.interactable)
             {
-                EventSystem.current?.SetSelectedGameObject(_selectionTarget);
-                if (_selectionTarget == _joinCodeInput.gameObject)
-                {
-                    _joinCodeInput.ActivateInputField();
-                }
+                EventSystem.current.SetSelectedGameObject(target);
+                if (target.TryGetComponent(out InputField input)) input.ActivateInputField();
             }
-
-            _selectionTarget = null;
             _selectionRoutine = null;
         }
 
         private void StopSelectionRoutine()
         {
-            if (_selectionRoutine == null)
-            {
-                return;
-            }
-
+            if (_selectionRoutine == null) return;
             StopCoroutine(_selectionRoutine);
             _selectionRoutine = null;
-            _selectionTarget = null;
         }
-
-        private void FocusJoinCodeInput()
-        {
-            SelectButtonNextFrame(_joinCodeInput.gameObject);
-        }
-
-        private void SetClientButtonLabel(string label)
-        {
-            _clientButtonLabel.text = label;
-        }
-
-        private void HandleJoinCodeChanged(string value)
-        {
-            char[] filteredCharacters = new char[value.Length];
-            int filteredLength = 0;
-
-            foreach (char character in value)
-            {
-                if (char.IsLetterOrDigit(character))
-                {
-                    filteredCharacters[filteredLength++] = char.ToUpperInvariant(character);
-                }
-            }
-
-            string filteredValue = new string(filteredCharacters, 0, filteredLength);
-            if (filteredValue != value)
-            {
-                _joinCodeInput.SetTextWithoutNotify(filteredValue);
-            }
-        }
-
-        private static bool TryNormalizeJoinCode(
-            string joinCode,
-            out string normalizedJoinCode)
-        {
-            normalizedJoinCode = string.Empty;
-            if (string.IsNullOrWhiteSpace(joinCode))
-            {
-                return false;
-            }
-
-            string trimmedCode = joinCode.Trim();
-            foreach (char character in trimmedCode)
-            {
-                if (!char.IsLetterOrDigit(character))
-                {
-                    return false;
-                }
-            }
-
-            normalizedJoinCode = trimmedCode.ToUpperInvariant();
-            return true;
-        }
-
-        public bool Initialize()
-        {
-            if (_initialized)
-            {
-                return true;
-            }
-
-            if (_hostButton == null
-                || _clientButton == null
-                || _secondaryButton == null
-                || _optionsButton == null
-                || _clientButtonLabel == null
-                || _secondaryButtonLabel == null
-                || _statusText == null
-                || _joinCodeInput == null)
-            {
-                Debug.LogError(
-                    "ConnectionPanelUI possui referências obrigatórias ausentes no Inspector.",
-                    this);
-                enabled = false;
-                return false;
-            }
-
-            _hostNavigation = _hostButton.navigation;
-            _clientNavigation = _clientButton.navigation;
-            _secondaryNavigation = _secondaryButton.navigation;
-            _initialized = true;
-
-            return true;
-        }
-
-        private void ConfigureIdleNavigation()
-        {
-            Navigation hostNavigation = Navigation.defaultNavigation;
-            hostNavigation.mode = Navigation.Mode.Explicit;
-            hostNavigation.selectOnDown = _clientButton;
-            hostNavigation.selectOnUp = _secondaryButton;
-            _hostButton.navigation = hostNavigation;
-
-            Navigation clientNavigation = Navigation.defaultNavigation;
-            clientNavigation.mode = Navigation.Mode.Explicit;
-            clientNavigation.selectOnUp = _hostButton;
-            clientNavigation.selectOnDown = _optionsButton;
-            _clientButton.navigation = clientNavigation;
-
-            Navigation optionsNavigation = Navigation.defaultNavigation;
-            optionsNavigation.mode = Navigation.Mode.Explicit;
-            optionsNavigation.selectOnUp = _clientButton;
-            optionsNavigation.selectOnDown = _secondaryButton;
-            _optionsButton.navigation = optionsNavigation;
-
-            Navigation secondaryNavigation = Navigation.defaultNavigation;
-            secondaryNavigation.mode = Navigation.Mode.Explicit;
-            secondaryNavigation.selectOnUp = _optionsButton;
-            secondaryNavigation.selectOnDown = _hostButton;
-            _secondaryButton.navigation = secondaryNavigation;
-        }
-
     }
 }
