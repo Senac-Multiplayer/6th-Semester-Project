@@ -594,6 +594,7 @@ namespace PiGame.Lobby
 
         private void HandleStageChanged(LobbyStage previousStage, LobbyStage currentStage)
         {
+            if (IsServer) NetcodeLobbyConnectionService.Instance?.SetRoomJoinable(currentStage == LobbyStage.CharacterSelection);
             StageChanged?.Invoke();
         }
 

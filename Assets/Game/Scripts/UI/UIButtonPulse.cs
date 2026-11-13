@@ -55,6 +55,8 @@ namespace PiGame.UI
             Transform nextTransform = selected != null
                 && selected.IsActive()
                 && selected.IsInteractable()
+                && !(selected is InputField)
+                && !(selected is TMPro.TMP_InputField)
                 && selected.GetComponentInParent<MapVotingPanelUI>() == null
                     ? selected.transform
                     : null;

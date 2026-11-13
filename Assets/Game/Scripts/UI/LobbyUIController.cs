@@ -1,6 +1,9 @@
+using System;
+using System.Threading.Tasks;
 using PiGame.Lobby;
 using PiGame.Networking;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.Serialization;
@@ -29,6 +32,7 @@ namespace PiGame.UI
         [SerializeField] private Text _sessionCodeText;
         [SerializeField] private PauseMenuUI _lobbyPause;
         [SerializeField] private PlayerNamePanelUI _playerNamePanel;
+        [SerializeField] private RoomBrowserPanelUI _roomBrowser;
 
         [Header("Services")]
         [SerializeField] private NetcodeLobbyConnectionService _connectionService;
@@ -37,6 +41,8 @@ namespace PiGame.UI
         private ConfirmationAction _pendingConfirmation;
         private bool _returnToOptionsAfterName;
         private int _ignoreMenuInputFrame = -1;
+        private int _roomQueryVersion;
+        private float _nextRoomRefresh;
 
         private void Awake()
         {
@@ -46,14 +52,14 @@ namespace PiGame.UI
             }
 
             _connectionServiceContract = _connectionService;
-            if (_mainMenu == null || _connectionPanel == null || _playerNamePanel == null)
+            if (_mainMenu == null || _connectionPanel == null || _playerNamePanel == null || _roomBrowser == null)
             {
-                Debug.LogError("LobbyUIController precisa dos painéis de menu, conexão e nome no Inspector.", this);
+                Debug.LogError("LobbyUIController precisa dos painéis de menu, conexão, nome e salas no Inspector.", this);
                 enabled = false;
                 return;
             }
 
-            if (!_connectionPanel.Initialize())
+            if (!_connectionPanel.Initialize() || !_roomBrowser.Initialize())
             {
                 enabled = false;
                 return;
@@ -64,14 +70,16 @@ namespace PiGame.UI
 
         private void OnEnable()
         {
-            _connectionPanel.HostRequested += HandleHostRequested;
-            _connectionPanel.ClientRequested += HandleClientRequested;
             _connectionPanel.CancelConnectionRequested += HandleCancelConnectionRequested;
+            _connectionPanel.CreateRoomRequested += HandleCreateRoom;
+            _connectionPanel.JoinCodeRequested += HandleJoinCode;
+            _connectionPanel.QuickJoinRequested += HandleQuickJoin;
+            _roomBrowser.RefreshRequested += RefreshRooms;
+            _roomBrowser.JoinRequested += HandleJoinRoom;
             _mainMenu.PlayRequested += HandlePlayRequested;
             _mainMenu.OptionsRequested += HandleOptionsRequested;
             _mainMenu.QuitRequested += HandleQuitRequested;
             _connectionPanel.BackRequested += ShowMainMenu;
-            _connectionPanel.OptionsRequested += HandleOptionsRequested;
             _mapVotingController.DisconnectRequested += HandleDisconnectRequested;
             _mapVotingController.VisibilityChanged += HandleMapVotingVisibilityChanged;
             _confirmationPanel.Confirmed += HandleConfirmationConfirmed;
@@ -85,6 +93,7 @@ namespace PiGame.UI
             _lobbyPause.ControlsClosed += HandleControlsClosed;
             _lobbyPause.PlayerNameRequested += HandlePlayerNameRequested;
             _playerNamePanel.Closed += HandlePlayerNameClosed;
+            _roomBrowser.BackRequested += HandleRoomBrowserBack;
             _confirmationPanel.Hide();
 
             if (_connectionServiceContract == null)
@@ -121,20 +130,25 @@ namespace PiGame.UI
 
         private void OnDisable()
         {
-            _connectionPanel.HostRequested -= HandleHostRequested;
-            _connectionPanel.ClientRequested -= HandleClientRequested;
+            _roomQueryVersion++;
             _connectionPanel.CancelConnectionRequested -= HandleCancelConnectionRequested;
+            _connectionPanel.CreateRoomRequested -= HandleCreateRoom;
+            _connectionPanel.JoinCodeRequested -= HandleJoinCode;
+            _connectionPanel.QuickJoinRequested -= HandleQuickJoin;
+            _roomBrowser.RefreshRequested -= RefreshRooms;
+            _roomBrowser.JoinRequested -= HandleJoinRoom;
             _mainMenu.PlayRequested -= HandlePlayRequested;
             _mainMenu.OptionsRequested -= HandleOptionsRequested;
             _mainMenu.QuitRequested -= HandleQuitRequested;
             _connectionPanel.BackRequested -= ShowMainMenu;
-            _connectionPanel.OptionsRequested -= HandleOptionsRequested;
             _mapVotingController.DisconnectRequested -= HandleDisconnectRequested;
             _mapVotingController.VisibilityChanged -= HandleMapVotingVisibilityChanged;
             _confirmationPanel.Confirmed -= HandleConfirmationConfirmed;
             _confirmationPanel.Canceled -= HandleConfirmationCanceled;
             _matchSettingsPanel.Opened -= HandleMatchSettingsOpened;
             _matchSettingsPanel.Closed -= HandleMatchSettingsClosed;
+            _roomBrowser.BackRequested -= HandleRoomBrowserBack;
+
             if (_lobbyPause != null)
             {
                 _lobbyPause.ResumeRequested -= CloseLobbyPause;
@@ -235,6 +249,16 @@ namespace PiGame.UI
             }
 
             if (_pendingConfirmation != ConfirmationAction.None) return;
+
+            if (_roomBrowser.gameObject.activeInHierarchy)
+            {
+                if(keyboardBack || gamepadBack || gamepadMenu)
+                {
+                    _roomBrowser.HandleBack();
+                }
+                return;
+            }
+
             if ((_connectionServiceContract == null || !_connectionServiceContract.IsConnected)
                 && (keyboardBack || gamepadMenu || gamepadBack))
             {
@@ -244,6 +268,11 @@ namespace PiGame.UI
                     _ignoreMenuInputFrame = Time.frameCount;
                 }
                 else if (_mainMenu.IsHomeVisible) HandleQuitRequested();
+                else if (_connectionPanel.gameObject.activeInHierarchy)
+                {
+                    _connectionPanel.HandleBack();
+                    _ignoreMenuInputFrame = Time.frameCount;
+                }
                 return;
             }
 
@@ -288,6 +317,8 @@ namespace PiGame.UI
 
         private void ShowMainMenu()
         {
+            _roomQueryVersion++;
+            _roomBrowser.Hide();
             LoadingScreenUI.Instance.Hide();
             _playerNamePanel.Hide();
             _lobbyPause.SetVisible(false);
@@ -297,6 +328,68 @@ namespace PiGame.UI
             _connectionPanel.gameObject.SetActive(false);
             _lobbyPanel.SetActive(false);
             _mainMenu.ShowHome();
+            _ignoreMenuInputFrame = Time.frameCount;
+        }
+
+        public void ShowRoomBrowser()
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+
+            _connectionPanel.gameObject.SetActive(false);
+            _roomBrowser.Show();
+            RefreshRooms();
+        }
+
+        private async void RefreshRooms()
+        {
+            int version = ++_roomQueryVersion;
+            float delay = Mathf.Max(0f, _nextRoomRefresh - Time.unscaledTime);
+            _nextRoomRefresh = Time.unscaledTime + delay + 1.2f;
+            _roomBrowser.SetStatus("BUSCANDO SALAS...", true);
+            try
+            {
+                if (delay > 0f) await Task.Delay(Mathf.CeilToInt(delay * 1000f));
+                if (version != _roomQueryVersion || !_roomBrowser.gameObject.activeInHierarchy) return;
+                var rooms = await _connectionServiceContract.QueryRoomsAsync();
+                if (version == _roomQueryVersion && _roomBrowser.gameObject.activeInHierarchy)
+                    _roomBrowser.Render(rooms);
+            }
+            catch (Exception exception)
+            {
+                if (version != _roomQueryVersion || !_roomBrowser.gameObject.activeInHierarchy) return;
+                Debug.LogWarning($"Não foi possível buscar salas: {exception.Message}", this);
+                _roomBrowser.SetStatus("NÃO FOI POSSÍVEL BUSCAR SALAS. TENTE ATUALIZAR NOVAMENTE.");
+            }
+        }
+
+        private void HandleCreateRoom(string name, bool isPrivate) => ConnectRoom(
+            () => _connectionServiceContract.StartHostAsync(name, isPrivate), "CRIANDO SALA...");
+        private void HandleJoinCode(string code) => ConnectRoom(
+            () => _connectionServiceContract.StartClientAsync(code), "ENTRANDO NA SALA...");
+        private void HandleQuickJoin() => ConnectRoom(
+            _connectionServiceContract.QuickJoinAsync, "BUSCANDO PARTIDA...");
+        private void HandleJoinRoom(string id) => ConnectRoom(
+            () => _connectionServiceContract.JoinRoomAsync(id), "ENTRANDO NA SALA...");
+
+        private async void ConnectRoom(Func<Task> connect, string message)
+        {
+            ShowConnectionPanel();
+            _connectionPanel.ShowConnecting(message);
+            await connect();
+        }
+
+        public void CopySessionCode()
+        {
+            GUIUtility.systemCopyBuffer = _connectionServiceContract.JoinCode;
+        }
+
+        private void HandleRoomBrowserBack()
+        {
+            _roomQueryVersion++;
+            _roomBrowser.Hide();
+            ShowConnectionPanel();
+            _connectionPanel.ShowIdle();
+
             _ignoreMenuInputFrame = Time.frameCount;
         }
 
@@ -313,32 +406,6 @@ namespace PiGame.UI
                 _connectionPanel.FocusDefaultButton();
             else
                 _mainMenu.FocusDefaultButton();
-        }
-
-        private async void HandleHostRequested()
-        {
-            if (_connectionServiceContract == null)
-            {
-                ShowConnectionError("SERVIÇO DE REDE NÃO CONFIGURADO");
-                return;
-            }
-
-            _connectionPanel.ShowConnecting("CRIANDO SALA...");
-            LoadingScreenUI.Instance.Show();
-            await _connectionServiceContract.StartHostAsync();
-        }
-
-        private async void HandleClientRequested(string joinCode)
-        {
-            if (_connectionServiceContract == null)
-            {
-                ShowConnectionError("SERVIÇO DE REDE NÃO CONFIGURADO");
-                return;
-            }
-
-            _connectionPanel.ShowConnecting("ENTRANDO NA SALA...");
-            LoadingScreenUI.Instance.Show();
-            await _connectionServiceContract.StartClientAsync(joinCode);
         }
 
         private async void HandleCancelConnectionRequested()
@@ -471,7 +538,8 @@ namespace PiGame.UI
                 LobbyConnectionFailure.ServicesUnavailable => "SERVIÇOS UNITY INDISPONÍVEIS",
                 LobbyConnectionFailure.AuthenticationFailed => "FALHA NA AUTENTICAÇÃO",
                 LobbyConnectionFailure.InvalidJoinCode => "CÓDIGO INVÁLIDO",
-                LobbyConnectionFailure.SessionNotFound => "SALA NÃO ENCONTRADA",
+                LobbyConnectionFailure.SessionNotFound => "SALA INDISPONÍVEL: PODE TER FECHADO OU FICADO CHEIA",
+                LobbyConnectionFailure.NoAvailableRooms => "NENHUMA SALA DISPONÍVEL.\nCRIE UMA SALA PARA JOGAR.",
                 LobbyConnectionFailure.SessionConflict => "SESSÃO ANTERIOR AINDA ATIVA",
                 _ => "NÃO FOI POSSÍVEL INICIAR A CONEXÃO"
             };
@@ -481,6 +549,8 @@ namespace PiGame.UI
 
         private void ShowConnectionPanel()
         {
+            _roomQueryVersion++;
+            _roomBrowser.Hide();
             _playerNamePanel.Hide();
             _lobbyPause.SetVisible(false);
             _pendingConfirmation = ConfirmationAction.None;
@@ -494,6 +564,7 @@ namespace PiGame.UI
 
         private void ShowLobbyPanel()
         {
+            _roomBrowser.Hide();
             _pendingConfirmation = ConfirmationAction.None;
             _confirmationPanel.Hide();
             _mainMenu.Hide();
@@ -513,14 +584,13 @@ namespace PiGame.UI
                 return;
             }
 
-            bool showCode = _connectionServiceContract.IsHost
-                && !string.IsNullOrWhiteSpace(_connectionServiceContract.JoinCode);
+            bool showCode = !string.IsNullOrWhiteSpace(_connectionServiceContract.JoinCode);
             _sessionCodeText.gameObject.SetActive(showCode);
             if (showCode)
             {
                 _sessionCodeText.text =
-                    $"CÓDIGO DA SALA: <size=26>"
-                    + $"{_connectionServiceContract.JoinCode}</size>";
+                    $"CÓDIGO: <size=26>"
+                    + $"{_connectionServiceContract.JoinCode}</size>  [COPIAR]";
             }
         }
 
