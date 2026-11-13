@@ -15,5 +15,5 @@ MonoBehaviour:
   _id: 3
   _displayName: REBELDE
   _color: {r: 0.75, g: 0.12, b: 0.14, a: 1}
-  _portrait: {fileID: 21300000, guid: c8d1859a7291421185a28c981934d204, type: 3}
+  _portrait: {fileID: -5567240677184677724, guid: 7061e8dff3a0ccd43b6b047b4e2e2599, type: 3}
   _playerPrefab: {fileID: 5788769337959252140, guid: b696573b3028f9c44ace562d610dffdc, type: 3}
