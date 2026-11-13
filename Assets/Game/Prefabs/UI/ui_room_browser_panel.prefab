@@ -1287,7 +1287,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 8960000000001303}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 8960000000000005}
+        m_TargetAssemblyTypeName: PiGame.UI.RoomBrowserPanelUI, Assembly-CSharp
+        m_MethodName: RefreshRooms
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument:
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &8960000000001305
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1733,3 +1745,8 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   _refreshButton: {fileID: 8960000000001304}
+  _backButton: {fileID: 8960000000001504}
+  _statusText: {fileID: 8960000000000503}
+  _content: {fileID: 8960000000001101}
+  _scroll: {fileID: 8960000000000904}
+  _slotPrefab: {fileID: 8961000000000005, guid: fbaed5b8ab994a4da7254b92e6f8eb5d, type: 3}

@@ -58,6 +58,7 @@ MonoBehaviour:
   _roomNameInput: {fileID: 8972000000000404}
   _joinCodeInput: {fileID: 1301371091}
   _statusText: {fileID: 383927642}
+  _privateRoomToggle: {fileID: 8972000000000804}
 --- !u!114 &3756357016431529449
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1294,7 +1295,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 8971000000000503}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1690314032}
+        m_TargetAssemblyTypeName: PiGame.UI.ConnectionPanelUI, Assembly-CSharp
+        m_MethodName: QuickJoin
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument:
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &8971000000000560
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4115,7 +4128,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1661872922}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1690314032}
+        m_TargetAssemblyTypeName: PiGame.UI.ConnectionPanelUI, Assembly-CSharp
+        m_MethodName: CreateRoom
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument:
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1661872979
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5791,7 +5816,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1175355753}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1690314032}
+        m_TargetAssemblyTypeName: PiGame.UI.ConnectionPanelUI, Assembly-CSharp
+        m_MethodName: JoinByCode
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument:
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1175355810
 MonoBehaviour:
   m_ObjectHideFlags: 0
