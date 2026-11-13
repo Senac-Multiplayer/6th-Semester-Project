@@ -570,6 +570,7 @@ namespace PiGame.UI
             _mainMenu.Hide();
             _connectionPanel.gameObject.SetActive(false);
             _lobbyPanel.SetActive(true);
+            _matchSettingsPanel.gameObject.SetActive(true);
             _matchSettingsPanel.ResetView();
             _matchSettingsPanel.SetMenuVisible(
                 _connectionServiceContract.IsHost && !_mapVotingController.IsVisible);
