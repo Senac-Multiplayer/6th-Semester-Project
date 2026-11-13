@@ -27,6 +27,8 @@ namespace PiGame.UI
         [Header("Player slots")]
         [SerializeField] private RectTransform[] _slotRoots;
         [SerializeField] private Image[] _slotBackgrounds;
+        [SerializeField] private Image[] _clanBackgrounds = Array.Empty<Image>();
+        [SerializeField] private Image[] _clanDetails = Array.Empty<Image>();
         [SerializeField] private Image[] _characterPortraits;
         [SerializeField] private Image[] _deviceIcons;
         [SerializeField] private Text[] _slotLabels;
@@ -85,6 +87,14 @@ namespace PiGame.UI
                 || Array.Exists(_characterNameplates, plate => !plate) || Array.Exists(_readyChecks, check => !check))
             {
                 Debug.LogError("Configure bandeira, placa do personagem e ícone de pronto para cada slot no CharacterSelectionPanelUI.", this);
+                enabled = false;
+                return;
+            }
+            if (_clanBackgrounds.Length != _slotRoots.Length || _clanDetails.Length != _slotRoots.Length
+                || Array.Exists(_clanBackgrounds, image => !image) || Array.Exists(_clanDetails, image => !image)
+                || Array.Exists(_characters, character => !character || !character.LobbyBackground || !character.LobbyBackgroundDetails))
+            {
+                Debug.LogError("Configure fundos e detalhes dos clãs no prefab e nos assets de personagem.", this);
                 enabled = false;
                 return;
             }
@@ -368,7 +378,14 @@ namespace PiGame.UI
             _readyBanners[slot].SetBool(ReadyParameter, player.IsReady);
             _readyChecks[slot].gameObject.SetActive(player.IsReady);
 
-            _slotBackgrounds[slot].color = characterColor;
+            _slotBackgrounds[slot].color = Color.white;
+            _clanBackgrounds[slot].gameObject.SetActive(character != null);
+            _clanDetails[slot].gameObject.SetActive(character != null);
+            if (character != null)
+            {
+                _clanBackgrounds[slot].sprite = character.LobbyBackground;
+                _clanDetails[slot].sprite = character.LobbyBackgroundDetails;
+            }
             _characterNameplates[slot].gameObject.SetActive(true);
             _characterNameplates[slot].color = Color.Lerp(characterColor, Color.white, 0.12f);
 
@@ -417,6 +434,8 @@ namespace PiGame.UI
             _characterNameplates[slot].gameObject.SetActive(false);
             _playerNameTexts[slot].text = string.Empty;
             _slotRoots[slot].localScale = Vector3.one;
+            _clanBackgrounds[slot].gameObject.SetActive(false);
+            _clanDetails[slot].gameObject.SetActive(false);
             _slotBackgrounds[slot].color = new Color(0.12f, 0.14f, 0.18f, 1f);
             _characterPortraits[slot].gameObject.SetActive(false);
             _deviceIcons[slot].gameObject.SetActive(false);

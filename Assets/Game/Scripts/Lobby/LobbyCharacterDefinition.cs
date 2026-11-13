@@ -12,6 +12,12 @@ namespace PiGame.Lobby
         [SerializeField] private Sprite _portrait;
         [SerializeField] private NetworkObject _playerPrefab;
 
+        [Header("Fundo do seletor do lobby")]
+        [SerializeField] private Sprite _lobbyBackground;
+        [SerializeField] private Sprite _lobbyBackgroundDetails;
+
+        public Sprite LobbyBackground => _lobbyBackground;
+        public Sprite LobbyBackgroundDetails => _lobbyBackgroundDetails;
         public LobbyCharacterId Id => _id;
         public string DisplayName => _displayName;
         public Color Color => _color;

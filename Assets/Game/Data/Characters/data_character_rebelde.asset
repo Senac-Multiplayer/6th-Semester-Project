@@ -17,3 +17,5 @@ MonoBehaviour:
   _color: {r: 0.75, g: 0.12, b: 0.14, a: 1}
   _portrait: {fileID: 21300000, guid: c8d1859a7291421185a28c981934d204, type: 3}
   _playerPrefab: {fileID: 5788769337959252140, guid: b696573b3028f9c44ace562d610dffdc, type: 3}
+  _lobbyBackground: {fileID: 21300000, guid: d255f5503e9141f7ad03857aa077abb2, type: 3}
+  _lobbyBackgroundDetails: {fileID: 21300000, guid: 6f127bca04e94a268a85fa24497198af, type: 3}
