@@ -12,6 +12,8 @@ namespace PiGame.Gameplay
     public class NetworkPlayerState : NetworkBehaviour
     {
         [SerializeField] private int _maximumHealth = 3;
+        [SerializeField] private GameObject _deathPropPrefab;
+        private GameObject _activeDeathProp;
 
         private readonly NetworkVariable<int> _playerSlot = new NetworkVariable<int>(-1);
         private readonly NetworkVariable<LobbyCharacterId> _characterId =
@@ -101,6 +103,8 @@ namespace PiGame.Gameplay
             _matchActive.OnValueChanged -= HandleBoolChanged;
             _indicatorsVisible.OnValueChanged -= HandleBoolChanged;
             _playerName.OnValueChanged -= HandleNameChanged;
+
+            CleanupDeathProp();
         }
 
         public void InitializeServer(LobbyPlayerData playerData, Color indicatorColor)
@@ -218,6 +222,7 @@ namespace PiGame.Gameplay
 
             _isAlive.Value = false;
             _matchActive.Value = false;
+            SpawnDeathProp();
             if (TryGetComponent<ICharacterCombat>(out var characterCombat))
             {
                 characterCombat.ClearProjectilesServer();
@@ -231,7 +236,7 @@ namespace PiGame.Gameplay
             {
                 return;
             }
-
+            CleanupDeathProp();
             transform.position = position;
             if (_rigidbody != null)
             {
@@ -256,7 +261,36 @@ namespace PiGame.Gameplay
                 characterCombat.RefillAmmoServer();
             }
         }
+        private void SpawnDeathProp()
+        {
+            if (_deathPropPrefab != null && _activeDeathProp == null)
+            {
+                _activeDeathProp = Instantiate(_deathPropPrefab, transform.position, Quaternion.identity);
 
+                var netObj = _activeDeathProp.GetComponent<NetworkObject>();
+                if (netObj != null)
+                {
+                    netObj.Spawn();
+                }
+            }
+        }
+
+        private void CleanupDeathProp()
+        {
+            if (_activeDeathProp != null)
+            {
+                var netObj = _activeDeathProp.GetComponent<NetworkObject>();
+                if (netObj != null && netObj.IsSpawned)
+                {
+                    netObj.Despawn(true);
+                }
+                else
+                {
+                    Destroy(_activeDeathProp);
+                }
+                _activeDeathProp = null;
+            }
+        }
         [Rpc(SendTo.SpecifiedInParams)]
         private void TeleportOwnerRpc(Vector3 position, RpcParams rpcParams)
         {

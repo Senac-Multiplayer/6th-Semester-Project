@@ -2463,6 +2463,7 @@ MonoBehaviour:
   _wallStickTime: 0.5
   _wallSlideSpeed: 4.5
   _fallMultiplier: 2
+  _jumpHoldGravityMultiplier: 1.5
   _wallJumpHorizontalForce: 10
   _wallJumpVerticalForce: 12
   _wallJumpControlLockTime: 0.2
@@ -2482,6 +2483,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.NetworkPlayerState
   ShowTopMostFoldoutHeaderGroup: 1
   _maximumHealth: 3
+  _deathPropPrefab: {fileID: 6841368190081493115, guid: 91bd36171ff978646a15260b78902adc, type: 3}
 --- !u!114 &880000000000000002
 MonoBehaviour:
   m_ObjectHideFlags: 0
