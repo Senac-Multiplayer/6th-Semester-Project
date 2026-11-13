@@ -1,3 +1,5 @@
+using System;
+using System.Threading.Tasks;
 using PiGame.Lobby;
 using PiGame.Networking;
 using UnityEngine;
@@ -39,6 +41,8 @@ namespace PiGame.UI
         private ConfirmationAction _pendingConfirmation;
         private bool _returnToOptionsAfterName;
         private int _ignoreMenuInputFrame = -1;
+        private int _roomQueryVersion;
+        private float _nextRoomRefresh;
 
         private void Awake()
         {
@@ -67,6 +71,11 @@ namespace PiGame.UI
         private void OnEnable()
         {
             _connectionPanel.CancelConnectionRequested += HandleCancelConnectionRequested;
+            _connectionPanel.CreateRoomRequested += HandleCreateRoom;
+            _connectionPanel.JoinCodeRequested += HandleJoinCode;
+            _connectionPanel.QuickJoinRequested += HandleQuickJoin;
+            _roomBrowser.RefreshRequested += RefreshRooms;
+            _roomBrowser.JoinRequested += HandleJoinRoom;
             _mainMenu.PlayRequested += HandlePlayRequested;
             _mainMenu.OptionsRequested += HandleOptionsRequested;
             _mainMenu.QuitRequested += HandleQuitRequested;
@@ -121,7 +130,13 @@ namespace PiGame.UI
 
         private void OnDisable()
         {
+            _roomQueryVersion++;
             _connectionPanel.CancelConnectionRequested -= HandleCancelConnectionRequested;
+            _connectionPanel.CreateRoomRequested -= HandleCreateRoom;
+            _connectionPanel.JoinCodeRequested -= HandleJoinCode;
+            _connectionPanel.QuickJoinRequested -= HandleQuickJoin;
+            _roomBrowser.RefreshRequested -= RefreshRooms;
+            _roomBrowser.JoinRequested -= HandleJoinRoom;
             _mainMenu.PlayRequested -= HandlePlayRequested;
             _mainMenu.OptionsRequested -= HandleOptionsRequested;
             _mainMenu.QuitRequested -= HandleQuitRequested;
@@ -253,6 +268,11 @@ namespace PiGame.UI
                     _ignoreMenuInputFrame = Time.frameCount;
                 }
                 else if (_mainMenu.IsHomeVisible) HandleQuitRequested();
+                else if (_connectionPanel.gameObject.activeInHierarchy)
+                {
+                    _connectionPanel.HandleBack();
+                    _ignoreMenuInputFrame = Time.frameCount;
+                }
                 return;
             }
 
@@ -297,6 +317,7 @@ namespace PiGame.UI
 
         private void ShowMainMenu()
         {
+            _roomQueryVersion++;
             _roomBrowser.Hide();
             LoadingScreenUI.Instance.Hide();
             _playerNamePanel.Hide();
@@ -316,10 +337,55 @@ namespace PiGame.UI
 
             _connectionPanel.gameObject.SetActive(false);
             _roomBrowser.Show();
+            RefreshRooms();
+        }
+
+        private async void RefreshRooms()
+        {
+            int version = ++_roomQueryVersion;
+            float delay = Mathf.Max(0f, _nextRoomRefresh - Time.unscaledTime);
+            _nextRoomRefresh = Time.unscaledTime + delay + 1.2f;
+            _roomBrowser.SetStatus("BUSCANDO SALAS...", true);
+            try
+            {
+                if (delay > 0f) await Task.Delay(Mathf.CeilToInt(delay * 1000f));
+                if (version != _roomQueryVersion || !_roomBrowser.gameObject.activeInHierarchy) return;
+                var rooms = await _connectionServiceContract.QueryRoomsAsync();
+                if (version == _roomQueryVersion && _roomBrowser.gameObject.activeInHierarchy)
+                    _roomBrowser.Render(rooms);
+            }
+            catch (Exception exception)
+            {
+                if (version != _roomQueryVersion || !_roomBrowser.gameObject.activeInHierarchy) return;
+                Debug.LogWarning($"Não foi possível buscar salas: {exception.Message}", this);
+                _roomBrowser.SetStatus("NÃO FOI POSSÍVEL BUSCAR SALAS. TENTE ATUALIZAR NOVAMENTE.");
+            }
+        }
+
+        private void HandleCreateRoom(string name, bool isPrivate) => ConnectRoom(
+            () => _connectionServiceContract.StartHostAsync(name, isPrivate), "CRIANDO SALA...");
+        private void HandleJoinCode(string code) => ConnectRoom(
+            () => _connectionServiceContract.StartClientAsync(code), "ENTRANDO NA SALA...");
+        private void HandleQuickJoin() => ConnectRoom(
+            _connectionServiceContract.QuickJoinAsync, "BUSCANDO PARTIDA...");
+        private void HandleJoinRoom(string id) => ConnectRoom(
+            () => _connectionServiceContract.JoinRoomAsync(id), "ENTRANDO NA SALA...");
+
+        private async void ConnectRoom(Func<Task> connect, string message)
+        {
+            ShowConnectionPanel();
+            _connectionPanel.ShowConnecting(message);
+            await connect();
+        }
+
+        public void CopySessionCode()
+        {
+            GUIUtility.systemCopyBuffer = _connectionServiceContract.JoinCode;
         }
 
         private void HandleRoomBrowserBack()
         {
+            _roomQueryVersion++;
             _roomBrowser.Hide();
             ShowConnectionPanel();
             _connectionPanel.ShowIdle();
@@ -472,7 +538,8 @@ namespace PiGame.UI
                 LobbyConnectionFailure.ServicesUnavailable => "SERVIÇOS UNITY INDISPONÍVEIS",
                 LobbyConnectionFailure.AuthenticationFailed => "FALHA NA AUTENTICAÇÃO",
                 LobbyConnectionFailure.InvalidJoinCode => "CÓDIGO INVÁLIDO",
-                LobbyConnectionFailure.SessionNotFound => "SALA NÃO ENCONTRADA",
+                LobbyConnectionFailure.SessionNotFound => "SALA INDISPONÍVEL: PODE TER FECHADO OU FICADO CHEIA",
+                LobbyConnectionFailure.NoAvailableRooms => "NENHUMA SALA DISPONÍVEL.\nCRIE UMA SALA PARA JOGAR.",
                 LobbyConnectionFailure.SessionConflict => "SESSÃO ANTERIOR AINDA ATIVA",
                 _ => "NÃO FOI POSSÍVEL INICIAR A CONEXÃO"
             };
@@ -482,6 +549,7 @@ namespace PiGame.UI
 
         private void ShowConnectionPanel()
         {
+            _roomQueryVersion++;
             _roomBrowser.Hide();
             _playerNamePanel.Hide();
             _lobbyPause.SetVisible(false);
@@ -516,14 +584,13 @@ namespace PiGame.UI
                 return;
             }
 
-            bool showCode = _connectionServiceContract.IsHost
-                && !string.IsNullOrWhiteSpace(_connectionServiceContract.JoinCode);
+            bool showCode = !string.IsNullOrWhiteSpace(_connectionServiceContract.JoinCode);
             _sessionCodeText.gameObject.SetActive(showCode);
             if (showCode)
             {
                 _sessionCodeText.text =
-                    $"CÓDIGO DA SALA: <size=26>"
-                    + $"{_connectionServiceContract.JoinCode}</size>";
+                    $"CÓDIGO: <size=26>"
+                    + $"{_connectionServiceContract.JoinCode}</size>  [COPIAR]";
             }
         }
 

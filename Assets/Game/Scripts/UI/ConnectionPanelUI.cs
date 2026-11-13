@@ -21,12 +21,21 @@ namespace PiGame.UI
         [SerializeField] private InputField _joinCodeInput;
         [SerializeField] private TMP_Text _statusText;
 
+        [SerializeField] private Toggle _privateRoomToggle;
+
         private Coroutine _selectionRoutine;
         private bool _isConnecting;
         private bool _initialized;
 
         public event Action CancelConnectionRequested;
         public event Action BackRequested;
+        public event Action<string, bool> CreateRoomRequested;
+        public event Action<string> JoinCodeRequested;
+        public event Action QuickJoinRequested;
+
+        public void CreateRoom() => CreateRoomRequested?.Invoke(_roomNameInput.text, _privateRoomToggle.isOn);
+        public void JoinByCode() => JoinCodeRequested?.Invoke(_joinCodeInput.text);
+        public void QuickJoin() => QuickJoinRequested?.Invoke();
 
         private void Awake() => Initialize();
 
@@ -43,7 +52,7 @@ namespace PiGame.UI
 
             if (!_mainActions || !_createRoomContent || !_joinCodeContent
                 || !_interactionGroup || !_createRoomButton || !_roomNameInput
-                || !_joinCodeInput || !_statusText)
+                || !_joinCodeInput || !_statusText || !_privateRoomToggle)
             {
                 Debug.LogError("Configure grupos, CanvasGroup, seleção, campos e status no ConnectionPanelUI.", this);
                 enabled = false;

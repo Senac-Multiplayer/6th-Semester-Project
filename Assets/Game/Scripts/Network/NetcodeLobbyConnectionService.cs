@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using PiGame.Lobby;
@@ -30,6 +31,8 @@ namespace PiGame.Networking
         [SerializeField, Range(2, 4)] private int _maxPlayers = 4;
         [SerializeField, Min(5f)] private float _hostRecoveryTimeoutSeconds = 45f;
 
+        private bool _savingRoomLock;
+        private bool _desiredRoomLocked;
         private bool _isDuplicate;
         private SessionRole _sessionRole;
         private ISession _session;
@@ -45,6 +48,7 @@ namespace PiGame.Networking
         private static bool _authenticationIdentityLogged;
         private static string _selectedServicesProfile;
         private static Mutex _servicesProfileMutex;
+        private static Task _servicesReadyTask;
 
         public event Action Connected;
         public event Action Disconnected;
@@ -94,123 +98,119 @@ namespace PiGame.Networking
             }
         }
 
-        public async Task StartHostAsync()
+        public Task StartHostAsync(string roomName = null, bool isPrivate = true)
         {
-            if (!TryBeginSession(SessionRole.Host, out int operationVersion))
-            {
-                return;
-            }
-
-            try
-            {
-                await EnsureServicesReadyAsync();
-                if (!IsOperationCurrent(operationVersion))
-                {
-                    return;
-                }
-
-                SessionOptions options = new SessionOptions
-                {
-                    MaxPlayers = _maxPlayers,
-                    IsPrivate = true,
-                    Name = "PI6 Lobby"
-                }.WithRelayNetwork().WithHostMigration(CreateMigrationDataHandler());
-
-                ISession createdSession = await MultiplayerService.Instance.CreateSessionAsync(options);
-                await CompleteOrDiscardSessionAsync(createdSession, operationVersion);
-            }
-            catch (SessionException exception)
-            {
-                HandleSessionException(exception, operationVersion);
-            }
-            catch (AuthenticationException exception)
-            {
-                HandleServiceException(
-                    exception,
-                    LobbyConnectionFailure.AuthenticationFailed,
-                    operationVersion);
-            }
-            catch (RequestFailedException exception)
-            {
-                HandleServiceException(
-                    exception,
-                    LobbyConnectionFailure.ServicesUnavailable,
-                    operationVersion);
-            }
-            catch (Exception exception)
-            {
-                HandleServiceException(
-                    exception,
-                    LobbyConnectionFailure.ServicesUnavailable,
-                    operationVersion);
-            }
+            string name = string.IsNullOrWhiteSpace(roomName) ? $"Sala de {LocalPlayerName.Load()}" : roomName.Trim();
+            if (name.Length > 24) name = name.Substring(0, 24);
+            return ConnectAsync(SessionRole.Host, async () => await MultiplayerService.Instance.CreateSessionAsync(
+                new SessionOptions { MaxPlayers = _maxPlayers, IsPrivate = isPrivate, Name = name }
+                    .WithRelayNetwork().WithHostMigration(CreateMigrationDataHandler())));
         }
 
-        public async Task StartClientAsync(string joinCode)
+        public Task StartClientAsync(string joinCode)
         {
-            if (!TryNormalizeJoinCode(joinCode, out string normalizedJoinCode))
+            if (!TryNormalizeJoinCode(joinCode, out string code))
             {
                 ConnectionFailed?.Invoke(LobbyConnectionFailure.InvalidJoinCode);
-                return;
+                return Task.CompletedTask;
             }
+            return ConnectAsync(SessionRole.Client, () => MultiplayerService.Instance.JoinSessionByCodeAsync(
+                code, new JoinSessionOptions().WithHostMigration(CreateMigrationDataHandler())), code);
+        }
 
-            if (!TryBeginSession(SessionRole.Client, out int operationVersion))
-            {
-                return;
-            }
+        public Task JoinRoomAsync(string sessionId) => ConnectAsync(SessionRole.Client,
+            () => MultiplayerService.Instance.JoinSessionByIdAsync(sessionId,
+                new JoinSessionOptions().WithHostMigration(CreateMigrationDataHandler())));
 
+        private static List<FilterOption> RoomFilters() => new()
+        {
+            new FilterOption(FilterField.AvailableSlots, "0", FilterOperation.Greater),
+            new FilterOption(FilterField.IsLocked, "false", FilterOperation.Equal),
+            new FilterOption(FilterField.HasPassword, "false", FilterOperation.Equal)
+        };
+
+        public async Task<IList<ISessionInfo>> QueryRoomsAsync()
+        {
+            await EnsureServicesReadyAsync();
+            QuerySessionsResults result = await MultiplayerService.Instance.QuerySessionsAsync(
+                new QuerySessionsOptions { Count = 30, FilterOptions = RoomFilters() });
+            return result.Sessions;
+        }
+
+        public Task QuickJoinAsync() => ConnectAsync(SessionRole.Client, async () =>
+        {
+            int operationVersion = _operationVersion;
+            // A consulta distingue lista vazia de falhas de autenticação ou transporte.
+            var rooms = await QueryRoomsAsync();
+            if (!IsOperationCurrent(operationVersion)) throw new OperationCanceledException();
+            if (rooms.Count == 0)
+                throw new SessionException("No public rooms available.", SessionError.SessionNotFound, null);
+            return await MultiplayerService.Instance.MatchmakeSessionAsync(
+                new QuickJoinOptions { CreateSession = false, Timeout = TimeSpan.Zero, Filters = RoomFilters() },
+                new SessionOptions().WithRelayNetwork().WithHostMigration(CreateMigrationDataHandler()));
+        }, quickJoin: true);
+
+        private async Task ConnectAsync(SessionRole role, Func<Task<ISession>> connect,
+            string recoveryCode = null, bool quickJoin = false)
+        {
+            if (!TryBeginSession(role, out int operationVersion)) return;
             try
             {
                 await EnsureServicesReadyAsync();
-                if (!IsOperationCurrent(operationVersion))
-                {
-                    return;
-                }
-
-                ISession joinedSession = await MultiplayerService.Instance.JoinSessionByCodeAsync(
-                    normalizedJoinCode, new JoinSessionOptions().WithHostMigration(CreateMigrationDataHandler()));
-                await CompleteOrDiscardSessionAsync(joinedSession, operationVersion);
+                if (!IsOperationCurrent(operationVersion)) return;
+                ISession session = await connect();
+                await CompleteOrDiscardSessionAsync(session, operationVersion);
             }
             catch (SessionException exception)
             {
-                if (exception.Error == SessionError.SessionConflict
-                    && IsOperationCurrent(operationVersion))
+                if (!IsOperationCurrent(operationVersion)) return;
+                if (quickJoin && exception.Error == SessionError.SessionNotFound)
                 {
-                    ISession recoveredSession = await TryRecoverJoinedSessionAsync(
-                        normalizedJoinCode,
-                        operationVersion);
-                    if (recoveredSession != null)
+                    ReportFailure(LobbyConnectionFailure.NoAvailableRooms);
+                    return;
+                }
+                if (recoveryCode != null && exception.Error == SessionError.SessionConflict)
+                {
+                    ISession recovered = await TryRecoverJoinedSessionAsync(recoveryCode, operationVersion);
+                    if (recovered != null)
                     {
-                        await CompleteOrDiscardSessionAsync(
-                            recoveredSession,
-                            operationVersion);
+                        await CompleteOrDiscardSessionAsync(recovered, operationVersion);
                         return;
                     }
                 }
-
                 HandleSessionException(exception, operationVersion);
             }
             catch (AuthenticationException exception)
             {
-                HandleServiceException(
-                    exception,
-                    LobbyConnectionFailure.AuthenticationFailed,
-                    operationVersion);
-            }
-            catch (RequestFailedException exception)
-            {
-                HandleServiceException(
-                    exception,
-                    LobbyConnectionFailure.ServicesUnavailable,
-                    operationVersion);
+                HandleServiceException(exception, LobbyConnectionFailure.AuthenticationFailed, operationVersion);
             }
             catch (Exception exception)
             {
-                HandleServiceException(
-                    exception,
-                    LobbyConnectionFailure.ServicesUnavailable,
-                    operationVersion);
+                HandleServiceException(exception, LobbyConnectionFailure.ServicesUnavailable, operationVersion);
             }
+        }
+
+        public async void SetRoomJoinable(bool joinable)
+        {
+            if (_session == null || !_session.IsHost) return;
+            _desiredRoomLocked = !joinable;
+            if (_savingRoomLock) return;
+            _savingRoomLock = true;
+            ISession session = _session;
+            try
+            {
+                while (session == _session && session.IsHost && session.IsLocked != _desiredRoomLocked)
+                {
+                    IHostSession host = session.AsHost();
+                    host.IsLocked = _desiredRoomLocked;
+                    await host.SavePropertiesAsync();
+                }
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning($"Não foi possível atualizar a disponibilidade da sala: {exception.Message}", this);
+            }
+            finally { _savingRoomLock = false; }
         }
 
         public async Task ShutdownAsync()
@@ -267,7 +267,16 @@ namespace PiGame.Networking
             return true;
         }
 
-        private static async Task EnsureServicesReadyAsync()
+        private static Task EnsureServicesReadyAsync()
+        {
+            if (_servicesReadyTask == null || _servicesReadyTask.IsFaulted || _servicesReadyTask.IsCanceled
+                || (_servicesReadyTask.IsCompleted && (UnityServices.State != ServicesInitializationState.Initialized
+                    || !AuthenticationService.Instance.IsSignedIn)))
+                _servicesReadyTask = InitializeServicesAsync();
+            return _servicesReadyTask;
+        }
+
+        private static async Task InitializeServicesAsync()
         {
             string requestedProfile = FindServicesProfileArgument();
 
@@ -576,6 +585,8 @@ namespace PiGame.Networking
 
             _session = session;
             AttachSession();
+            NetworkLobbyState lobby = FindFirstObjectByType<NetworkLobbyState>();
+            if (lobby != null) SetRoomJoinable(lobby.Stage == LobbyStage.CharacterSelection);
             _isStarting = false;
             _wasConnected = true;
             Connected?.Invoke();
@@ -704,6 +715,7 @@ namespace PiGame.Networking
                 }
             }
             _hostMigrationPending = false;
+            SetRoomJoinable(true);
             Connected?.Invoke();
         }
 
