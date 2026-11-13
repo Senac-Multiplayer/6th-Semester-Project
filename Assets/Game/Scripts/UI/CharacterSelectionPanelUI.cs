@@ -29,6 +29,8 @@ namespace PiGame.UI
         [SerializeField] private Image[] _slotBackgrounds;
         [SerializeField] private Image[] _clanBackgrounds = Array.Empty<Image>();
         [SerializeField] private Image[] _clanDetails = Array.Empty<Image>();
+        [SerializeField] private Image[] _playerNumbers;
+        [SerializeField] private Sprite[] _playerNumberSprites;
         [SerializeField] private Image[] _characterPortraits;
         [SerializeField] private Image[] _deviceIcons;
         [SerializeField] private Text[] _slotLabels;
@@ -41,6 +43,7 @@ namespace PiGame.UI
         [Header("Ready banners")]
         [SerializeField] private Animator[] _readyBanners = Array.Empty<Animator>();
         [SerializeField] private Image[] _readyBannerCloths = Array.Empty<Image>();
+        [SerializeField] private Image[] _readyBannerMotifs;
 
         [Header("Character navigation")]
         [SerializeField] private RectTransform _browseControlsRoot;
@@ -95,6 +98,17 @@ namespace PiGame.UI
                 || Array.Exists(_characters, character => !character || !character.LobbyBackground || !character.LobbyBackgroundDetails))
             {
                 Debug.LogError("Configure fundos e detalhes dos clãs no prefab e nos assets de personagem.", this);
+                enabled = false;
+                return;
+            }
+            if (_playerNumbers.Length != _slotRoots.Length || _playerNumberSprites.Length != _slotRoots.Length
+                || _readyBannerMotifs.Length != _slotRoots.Length
+                || Array.Exists(_playerNumbers, image => !image) || Array.Exists(_playerNumberSprites, sprite => !sprite)
+                || Array.Exists(_readyBannerMotifs, image => !image)
+                || Array.Exists(_characters, character => !character.LobbyBanner
+                    || !character.LobbyUp || !character.LobbyDown || !character.LobbyUpPressed || !character.LobbyDownPressed))
+            {
+                Debug.LogError("Configure bandeiras, números e setas dos quatro clãs no seletor.", this);
                 enabled = false;
                 return;
             }
@@ -311,14 +325,17 @@ namespace PiGame.UI
             Transform nameplate = _characterNameplates[_localPlayerSlot].transform;
             const float duration = 0.18f;
             float elapsed = 0f;
+            Button arrowButton = arrow.GetComponent<Button>();
             while (elapsed < duration)
             {
                 float pulse = Mathf.Sin(elapsed / duration * Mathf.PI);
+                arrowButton.image.overrideSprite = arrowButton.spriteState.pressedSprite;
                 arrow.localScale = Vector3.one * (1f + 0.25f * pulse);
                 nameplate.localScale = Vector3.one * (1f + 0.15f * pulse);
                 elapsed += Time.unscaledDeltaTime;
                 yield return null;
             }
+            arrowButton.image.overrideSprite = null;
             arrow.localScale = Vector3.one;
             nameplate.localScale = Vector3.one;
             _browsePulseRoutine = null;
@@ -329,6 +346,8 @@ namespace PiGame.UI
             if (_browsePulseRoutine != null)
                 StopCoroutine(_browsePulseRoutine);
             _browsePulseRoutine = null;
+            _previousCharacterButton.image.overrideSprite = null;
+            _nextCharacterButton.image.overrideSprite = null;
             _previousCharacterButton.transform.localScale = Vector3.one;
             _nextCharacterButton.transform.localScale = Vector3.one;
             foreach (Image nameplate in _characterNameplates)
@@ -350,9 +369,7 @@ namespace PiGame.UI
 
         private void PositionBrowseControls()
         {
-            Vector3 position = _slotRoots[_localPlayerSlot].position;
-            position.x = _slotLabels[_localPlayerSlot].transform.position.x;
-            _browseControlsRoot.position = position;
+            _browseControlsRoot.position = _characterNameplates[_localPlayerSlot].transform.position;
         }
 
         public void Focus()
@@ -385,6 +402,14 @@ namespace PiGame.UI
             {
                 _clanBackgrounds[slot].sprite = character.LobbyBackground;
                 _clanDetails[slot].sprite = character.LobbyBackgroundDetails;
+                _readyBannerMotifs[slot].sprite = character.LobbyBanner;
+                _playerNumbers[slot].sprite = _playerNumberSprites[slot];
+                _playerNumbers[slot].color = Color.Lerp(characterColor, Color.white, 0.18f);
+                if (isLocalPlayer)
+                {
+                    ConfigureArrow(_previousCharacterButton, character.LobbyUp, character.LobbyUpPressed);
+                    ConfigureArrow(_nextCharacterButton, character.LobbyDown, character.LobbyDownPressed);
+                }
             }
             _characterNameplates[slot].gameObject.SetActive(true);
             _characterNameplates[slot].color = Color.Lerp(characterColor, Color.white, 0.12f);
@@ -427,6 +452,16 @@ namespace PiGame.UI
             }
         }
 
+        private static void ConfigureArrow(Button button, Sprite normal, Sprite pressed)
+        {
+            button.image.sprite = normal;
+            SpriteState states = button.spriteState;
+            states.highlightedSprite = pressed;
+            states.selectedSprite = pressed;
+            states.pressedSprite = pressed;
+            button.spriteState = states;
+        }
+
         private void RenderEmptySlot(int slot)
         {
             _readyBanners[slot].gameObject.SetActive(false);
@@ -434,6 +469,8 @@ namespace PiGame.UI
             _characterNameplates[slot].gameObject.SetActive(false);
             _playerNameTexts[slot].text = string.Empty;
             _slotRoots[slot].localScale = Vector3.one;
+            _playerNumbers[slot].sprite = _playerNumberSprites[slot];
+            _playerNumbers[slot].color = Color.white;
             _clanBackgrounds[slot].gameObject.SetActive(false);
             _clanDetails[slot].gameObject.SetActive(false);
             _slotBackgrounds[slot].color = new Color(0.12f, 0.14f, 0.18f, 1f);

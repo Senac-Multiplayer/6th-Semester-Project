@@ -19,3 +19,8 @@ MonoBehaviour:
   _playerPrefab: {fileID: 5788769337959252140, guid: 2b3d704fa8d6c9b4ebedcd71572158f0, type: 3}
   _lobbyBackground: {fileID: 21300000, guid: eb8d040af59245a4a18f3b1bc4b27cb3, type: 3}
   _lobbyBackgroundDetails: {fileID: 21300000, guid: d873452444ce4e7290577c51e4a72d7c, type: 3}
+  _lobbyBanner: {fileID: 21300000, guid: 433d253034134342836b6555851d8bbb, type: 3}
+  _lobbyUp: {fileID: 21300000, guid: 87035552b5364629a4384ae3187254f6, type: 3}
+  _lobbyUpPressed: {fileID: 21300000, guid: c712ed6370d341b8b4e184a8e3b0c2a5, type: 3}
+  _lobbyDown: {fileID: 21300000, guid: 073ed012999d437c87d8afc2a0a41b09, type: 3}
+  _lobbyDownPressed: {fileID: 21300000, guid: 690b99bd553741edae46459d7cc68cd0, type: 3}
