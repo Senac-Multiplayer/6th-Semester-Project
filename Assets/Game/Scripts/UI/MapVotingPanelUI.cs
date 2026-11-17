@@ -25,10 +25,20 @@ namespace PiGame.UI
         [SerializeField] private LobbyMapDefinition[] _maps;
         [SerializeField] private Button[] _optionButtons;
         [SerializeField] private Image[] _previewImages;
+        [SerializeField] private Image[] _nameplateImages;
         [SerializeField] private Text[] _optionLabels;
         [SerializeField] private Text[] _voterLabels;
 
         [SerializeField, Min(1)] private int _columns = 5;
+
+        [Header("Mapa escolhido")]
+        [SerializeField] private CanvasGroup _optionsGroup;
+        [SerializeField] private CanvasGroup _winnerPresentation;
+        [SerializeField] private RectTransform _winnerCard;
+        [SerializeField] private Image _winnerPreview;
+        [SerializeField] private Text _winnerMapName;
+        [SerializeField, Min(0.01f)] private float _winnerTransitionSeconds = 0.45f;
+        [SerializeField, Min(1f)] private float _winnerScale = 2f;
 
         [Header("Status")]
         [SerializeField] private Text _statusText;
@@ -42,6 +52,10 @@ namespace PiGame.UI
         [SerializeField] private Text _backLegendText;
 
         [Header("Selection visual")]
+        [SerializeField] private Sprite _normalFrameSprite;
+        [SerializeField] private Sprite _selectedFrameSprite;
+        [SerializeField] private Sprite _normalNameplateSprite;
+        [SerializeField] private Sprite _selectedNameplateSprite;
         [SerializeField] private Color _normalColor = new(0.32f, 0.27f, 0.38f, 1f);
         [SerializeField] private Color _selectedColor = new(0.98f, 0.72f, 0.18f, 1f);
         [SerializeField] private Color _winnerColor = new(0.3f, 0.9f, 0.5f, 1f);
@@ -73,6 +87,15 @@ namespace PiGame.UI
 
         private void Awake()
         {
+            if (!_optionsGroup || !_winnerPresentation || !_winnerCard || !_winnerPreview || !_winnerMapName
+                || !_normalFrameSprite || !_selectedFrameSprite || !_normalNameplateSprite || !_selectedNameplateSprite
+                || _nameplateImages == null || _nameplateImages.Length != _optionButtons.Length
+                || Array.Exists(_nameplateImages, image => !image))
+            {
+                Debug.LogError("Configure a grade e a apresentação do mapa escolhido no MapVotingPanelUI.", this);
+                enabled = false;
+                return;
+            }
             for (int i = 0; i < _optionButtons.Length; i++)
             {
                 DisableAutomaticNavigation(_optionButtons[i]);
@@ -121,6 +144,7 @@ namespace PiGame.UI
 
         private void Update()
         {
+            FitOptionsToAvailableHeight();
             if (_lastGamepad != Gamepad.current)
             {
                 _lastGamepad = Gamepad.current;
@@ -209,7 +233,12 @@ namespace PiGame.UI
                 _localVoteConfirmed = localVote.IsConfirmed;
             }
             if (stage == LobbyStage.MatchStarting) RenderDraw(serverTime);
-            else _isDrawingMap = false;
+            else
+            {
+                _isDrawingMap = false;
+                _optionsGroup.alpha = 1f;
+                _winnerPresentation.alpha = 0f;
+            }
             RefreshLegend();
 
             RenderVoters(players, votes);
@@ -363,7 +392,7 @@ namespace PiGame.UI
             {
                 _statusText.text = _isDrawingMap
                     ? (_drawPhase == 0 ? "DESEMPATANDO VOTOS..." : "SORTEANDO MAPA...")
-                    : $"MAPA ESCOLHIDO: {GetMapDisplayName(_selectedMapId)}\nINICIANDO PARTIDA...";
+                    : "INICIANDO PARTIDA...";
                 if (!_isDrawingMap && _selectedMapId == LobbyMapId.Random)
                     _statusText.text = "ALEATÓRIO VENCEU O DESEMPATE...";
                 _statusText.color = HasFinalMap ? _winnerColor : _selectedColor;
@@ -397,9 +426,16 @@ namespace PiGame.UI
                 button.transform.localScale = isSelected || isWinner
                     ? Vector3.one * _selectedScale
                     : Vector3.one;
-                button.targetGraphic.color = isWinner || isSelected
-                    ? (HasFinalMap ? _winnerColor : _selectedColor)
-                    : _normalColor;
+                bool highlighted = isWinner || isSelected;
+                Sprite frameSprite = highlighted ? _selectedFrameSprite : _normalFrameSprite;
+                button.image.sprite = frameSprite;
+                // A roleta bloqueia os botões, mas mantém a arte do card apontado.
+                SpriteState sprites = button.spriteState;
+                sprites.disabledSprite = frameSprite;
+                button.spriteState = sprites;
+                button.image.overrideSprite = frameSprite;
+                button.targetGraphic.color = _normalColor;
+                _nameplateImages[i].sprite = highlighted ? _selectedNameplateSprite : _normalNameplateSprite;
             }
         }
 
@@ -452,6 +488,7 @@ namespace PiGame.UI
                     if (_uiAudioManager != null) _uiAudioManager.PlayDrawRoullete();
                 }
             }
+            RenderWinnerPresentation(serverTime, phase == 2 && displayed == _draw.MapId);
             if (_drawPhase == phase && _selectedMapId == displayed && _isDrawingMap == spinning)
                 return;
             _drawPhase = phase;
@@ -459,6 +496,36 @@ namespace PiGame.UI
             _isDrawingMap = spinning;
             RefreshStatus();
             RefreshSelectionVisuals();
+        }
+
+        private void RenderWinnerPresentation(double serverTime, bool finalMap)
+        {
+            if (!finalMap)
+            {
+                _optionsGroup.alpha = 1f;
+                _winnerPresentation.alpha = 0f;
+                return;
+            }
+
+            int index = GetOptionIndex(_draw.MapId);
+            float elapsed = (float)(serverTime - _draw.StartsAt - _draw.Duration);
+            float progress = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / _winnerTransitionSeconds));
+            _optionsGroup.alpha = 1f - progress;
+            _winnerPresentation.alpha = progress;
+            Vector2 start = _winnerCard.parent.InverseTransformPoint(_optionButtons[index].transform.position);
+            _winnerCard.anchoredPosition = Vector2.Lerp(start, Vector2.zero, progress);
+            _winnerCard.localScale = Vector3.one * Mathf.Lerp(1f, _winnerScale, progress);
+            _winnerPreview.sprite = _previewImages[index].sprite;
+            _winnerPreview.enabled = _winnerPreview.sprite != null;
+            _winnerMapName.text = GetMapDisplayName(_draw.MapId);
+        }
+
+        private void FitOptionsToAvailableHeight()
+        {
+            // Reserva espaço para o cabeçalho, os avisos e as legendas em telas mais baixas.
+            float availableHeight = ((RectTransform)transform).rect.height;
+            float scale = Mathf.Clamp((availableHeight - 400f) / 680f, 0.1f, 1f);
+            _optionsGroup.transform.localScale = Vector3.one * scale;
         }
 
         // O mesmo relógio e a mesma sequência em cada peer; o último passo leva cerca de 1–2 s.

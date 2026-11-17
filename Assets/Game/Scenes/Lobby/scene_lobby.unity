@@ -152,7 +152,7 @@ RectTransform:
   - {fileID: 2200000001}
   - {fileID: 2130000001}
   - {fileID: 2140000101}
-  - {fileID: 2150001001}
+  - {fileID: 9250000000000001}
   m_Father: {fileID: 436354354}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -273,6 +273,9 @@ MonoBehaviour:
   _playerNamePanel: {fileID: 2260000002}
   _roomBrowser: {fileID: 896999999000000003}
   _connectionService: {fileID: 2101000004}
+  _sessionCodeRoot: {fileID: 9250000000000001}
+  _sessionCodeVotingY: -155
+  _sessionCodeVotingSize: {x: 300, y: 82}
 --- !u!114 &436354351
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1238,13 +1241,13 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2150001011}
-  m_Father: {fileID: 97037353}
+  m_Father: {fileID: 9250000000000001}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 1, y: 1}
+  m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -45, y: -12}
-  m_SizeDelta: {x: 540, y: 30}
-  m_Pivot: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: -20, y: -8}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2150001002
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1275,12 +1278,12 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 12800000, guid: e8303ca10b827f249a0301ba66b72d3b, type: 3}
-    m_FontSize: 20
+    m_FontSize: 16
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
     m_MaxSize: 28
-    m_Alignment: 2
+    m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
     m_HorizontalOverflow: 0
@@ -1984,48 +1987,6 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 700002263431072, guid: c33981f1453cc72f7e0e325732862077, type: 3}
-      propertyPath: m_SizeDelta.x
-      value: 591.66
-      objectReference: {fileID: 0}
-    - target: {fileID: 700002263431072, guid: c33981f1453cc72f7e0e325732862077, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: -445.83
-      objectReference: {fileID: 0}
-    - target: {fileID: 700002263431074, guid: c33981f1453cc72f7e0e325732862077, type: 3}
-      propertyPath: m_fontColor32.rgba
-      value: 4284262617
-      objectReference: {fileID: 0}
-    - target: {fileID: 700002263431094, guid: c33981f1453cc72f7e0e325732862077, type: 3}
-      propertyPath: m_text
-      value: "Gabriel Souza Correia \u2014 Chefe\nGabriel Parzanes de Lima\nBruno
-        Virgilio da Silva\nLucas Martins de Oliveira\nMarcello Flores Ferreira"
-      objectReference: {fileID: 0}
-    - target: {fileID: 700002263431094, guid: c33981f1453cc72f7e0e325732862077, type: 3}
-      propertyPath: m_fontColor32.rgba
-      value: 4292471019
-      objectReference: {fileID: 0}
-    - target: {fileID: 700002263431132, guid: c33981f1453cc72f7e0e325732862077, type: 3}
-      propertyPath: m_SizeDelta.x
-      value: 591.6527
-      objectReference: {fileID: 0}
-    - target: {fileID: 700002263431132, guid: c33981f1453cc72f7e0e325732862077, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: -445.83
-      objectReference: {fileID: 0}
-    - target: {fileID: 700002263431132, guid: c33981f1453cc72f7e0e325732862077, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -237.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 700002263431134, guid: c33981f1453cc72f7e0e325732862077, type: 3}
-      propertyPath: m_text
-      value: "Jo\xE3o Pedro Ribeiro Vivas \u2014 Chefe\nThales Botosso de Carvalho\nAlex
-        Santos Oliveira\nFred\nRenato \nKevin "
-      objectReference: {fileID: 0}
-    - target: {fileID: 700002263431134, guid: c33981f1453cc72f7e0e325732862077, type: 3}
-      propertyPath: m_fontColor32.rgba
-      value: 4292471019
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -2314,3 +2275,79 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!1 &9250000000000000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9250000000000001}
+  - component: {fileID: 9250000000000002}
+  - component: {fileID: 9250000000000003}
+  m_Layer: 5
+  m_Name: SessionCodeFieldArtwork
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &9250000000000001
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9250000000000000}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 2150001001}
+  m_Father: {fileID: 97037353}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 1, y: 1}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: -185, y: -65}
+  m_SizeDelta: {x: 320, y: 94}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &9250000000000002
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9250000000000000}
+  m_CullTransparentMesh: 1
+--- !u!114 &9250000000000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9250000000000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 21300000, guid: 22b1bb2530544b629934696c75b2e775, type: 3}
+  m_Type: 1
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 0.25

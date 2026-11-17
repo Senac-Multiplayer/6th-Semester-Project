@@ -335,6 +335,7 @@ namespace PiGame.UI
         private void ShowInlineDisplay() => ShowInlineContent(_displayContent);
         private void ShowInlinePlayer()
         {
+            if (_controlsView != null && _controlsView.IsVisible && _controlsView.BlocksBackShortcut) return;
             _inlinePlayerName.SetTextWithoutNotify(LocalPlayerName.Load());
             ShowInlineContent(_playerContent);
             QueueSelection(_inlinePlayerName);
@@ -342,6 +343,8 @@ namespace PiGame.UI
 
         private void ShowInlineContent(GameObject content)
         {
+            if (_controlsView != null && _controlsView.IsVisible
+                && _controlsView.BlocksBackShortcut && content != _controlsContent) return;
             if (_controlsView != null && _controlsView.IsVisible && content != _controlsContent)
                 _controlsView.Hide(false);
             _audioContent.SetActive(content == _audioContent);

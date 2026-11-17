@@ -65,6 +65,7 @@ namespace PiGame.UI
         [Header("Input icons")]
         [SerializeField] private Sprite _keyboardDeviceSprite;
         [SerializeField] private Sprite _gamepadDeviceSprite;
+        [SerializeField] private float _gamepadDeviceOffsetY = -3f;
         [SerializeField] private Image _confirmLegendIcon;
         [SerializeField] private Image _backLegendIcon;
         [SerializeField] private Image _upLegendIcon;
@@ -79,6 +80,7 @@ namespace PiGame.UI
 
         private LobbyInputDeviceKind _lastInputDevice = LobbyInputDeviceKind.Keyboard;
         private Gamepad _lastGamepad;
+        private Vector2[] _deviceIconPositions;
         private bool _interactionEnabled = true;
         private int _localPlayerSlot = -1;
         private bool _localPlayerIsReady = true;
@@ -137,6 +139,12 @@ namespace PiGame.UI
                 enabled = false;
                 return;
             }
+            _deviceIconPositions = new Vector2[_deviceIcons.Length];
+            for (int i = 0; i < _deviceIcons.Length; i++)
+            {
+                _deviceIconPositions[i] = _deviceIcons[i].rectTransform.anchoredPosition;
+            }
+
             DisableAutomaticNavigation(_previousCharacterButton);
             DisableAutomaticNavigation(_nextCharacterButton);
 
@@ -421,7 +429,7 @@ namespace PiGame.UI
             _readyBanners[slot].SetBool(ReadyParameter, player.IsReady);
             _readyChecks[slot].gameObject.SetActive(player.IsReady);
 
-            _slotBackgrounds[slot].color = Color.white;
+            _slotBackgrounds[slot].color = Color.clear;
             _clanBackgrounds[slot].gameObject.SetActive(character != null);
             _clanDetails[slot].gameObject.SetActive(character != null && _cardBackground != CardBackground.Banner);
             _selectionBanners[slot].gameObject.SetActive(character != null && _cardBackground != CardBackground.GradientWithDetails);
@@ -466,6 +474,8 @@ namespace PiGame.UI
             Sprite deviceSprite = GetDeviceSprite(player.InputDevice);
             deviceIcon.gameObject.SetActive(deviceSprite != null);
             deviceIcon.sprite = deviceSprite;
+            deviceIcon.rectTransform.anchoredPosition = _deviceIconPositions[slot]
+                + Vector2.up * (player.InputDevice == LobbyInputDeviceKind.Gamepad ? _gamepadDeviceOffsetY : 0f);
 
             Text statusText = _statusTexts[slot];
             if (player.IsReady)

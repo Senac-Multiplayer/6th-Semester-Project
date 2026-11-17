@@ -150,7 +150,7 @@ namespace PiGame.UI
             _returnButton = _creditsButton;
             _home.gameObject.SetActive(false);
             _credits.SetActive(true);
-            EventSystem.current.SetSelectedGameObject(_creditsBackButton.gameObject);
+            _credits.GetComponent<CreditsPanelUI>().FocusDefaultTeam();
         }
     }
 }

@@ -33,6 +33,9 @@ namespace PiGame.UI
         [SerializeField] private MatchSettingsPanelUI _matchSettingsPanel;
         [FormerlySerializedAs("_localNetworkAddressText")]
         [SerializeField] private Text _sessionCodeText;
+        [SerializeField] private RectTransform _sessionCodeRoot;
+        [SerializeField] private float _sessionCodeVotingY = -155f;
+        [SerializeField] private Vector2 _sessionCodeVotingSize = new(300f, 82f);
         [SerializeField] private PauseMenuUI _lobbyPause;
         [SerializeField] private PlayerNamePanelUI _playerNamePanel;
         [SerializeField] private RoomBrowserPanelUI _roomBrowser;
@@ -52,9 +55,13 @@ namespace PiGame.UI
         private readonly List<QuerySessionsResults> _roomPages = new();
         private int _roomPageIndex = -1;
         private bool _roomQueryInProgress;
+        private Vector2 _sessionCodeSelectionPosition;
+        private Vector2 _sessionCodeSelectionSize;
 
         private void Awake()
         {
+            _sessionCodeSelectionPosition = _sessionCodeRoot.anchoredPosition;
+            _sessionCodeSelectionSize = _sessionCodeRoot.sizeDelta;
             if (NetcodeLobbyConnectionService.Instance != null)
             {
                 _connectionService = NetcodeLobbyConnectionService.Instance;
@@ -684,7 +691,9 @@ namespace PiGame.UI
             _matchSettingsPanel.ResetView();
             _matchSettingsPanel.SetMenuVisible(
                 _connectionServiceContract.IsHost && !_mapVotingController.IsVisible);
+            _matchSettingsPanel.SetSummaryVisible(!_connectionServiceContract.IsHost && !_mapVotingController.IsVisible);
             RefreshSessionCode();
+            PositionSessionCode(_mapVotingController.IsVisible);
             SetLobbyInteractionEnabled(true);
         }
 
@@ -700,8 +709,7 @@ namespace PiGame.UI
             if (showCode)
             {
                 _sessionCodeText.text =
-                    $"CÓDIGO: <size=26>"
-                    + $"{_connectionServiceContract.JoinCode}</size>";
+                    $"CÓDIGO DA SALA\n<size=24>{_connectionServiceContract.JoinCode}</size>";
             }
         }
 
@@ -717,11 +725,22 @@ namespace PiGame.UI
 
         private void HandleMapVotingVisibilityChanged(bool isVisible)
         {
+            PositionSessionCode(isVisible);
+            _matchSettingsPanel.SetSummaryVisible(!isVisible
+                && _connectionServiceContract != null && !_connectionServiceContract.IsHost);
             _matchSettingsPanel.SetMenuVisible(
                 !isVisible
                 && _connectionServiceContract != null
                 && _connectionServiceContract.IsHost);
             SetLobbyInteractionEnabled(true);
+        }
+
+        private void PositionSessionCode(bool mapVotingVisible)
+        {
+            Vector2 position = _sessionCodeSelectionPosition;
+            if (mapVotingVisible) position.y = _sessionCodeVotingY;
+            _sessionCodeRoot.anchoredPosition = position;
+            _sessionCodeRoot.sizeDelta = mapVotingVisible ? _sessionCodeVotingSize : _sessionCodeSelectionSize;
         }
 
         private void ShowConnectionError(string message)

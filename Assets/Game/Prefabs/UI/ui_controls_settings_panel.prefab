@@ -1074,7 +1074,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &544258631
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4320,7 +4320,6 @@ MonoBehaviour:
   _conflictPanel: {fileID: 3000000020}
   _resetKeyboardButton: {fileID: 1892241027}
   _resetGamepadButton: {fileID: 675033097}
-  _backButton: {fileID: 544258635}
   _promptCatalog: {fileID: 11400000, guid: 85db1ed5aa154294b3a6c0998a77644b, type: 2}
 --- !u!114 &1378543914
 MonoBehaviour:
