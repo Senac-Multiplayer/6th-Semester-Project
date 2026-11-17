@@ -205,7 +205,7 @@ MonoBehaviour:
   _fallSpeedThreshold: 3
   _collisionLayers:
     serializedVersion: 2
-    m_Bits: 1096
+    m_Bits: 1224
   _collisionOffset: 0.01
   _solidCollider: {fileID: 7087870560983064037}
 --- !u!50 &900000000000000006

@@ -225,8 +225,10 @@ namespace PiGame.Gameplay
 
         private void HandlePlayerCollision(NetworkPlayerState player, RaycastHit2D hit)
         {
+            
             if (player.OwnerClientId == _shooterClientId)
             {
+
                 transform.position +=
                     (Vector3)(_direction * _speed * Time.fixedDeltaTime);
 
@@ -242,7 +244,7 @@ namespace PiGame.Gameplay
 
             Bounce(
                 hit.normal,
-                _playerBounceSpeedLoss);    
+                _playerBounceSpeedLoss);  
         }
 
         private void Bounce(Vector2 normal, float speedLoss)
