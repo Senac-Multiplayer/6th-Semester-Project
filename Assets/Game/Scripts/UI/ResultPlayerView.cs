@@ -27,6 +27,8 @@ namespace PiGame.UI
         [SerializeField] private CanvasGroup _information;
         [SerializeField] private CanvasGroup _spotlight;
         [SerializeField] private Image _frame;
+        [Tooltip("Ordem: ouro (1º), prata (2º), bronze (3º) e ferro (4º).")]
+        [SerializeField] private Sprite[] _placementFrames;
         [SerializeField] private TMP_Text _place;
         [SerializeField] private TMP_Text _playerTag;
         [SerializeField] private TMP_Text _playerName;
@@ -61,10 +63,12 @@ namespace PiGame.UI
         {
             if (!_podium || !_information || !_spotlight || !_frame || !_place || !_playerTag
                 || !_playerName || !_characterName || !_points || !_pointsPlate || !_seatedPlateCover
+                || _placementFrames == null || _placementFrames.Length != 4
+                || Array.Exists(_placementFrames, frame => !frame)
                 || !_character || !_foregroundCharacter || _characters == null
                 || _characters.Length == 0 || Array.Exists(_characters, c => c == null || !c.Idle))
             {
-                Debug.LogError("Configure o pilar, cartão, luz, textos e animações no ResultPlayerView.", this);
+                Debug.LogError("Configure o pilar, cartão, molduras de colocação, luz, textos e animações no ResultPlayerView.", this);
                 enabled = false;
                 return;
             }
@@ -105,7 +109,8 @@ namespace PiGame.UI
             _playerTag.color = PlayerSlotColors.Get(player.PlayerSlot);
             _playerName.text = player.PlayerName.ToString();
             _characterName.text = visual.Name;
-            _frame.color = winner ? _winnerColor : PlayerSlotColors.Get(player.PlayerSlot);
+            _frame.sprite = _placementFrames[Mathf.Clamp(place - 1, 0, _placementFrames.Length - 1)];
+            _frame.color = Color.white;
         }
 
         public void Present(float rise, float light, float information)
