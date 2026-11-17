@@ -23,7 +23,7 @@ MonoBehaviour:
   _lobbyBackgroundDetails: {fileID: 21300000, guid: 6f127bca04e94a268a85fa24497198af, type: 3}
   _lobbyDetailsOffset: {x: -150, y: 0}
   _lobbyDetailsScale: 2
-  _lobbyFrame: {fileID: 21300000, guid: 0c7faa7b9ab64e059394aaf7c295a472, type: 3}
+  _lobbyFrame: {fileID: 21300000, guid: 8d6d9030c7d844adbd0c699329607cf5, type: 3}
   _lobbyBanner: {fileID: 21300000, guid: 06bc9eb4fdd14333b916e139a7e83309, type: 3}
   _lobbyUp: {fileID: 21300000, guid: e2a924e6de7c4237b21d74a82e32ab2a, type: 3}
   _lobbyUpPressed: {fileID: 21300000, guid: 274066b4944d4118a470c83c0fa1043f, type: 3}

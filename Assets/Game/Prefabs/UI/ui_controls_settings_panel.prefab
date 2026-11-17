@@ -2827,6 +2827,9 @@ MonoBehaviour:
   _messageText: {fileID: 595983598}
   _confirmButton: {fileID: 633485181}
   _cancelButton: {fileID: 226029902}
+  _confirmText: {fileID: 1326865769}
+  _normalTextColor: {r: 0.9647, g: 0.949, b: 0.8549, a: 1}
+  _dangerTextColor: {r: 1, g: 0.4392157, b: 0.4392157, a: 1}
 --- !u!1 &1005017829
 GameObject:
   m_ObjectHideFlags: 0

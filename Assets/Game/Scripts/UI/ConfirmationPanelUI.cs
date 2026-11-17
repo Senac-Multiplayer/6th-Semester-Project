@@ -12,15 +12,21 @@ namespace PiGame.UI
         [SerializeField] private TMP_Text _messageText;
         [SerializeField] private Button _confirmButton;
         [SerializeField] private Button _cancelButton;
+        [SerializeField] private Graphic _confirmText;
+        [SerializeField] private Color _normalTextColor = new Color32(246, 242, 218, 255);
+        [SerializeField] private Color _dangerTextColor = new Color32(255, 112, 112, 255);
 
         private Coroutine _selectionRoutine;
 
         public event Action Confirmed;
         public event Action Canceled;
 
-        public void Show(string message)
+        public void Show(string message, string confirmLabel = "CONFIRMAR", bool dangerous = true)
         {
             _messageText.text = message;
+            if (_confirmText is TMP_Text tmp) tmp.text = confirmLabel;
+            else if (_confirmText is Text text) text.text = confirmLabel;
+            _confirmText.color = dangerous ? _dangerTextColor : _normalTextColor;
             gameObject.SetActive(true);
         }
 

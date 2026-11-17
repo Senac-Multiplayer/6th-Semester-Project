@@ -129,12 +129,18 @@ namespace PiGame.Networking
             new FilterOption(FilterField.HasPassword, "false", FilterOperation.Equal)
         };
 
-        public async Task<IList<ISessionInfo>> QueryRoomsAsync()
+        public const int RoomsPerPage = 10;
+
+        public async Task<QuerySessionsResults> QueryRoomsAsync(string continuationToken = null)
         {
             await EnsureServicesReadyAsync();
-            QuerySessionsResults result = await MultiplayerService.Instance.QuerySessionsAsync(
-                new QuerySessionsOptions { Count = 30, FilterOptions = RoomFilters() });
-            return result.Sessions;
+            return await MultiplayerService.Instance.QuerySessionsAsync(new QuerySessionsOptions
+            {
+                Count = RoomsPerPage,
+                ContinuationToken = continuationToken,
+                FilterOptions = RoomFilters(),
+                SortOptions = new List<SortOption> { new(SortOrder.Ascending, SortField.CreationTime) }
+            });
         }
 
         public Task QuickJoinAsync() => ConnectAsync(SessionRole.Client, async () =>
@@ -143,7 +149,7 @@ namespace PiGame.Networking
             // A consulta distingue lista vazia de falhas de autenticação ou transporte.
             var rooms = await QueryRoomsAsync();
             if (!IsOperationCurrent(operationVersion)) throw new OperationCanceledException();
-            if (rooms.Count == 0)
+            if (rooms.Sessions.Count == 0)
                 throw new SessionException("No public rooms available.", SessionError.SessionNotFound, null);
             return await MultiplayerService.Instance.MatchmakeSessionAsync(
                 new QuickJoinOptions { CreateSession = false, Timeout = TimeSpan.Zero, Filters = RoomFilters() },

@@ -192,7 +192,7 @@ namespace PiGame.UI
                 return;
             }
 
-            _conflictPanel.Show("ESTE BOTÃO JÁ ESTÁ EM USO. DESEJA TROCAR OS CONTROLES?");
+            _conflictPanel.Show("ESTE BOTÃO JÁ ESTÁ EM USO. DESEJA TROCAR OS CONTROLES?", "TROCAR", false);
         }
 
         private void ConfirmConflict()

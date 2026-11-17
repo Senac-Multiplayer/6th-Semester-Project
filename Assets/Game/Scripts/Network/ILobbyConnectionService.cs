@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Unity.Services.Multiplayer;
 using System.Threading.Tasks;
 
@@ -31,7 +30,7 @@ namespace PiGame.Networking
         string JoinCode { get; }
 
         Task StartHostAsync(string roomName = null, bool isPrivate = true);
-        Task<IList<ISessionInfo>> QueryRoomsAsync();
+        Task<QuerySessionsResults> QueryRoomsAsync(string continuationToken = null);
         Task JoinRoomAsync(string sessionId);
         Task QuickJoinAsync();
         Task StartClientAsync(string joinCode);

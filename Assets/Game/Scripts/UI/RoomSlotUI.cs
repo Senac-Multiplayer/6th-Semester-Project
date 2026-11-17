@@ -13,6 +13,7 @@ namespace PiGame.UI
         [SerializeField] private TMP_Text _players;
         [SerializeField] private Button _joinButton;
         private string _sessionId;
+        public string SessionId => _sessionId;
         public event Action<string> JoinRequested;
 
         private void Awake()
