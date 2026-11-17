@@ -14,11 +14,9 @@ namespace PiGame.UI
         [SerializeField] private CanvasGroup _home;
         [Header("Botões — On Click disponível no Inspector para áudio local")]
         [SerializeField] private Button _playButton;
-        [SerializeField] private Button _charactersButton;
         [SerializeField] private Button _optionsButton;
         [SerializeField] private Button _creditsButton;
         [SerializeField] private Button _quitButton;
-        [SerializeField] private MenuCharactersPanelUI _characters;
         [SerializeField] private GameObject _credits;
         [SerializeField] private Button _creditsBackButton;
         [Header("Ícones de voltar — catálogo já usado no lobby")]
@@ -30,15 +28,15 @@ namespace PiGame.UI
         private bool _usesGamepad;
 
         public bool IsHomeVisible => _home.gameObject.activeInHierarchy;
-        public bool IsSubpanelVisible => _characters.IsVisible || _credits.activeInHierarchy;
+        public bool IsSubpanelVisible => _credits.activeInHierarchy;
         public event Action PlayRequested;
         public event Action OptionsRequested;
         public event Action QuitRequested;
 
         private void Awake()
         {
-            if (!_visuals || !_home || !_playButton || !_charactersButton || !_optionsButton
-                || !_creditsButton || !_quitButton || !_characters || !_credits || !_creditsBackButton
+            if (!_visuals || !_home || !_playButton || !_optionsButton
+                || !_creditsButton || !_quitButton || !_credits || !_creditsBackButton
                 || !_promptCatalog || _backIcons == null || _backIcons.Length == 0
                 || Array.Exists(_backIcons, icon => !icon))
             {
@@ -53,10 +51,8 @@ namespace PiGame.UI
             _playButton.onClick.AddListener(Play);
             _optionsButton.onClick.AddListener(OpenOptions);
             _quitButton.onClick.AddListener(Quit);
-            _charactersButton.onClick.AddListener(OpenCharacters);
             _creditsButton.onClick.AddListener(OpenCredits);
             _creditsBackButton.onClick.AddListener(ShowHome);
-            _characters.Closed += ShowHome;
             _returnButton = _playButton;
             RefreshBackIcons();
         }
@@ -87,7 +83,6 @@ namespace PiGame.UI
         public void ShowHome()
         {
             _visuals.SetActive(true);
-            _characters.Hide();
             _credits.SetActive(false);
             _home.gameObject.SetActive(true);
             SetInteractionEnabled(true);
@@ -98,7 +93,6 @@ namespace PiGame.UI
         {
             _visuals.SetActive(true);
             _home.gameObject.SetActive(false);
-            _characters.Hide();
             _credits.SetActive(false);
         }
 
@@ -149,13 +143,6 @@ namespace PiGame.UI
         {
             _returnButton = _quitButton;
             QuitRequested?.Invoke();
-        }
-
-        private void OpenCharacters()
-        {
-            _returnButton = _charactersButton;
-            _home.gameObject.SetActive(false);
-            _characters.Show();
         }
 
         private void OpenCredits()

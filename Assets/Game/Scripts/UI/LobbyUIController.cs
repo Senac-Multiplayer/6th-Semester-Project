@@ -591,7 +591,7 @@ namespace PiGame.UI
             {
                 _sessionCodeText.text =
                     $"CÓDIGO: <size=26>"
-                    + $"{_connectionServiceContract.JoinCode}</size>  [COPIAR]";
+                    + $"{_connectionServiceContract.JoinCode}</size>";
             }
         }
 
@@ -671,7 +671,7 @@ namespace PiGame.UI
             _lobbyPause.SetVisible(false);
         }
 
-        private void OpenLobbyPause()
+        public void OpenLobbyPause()
         {
             InitializeLobbyPause();
             if (_connectionServiceContract != null && _connectionServiceContract.IsConnected)
