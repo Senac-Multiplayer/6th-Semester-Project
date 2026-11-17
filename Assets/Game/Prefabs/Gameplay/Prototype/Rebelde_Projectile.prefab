@@ -16,8 +16,8 @@ GameObject:
   - component: {fileID: 5352191587516756331}
   - component: {fileID: 900000000000000006}
   - component: {fileID: 4662004174740731306}
-  - component: {fileID: 8967655456309469503}
   - component: {fileID: -5890077532484326983}
+  - component: {fileID: 7087870560983064037}
   m_Layer: 9
   m_Name: Rebelde_Projectile
   m_TagString: Untagged
@@ -199,12 +199,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.RebeldeProjectile
   ShowTopMostFoldoutHeaderGroup: 1
-  _wallBounceSpeedMultiplier: 0.7
-  _playerBounceSpeedMultiplier: 0.35
-  _maximumSpeed: 30
   _minimumSpeed: 5
-  _gravityScale: 1
-  _solidCollider: {fileID: 8967655456309469503}
+  _wallBounceSpeedLoss: 0.25
+  _playerBounceSpeedLoss: 0.5
+  _fallSpeedThreshold: 3
+  _collisionLayers:
+    serializedVersion: 2
+    m_Bits: 1224
+  _collisionOffset: 0.01
+  _solidCollider: {fileID: 7087870560983064037}
 --- !u!50 &900000000000000006
 Rigidbody2D:
   serializedVersion: 5
@@ -221,7 +224,7 @@ Rigidbody2D:
   m_LinearDamping: 0
   m_AngularDamping: 0.05
   m_GravityScale: 0
-  m_Material: {fileID: 6200000, guid: e89ac05a1d25aa14e95b1a0b49fe1ba3, type: 2}
+  m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -268,8 +271,25 @@ CircleCollider2D:
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
   m_Radius: 1
---- !u!58 &8967655456309469503
-CircleCollider2D:
+--- !u!114 &-5890077532484326983
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 900000000000000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80d7c879794dfda4687da0e400131852, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Components.NetworkRigidbody2D
+  ShowTopMostFoldoutHeaderGroup: 1
+  NetworkRigidbodyBaseExpanded: 0
+  UseRigidBodyForMotion: 0
+  AutoUpdateKinematicState: 1
+  AutoSetKinematicOnDespawn: 1
+--- !u!61 &7087870560983064037
+BoxCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -303,24 +323,17 @@ CircleCollider2D:
   m_CompositeOperation: 0
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
-  m_Radius: 0.5
---- !u!114 &-5890077532484326983
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 900000000000000001}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 80d7c879794dfda4687da0e400131852, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Components.NetworkRigidbody2D
-  ShowTopMostFoldoutHeaderGroup: 1
-  NetworkRigidbodyBaseExpanded: 0
-  UseRigidBodyForMotion: 0
-  AutoUpdateKinematicState: 1
-  AutoSetKinematicOnDespawn: 1
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.5, y: 0.5}
+    oldSize: {x: 1, y: 1}
+    newSize: {x: 1, y: 1}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 1, y: 1}
+  m_EdgeRadius: 0
 --- !u!1 &920000000000000010
 GameObject:
   m_ObjectHideFlags: 0

@@ -292,6 +292,7 @@ namespace PiGame.Gameplay
             foreach (Collider2D playerCollider in _colliders)
             {
                 playerCollider.enabled = isAlive;
+                Debug.Log("Sumiu Colisou");
             }
 
             if (_rigidbody != null)

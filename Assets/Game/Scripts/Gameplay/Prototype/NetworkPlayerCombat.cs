@@ -112,7 +112,7 @@ namespace PiGame.Gameplay
             Vector2 aim = ReadAimDirection();
             if (aim.sqrMagnitude > 0.0001f)
             {
-                _aimDirection = SnapAimToEightDirections(aim);
+                _aimDirection = aim.normalized;
                 RefreshAimIndicator();
             }
 
@@ -365,14 +365,6 @@ namespace PiGame.Gameplay
 
             return _aimDirection;
         }
-
-        private static Vector2 SnapAimToEightDirections(Vector2 direction)
-        {
-            float step = Mathf.PI / 4f;
-            float angle = Mathf.Round(Mathf.Atan2(direction.y, direction.x) / step) * step;
-            return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
-        }
-
         private bool ReadAimPressed()
         {
             return _aimFireAction.action.IsPressed();
