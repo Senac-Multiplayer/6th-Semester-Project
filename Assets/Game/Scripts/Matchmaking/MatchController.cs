@@ -64,6 +64,8 @@ namespace PiGame.Gameplay
         public int ScoreCount => _scores != null ? _scores.Count : 0;
         public bool CanReturnToLobby => IsSpawned && Phase == MatchPhase.ShowingResult
             && NetworkManager.ServerTime.Time >= _resultStartedAt.Value + _resultInputDelaySeconds;
+        public float ResultElapsed => IsSpawned && Phase == MatchPhase.ShowingResult
+            ? Mathf.Max(0f, (float)(NetworkManager.ServerTime.Time - _resultStartedAt.Value)) : 0f;
         public float ResultSecondsRemaining => IsSpawned
             ? Mathf.Max(0f, (float)(_resultStartedAt.Value
                 + Mathf.Max(_resultDisplaySeconds, _resultInputDelaySeconds) - NetworkManager.ServerTime.Time))
