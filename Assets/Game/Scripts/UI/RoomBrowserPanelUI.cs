@@ -98,7 +98,7 @@ namespace PiGame.UI
             _rooms = rooms;
             _pageNumber = pageNumber;
             _hasNextPage = hasNextPage;
-            _pageText.text = $"PÁGINA {pageNumber}";
+            _pageText.text = pageNumber.ToString();
             for (int i = 0; i < rooms.Count; i++)
             {
                 if (i == _slots.Count)
