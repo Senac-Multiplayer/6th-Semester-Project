@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using PiGame.Gameplay;
 using PiGame.Lobby;
 using TMPro;
@@ -16,110 +15,141 @@ namespace PiGame.UI
             public LobbyCharacterId Id;
             public string Name;
             public RuntimeAnimatorController Idle;
+            public RuntimeAnimatorController Victory;
+            public RuntimeAnimatorController Defeat;
+            public float FeetOffsetY;
+            public float OffsetX;
+            public bool DefeatInFront;
+            public float DefeatOffsetY;
         }
 
         [SerializeField] private RectTransform _podium;
+        [SerializeField] private CanvasGroup _information;
+        [SerializeField] private CanvasGroup _spotlight;
         [SerializeField] private Image _frame;
         [SerializeField] private TMP_Text _place;
         [SerializeField] private TMP_Text _playerTag;
         [SerializeField] private TMP_Text _playerName;
         [SerializeField] private TMP_Text _characterName;
         [SerializeField] private TMP_Text _points;
+        [SerializeField] private RectTransform _pointsPlate;
+        [SerializeField] private GameObject _seatedPlateCover;
+        [SerializeField] private float _seatedPointsY = -90f;
         [SerializeField] private Animator _character;
+        [SerializeField] private Animator _foregroundCharacter;
         [SerializeField] private CharacterVisual[] _characters;
         [SerializeField] private Color _winnerColor = new Color32(231, 186, 113, 255);
-        [SerializeField] private float _winnerHeight = 310f;
-        [SerializeField] private float _otherHeight = 270f;
-        [SerializeField] private float _lowerPlaceHeight = 240f;
 
-        [Header("Entrada dos pilares")]
-        [SerializeField, Min(0f)] private float _riseDuration = 2.6f;
-        [SerializeField, Min(0f)] private float _riseDistance = 650f;
-        [SerializeField] private AnimationCurve _riseCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
-        [Tooltip("Tremor em pixels da UI durante a subida. Zero desativa o efeito.")]
-        [SerializeField, Range(0f, 10f)] private float _shakeAmplitude = 2.5f;
-        [SerializeField, Min(0f)] private float _shakeFrequency = 18f;
+        [Header("Subida dos pilares")]
+        [SerializeField, Min(0f)] private float _baseHeight = 70f;
+        [SerializeField, Min(0f)] private float _maximumRise = 210f;
+        [SerializeField, Range(0f, 8f)] private float _shakePixels = 1.5f;
 
-        private Vector2 _restPosition;
-        private Coroutine _rise;
+        [SerializeField, Min(0f)] private float _feetBehindPillar = 24f;
+
+        private Vector2 _pointsRestPosition;
+        private CharacterVisual _visual;
+        private bool _winner;
+        private bool _draw;
+        private int _playerSlot;
+        private int _kills;
+        private int _shownPoints = -1;
+        private int _pose = -1;
+        private float _riseAmount;
 
         private void Awake()
         {
-            if (!_podium || !_frame || !_place || !_playerTag || !_playerName
-                || !_characterName || !_points || !_character || _characters == null
+            if (!_podium || !_information || !_spotlight || !_frame || !_place || !_playerTag
+                || !_playerName || !_characterName || !_points || !_pointsPlate || !_seatedPlateCover
+                || !_character || !_foregroundCharacter || _characters == null
                 || _characters.Length == 0 || Array.Exists(_characters, c => c == null || !c.Idle))
             {
-                Debug.LogError("Configure os textos, pódio e animações do ResultPlayerView no prefab.", this);
+                Debug.LogError("Configure o pilar, cartão, luz, textos e animações no ResultPlayerView.", this);
                 enabled = false;
                 return;
             }
-            _restPosition = _podium.anchoredPosition;
+            _pointsRestPosition = _pointsPlate.anchoredPosition;
         }
 
         private void OnDisable()
         {
-            if (_rise == null) return;
-            StopCoroutine(_rise);
-            _rise = null;
-            _podium.anchoredPosition = _restPosition;
+            _visual = null;
+            _pose = -1;
+            _shownPoints = -1;
         }
 
-        public void Show(MatchPlayerScoreData player, int place, bool winner, bool animate)
+        public void Bind(MatchPlayerScoreData player, int place, bool winner, int highestScore, bool draw = false)
         {
             gameObject.SetActive(true);
             if (!enabled) return;
-
             CharacterVisual visual = Array.Find(_characters, c => c.Id == player.CharacterId);
             if (visual == null)
             {
-                Debug.LogError($"Personagem {player.CharacterId} sem prévia no ResultPlayerView.", this);
-                enabled = false;
+                Debug.LogError($"Personagem {player.CharacterId} sem visual de resultado.", this);
                 return;
             }
 
+            if (_visual != visual)
+            {
+                _visual = visual;
+                _pose = -1;
+            }
+            _winner = winner;
+            _draw = draw;
+            _playerSlot = player.PlayerSlot;
+            _kills = Mathf.Max(0, player.Kills);
+            _riseAmount = _maximumRise * Mathf.Clamp01((float)_kills / Mathf.Max(1, highestScore));
             _place.text = $"{place}º";
             _place.color = winner ? _winnerColor : Color.white;
             _playerTag.text = $"P{player.PlayerSlot + 1}";
             _playerTag.color = PlayerSlotColors.Get(player.PlayerSlot);
             _playerName.text = player.PlayerName.ToString();
             _characterName.text = visual.Name;
-            _points.text = player.Kills.ToString();
             _frame.color = winner ? _winnerColor : PlayerSlotColors.Get(player.PlayerSlot);
-            _podium.sizeDelta = new Vector2(_podium.sizeDelta.x,
-                winner ? _winnerHeight : place >= 3 ? _lowerPlaceHeight : _otherHeight);
-            if (_character.runtimeAnimatorController != visual.Idle)
-            {
-                _character.runtimeAnimatorController = visual.Idle;
-                _character.Rebind();
-                _character.Update(0f);
-            }
-            // Atualizações do placar não reiniciam a entrada que já está acontecendo.
-            if (!animate) return;
-            if (_rise != null) StopCoroutine(_rise);
-            _rise = null;
-            _podium.anchoredPosition = _restPosition;
-            if (_riseDuration > 0f) _rise = StartCoroutine(Rise(player.PlayerSlot));
         }
 
-        private IEnumerator Rise(int playerSlot)
+        public void Present(float rise, float light, float information)
         {
-            Vector2 start = _restPosition + Vector2.down * _riseDistance;
-            float phase = playerSlot * 13.37f;
-            for (float elapsed = 0f; elapsed < _riseDuration; elapsed += Time.unscaledDeltaTime)
+            if (!enabled || _visual == null) return;
+            rise = Mathf.Clamp01(rise);
+            float shake = _shakePixels * Mathf.Sin(Mathf.PI * rise);
+            float offset = Mathf.Sin(rise * 42f + _playerSlot * 7f) * shake;
+            _podium.anchoredPosition = new Vector2(offset, _baseHeight + _riseAmount * rise);
+            int points = Mathf.FloorToInt(_kills * rise + 0.0001f);
+            if (_shownPoints != points)
             {
-                float time = elapsed / _riseDuration;
-                float progress = Mathf.Clamp01(_riseCurve.Evaluate(time));
-                // Ruído suave por jogador: esforço durante a subida, sem deslocamento residual ao parar.
-                float strength = _shakeAmplitude * Mathf.Sin(Mathf.PI * time);
-                float noiseTime = elapsed * _shakeFrequency;
-                Vector2 shake = new Vector2(
-                    Mathf.PerlinNoise(noiseTime, phase) * 2f - 1f,
-                    (Mathf.PerlinNoise(phase, noiseTime + 37f) * 2f - 1f) * 0.35f) * strength;
-                _podium.anchoredPosition = Vector2.LerpUnclamped(start, _restPosition, progress) + shake;
-                yield return null;
+                _shownPoints = points;
+                _points.text = points.ToString();
             }
-            _podium.anchoredPosition = _restPosition;
-            _rise = null;
+            _spotlight.alpha = _winner ? Mathf.Clamp01(light) : 0f;
+            _information.alpha = Mathf.Clamp01(information);
+
+            int pose = light <= 0f || _draw ? 0 : _winner ? 1 : 2;
+            bool inFront = pose == 2 && _visual.DefeatInFront && _visual.Defeat;
+            float plateY = inFront
+                ? Mathf.Max(_seatedPointsY, -_podium.anchoredPosition.y + _pointsPlate.rect.height * 0.5f)
+                : _pointsRestPosition.y;
+            _pointsPlate.anchoredPosition = new Vector2(_pointsRestPosition.x, plateY);
+            if (_pose == pose) return;
+            _pose = pose;
+            _seatedPlateCover.SetActive(inFront);
+            RuntimeAnimatorController controller = pose == 1 ? _visual.Victory
+                : pose == 2 ? _visual.Defeat : _visual.Idle;
+            if (!controller) controller = _visual.Idle;
+            _character.gameObject.SetActive(!inFront);
+            _foregroundCharacter.gameObject.SetActive(inFront);
+            Animator actor = inFront ? _foregroundCharacter : _character;
+            if (actor.runtimeAnimatorController != controller)
+            {
+                actor.runtimeAnimatorController = controller;
+                actor.Rebind();
+                actor.Update(0f);
+            }
+            // O clip compensa os quadros; aplique a posição base apenas ao trocar a pose.
+            ((RectTransform)_character.transform).anchoredPosition =
+                new Vector2(_visual.OffsetX, _visual.FeetOffsetY - _feetBehindPillar);
+            ((RectTransform)_foregroundCharacter.transform).anchoredPosition =
+                new Vector2(_visual.OffsetX, _visual.DefeatOffsetY);
         }
     }
 }

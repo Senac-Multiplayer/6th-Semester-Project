@@ -16,6 +16,13 @@ namespace PiGame.UI
         [SerializeField] private NetcodeMatchDisconnectService _disconnect;
         [SerializeField] private GameObject _root;
         [SerializeField] private CanvasGroup _content;
+        [SerializeField] private CanvasGroup _headingGroup;
+        [SerializeField] private CanvasGroup _actions;
+        [Header("Apresentação do resultado")]
+        [SerializeField, Min(0.1f)] private float _riseSeconds = 2.4f;
+        [SerializeField, Min(0.01f)] private float _spotlightSeconds = 0.45f;
+        [SerializeField, Min(0.01f)] private float _informationFadeSeconds = 0.3f;
+        [SerializeField] private AnimationCurve _riseCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
         [SerializeField] private TMP_Text _heading;
         [SerializeField] private TMP_Text _hostHint;
         [SerializeField] private ResultPlayerView[] _players;
@@ -27,10 +34,12 @@ namespace PiGame.UI
         private bool _busy;
         private bool _configured;
         private Coroutine _selection;
+        private bool _presentationComplete;
+        public float PresentationDuration => _riseSeconds + _spotlightSeconds + _informationFadeSeconds;
 
         private void Awake()
         {
-            if (!_match || !_pause || !_disconnect || !_root || !_content || !_heading || !_hostHint
+            if (!_match || !_pause || !_disconnect || !_root || !_content || !_headingGroup || !_actions || !_heading || !_hostHint
                 || !_returnButton || !_exitButton || !_confirmation || _players == null
                 || _players.Length == 0 || Array.Exists(_players, p => !p))
             {
@@ -43,6 +52,7 @@ namespace PiGame.UI
 
         private void OnEnable()
         {
+            if (!_configured) return;
             _match.PhaseChanged += Refresh;
             _match.ScoresChanged += Refresh;
             _returnButton.onClick.AddListener(ReturnToLobby);
@@ -69,18 +79,29 @@ namespace PiGame.UI
             bool visible = _match.Phase == MatchPhase.ShowingResult;
             bool opening = visible && !_root.activeSelf;
             _root.SetActive(visible);
-            if (!visible) return;
-
+            if (!visible)
+            {
+                _busy = false;
+                _presentationComplete = false;
+                return;
+            }
             if (opening)
             {
                 _pause.ClosePause();
                 _confirmation.Hide();
-                _content.interactable = true;
-                _content.blocksRaycasts = true;
+                _busy = false;
+                _presentationComplete = false;
+                EventSystem.current?.SetSelectedGameObject(null);
             }
 
             _scores.Clear();
-            for (int i = 0; i < _match.ScoreCount; i++) _scores.Add(_match.GetScore(i));
+            int highestScore = 0;
+            for (int i = 0; i < _match.ScoreCount; i++)
+            {
+                MatchPlayerScoreData score = _match.GetScore(i);
+                _scores.Add(score);
+                highestScore = Mathf.Max(highestScore, score.Kills);
+            }
             int winner = _match.WinningPlayerSlot;
             _scores.Sort((a, b) =>
             {
@@ -89,33 +110,56 @@ namespace PiGame.UI
                 int points = b.Kills.CompareTo(a.Kills);
                 return points != 0 ? points : a.PlayerSlot.CompareTo(b.PlayerSlot);
             });
-
-            int place = 1;
             _heading.text = winner < 0 ? "EMPATE!" : "RESULTADO";
-            for (int i = 0; i < _players.Length; i++)
+            for (int slot = 0; slot < _players.Length; slot++)
             {
-                if (i >= _scores.Count) { _players[i].gameObject.SetActive(false); continue; }
-                MatchPlayerScoreData score = _scores[i];
-                if (i == 0 || score.Kills != _scores[i - 1].Kills
-                    || _scores[i - 1].PlayerSlot == winner) place = i + 1;
-                bool animate = opening || !_players[i].gameObject.activeSelf;
-                _players[i].Show(score, place, score.PlayerSlot == winner, animate);
-                if (score.PlayerSlot == winner) _heading.text = $"{score.PlayerName} VENCEU!";
+                int index = _scores.FindIndex(score => score.PlayerSlot == slot);
+                if (index < 0)
+                {
+                    _players[slot].gameObject.SetActive(false);
+                    continue;
+                }
+                int place = 1;
+                for (int i = 1; i <= index; i++)
+                    if (_scores[i].Kills != _scores[i - 1].Kills || _scores[i - 1].PlayerSlot == winner)
+                        place = i + 1;
+                MatchPlayerScoreData player = _scores[index];
+                _players[slot].Bind(player, place, slot == winner, highestScore, winner < 0);
+                if (slot == winner) _heading.text = $"{player.PlayerName} VENCEU!";
             }
-
-            RefreshReturnHint();
-            _exitButton.interactable = !_busy;
-            if (opening) QueueSelection();
+            RenderPresentation(_match.ResultElapsed);
         }
 
         private void Update()
         {
-            if (_root.activeSelf && !_busy) RefreshReturnHint();
+            if (_configured && _root.activeSelf) RenderPresentation(_match.ResultElapsed);
+        }
+
+        private void RenderPresentation(float elapsed)
+        {
+            float rise = Mathf.Clamp01(elapsed / Mathf.Max(0.01f, _riseSeconds));
+            float light = Mathf.Clamp01((elapsed - _riseSeconds) / Mathf.Max(0.01f, _spotlightSeconds));
+            float information = Mathf.Clamp01((elapsed - _riseSeconds - _spotlightSeconds)
+                / Mathf.Max(0.01f, _informationFadeSeconds));
+            foreach (ResultPlayerView player in _players)
+                if (player.gameObject.activeSelf) player.Present(_riseCurve.Evaluate(rise), light, information);
+            _headingGroup.alpha = information;
+            _actions.alpha = information;
+            bool wasComplete = _presentationComplete;
+            _presentationComplete = elapsed >= PresentationDuration;
+            bool interactive = _presentationComplete && !_busy && !_confirmation.gameObject.activeSelf;
+            _content.interactable = interactive;
+            _content.blocksRaycasts = !_confirmation.gameObject.activeSelf;
+            _actions.interactable = interactive;
+            _actions.blocksRaycasts = interactive;
+            _exitButton.interactable = interactive;
+            RefreshReturnHint();
+            if (_presentationComplete && !wasComplete) QueueSelection();
         }
 
         private void RefreshReturnHint()
         {
-            _returnButton.interactable = _match.CanReturnToLobby && !_busy;
+            _returnButton.interactable = _presentationComplete && _match.CanReturnToLobby && !_busy;
             _hostHint.text = _match.CanReturnToLobby
                 ? $"Retorno automático ao lobby em {Mathf.CeilToInt(_match.ResultSecondsRemaining)}s."
                 : "Aguarde a apresentação do resultado...";
@@ -123,19 +167,19 @@ namespace PiGame.UI
 
         public void OnCancel(BaseEventData eventData)
         {
-            if (_root.activeSelf && !_confirmation.gameObject.activeSelf) AskExit();
+            if (_root.activeSelf && _presentationComplete && !_confirmation.gameObject.activeSelf) AskExit();
         }
 
         private void ReturnToLobby()
         {
-            if (_busy) return;
+            if (_busy || !_presentationComplete || !_match.CanReturnToLobby) return;
             _busy = _match.RequestReturnToLobby();
             _content.interactable = !_busy;
         }
 
         private void AskExit()
         {
-            if (_busy) return;
+            if (_busy || !_presentationComplete) return;
             _content.interactable = false;
             _content.blocksRaycasts = false;
             _confirmation.Show(_match.IsServer
