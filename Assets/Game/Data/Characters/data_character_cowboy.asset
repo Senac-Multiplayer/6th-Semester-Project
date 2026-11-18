@@ -24,6 +24,7 @@ MonoBehaviour:
   _lobbyDetailsOffset: {x: 160, y: 0}
   _lobbyFrame: {fileID: 21300000, guid: c99df3ea5ef242adbc3ff8966206d98b, type: 3}
   _lobbyBanner: {fileID: 21300000, guid: 433d253034134342836b6555851d8bbb, type: 3}
+  _lobbyReadyBannerOffset: {x: 0, y: 2}
   _lobbyUp: {fileID: 21300000, guid: 87035552b5364629a4384ae3187254f6, type: 3}
   _lobbyUpPressed: {fileID: 21300000, guid: c712ed6370d341b8b4e184a8e3b0c2a5, type: 3}
   _lobbyDown: {fileID: 21300000, guid: 073ed012999d437c87d8afc2a0a41b09, type: 3}

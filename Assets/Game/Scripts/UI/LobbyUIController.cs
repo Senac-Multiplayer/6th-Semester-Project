@@ -39,6 +39,7 @@ namespace PiGame.UI
         [SerializeField] private PauseMenuUI _lobbyPause;
         [SerializeField] private PlayerNamePanelUI _playerNamePanel;
         [SerializeField] private RoomBrowserPanelUI _roomBrowser;
+        [SerializeField] private LobbyPlayersPanelUI _playersPanel;
 
         [Header("Services")]
         [SerializeField] private NetcodeLobbyConnectionService _connectionService;
@@ -101,6 +102,8 @@ namespace PiGame.UI
             _mapVotingController.VisibilityChanged += HandleMapVotingVisibilityChanged;
             _confirmationPanel.Confirmed += HandleConfirmationConfirmed;
             _confirmationPanel.Canceled += HandleConfirmationCanceled;
+            _playersPanel.Opened += HandlePlayersOpened;
+            _playersPanel.Closed += HandlePlayersClosed;
             _matchSettingsPanel.Opened += HandleMatchSettingsOpened;
             _matchSettingsPanel.Closed += HandleMatchSettingsClosed;
             _lobbyPause.ResumeRequested += CloseLobbyPause;
@@ -163,6 +166,8 @@ namespace PiGame.UI
             _mapVotingController.VisibilityChanged -= HandleMapVotingVisibilityChanged;
             _confirmationPanel.Confirmed -= HandleConfirmationConfirmed;
             _confirmationPanel.Canceled -= HandleConfirmationCanceled;
+            _playersPanel.Opened -= HandlePlayersOpened;
+            _playersPanel.Closed -= HandlePlayersClosed;
             _matchSettingsPanel.Opened -= HandleMatchSettingsOpened;
             _matchSettingsPanel.Closed -= HandleMatchSettingsClosed;
             _roomBrowser.BackRequested -= HandleRoomBrowserBack;
@@ -207,6 +212,12 @@ namespace PiGame.UI
                 && Gamepad.current.startButton.wasPressedThisFrame;
             bool gamepadBack = Gamepad.current != null
                 && Gamepad.current.buttonEast.wasPressedThisFrame;
+
+            if (_playersPanel.IsOpen)
+            {
+                if (keyboardBack || gamepadBack || gamepadMenu) _playersPanel.HandleBack();
+                return;
+            }
 
             if (_matchSettingsPanel.IsOpen && (keyboardBack || gamepadBack || gamepadMenu))
             {
@@ -294,6 +305,14 @@ namespace PiGame.UI
                 return;
             }
 
+            bool playersShortcut = (Keyboard.current != null && Keyboard.current.pKey.wasPressedThisFrame)
+                || (Gamepad.current != null && Gamepad.current.leftShoulder.wasPressedThisFrame);
+            if (playersShortcut && !_matchSettingsPanel.IsOpen && _playersPanel.CanOpen)
+            {
+                _playersPanel.Show();
+                return;
+            }
+
             bool keyboardSettings = Keyboard.current != null
                 && Keyboard.current.tabKey.wasPressedThisFrame;
             bool gamepadSettings = Gamepad.current != null
@@ -335,6 +354,7 @@ namespace PiGame.UI
 
         private void ShowMainMenu()
         {
+            _playersPanel.Hide();
             _roomQueryVersion++;
             _roomBrowser.Hide();
             _joiningListedRoom = false;
@@ -634,6 +654,7 @@ namespace PiGame.UI
         private void HandleDisconnected()
         {
             ShowMainMenu();
+            if (_connectionService.WasKicked) ShowConnectionError("VOCÊ FOI EXPULSO DA SALA PELO HOST.");
         }
 
         private void HandleConnectionFailed(LobbyConnectionFailure failure)
@@ -666,6 +687,7 @@ namespace PiGame.UI
 
         private void ShowConnectionPanel()
         {
+            _playersPanel.Hide();
             _roomQueryVersion++;
             _roomBrowser.Hide();
             _playerNamePanel.Hide();
@@ -681,6 +703,7 @@ namespace PiGame.UI
 
         private void ShowLobbyPanel()
         {
+            _playersPanel.Hide();
             _roomBrowser.Hide();
             _pendingConfirmation = ConfirmationAction.None;
             _confirmationPanel.Hide();
@@ -711,6 +734,21 @@ namespace PiGame.UI
                 _sessionCodeText.text =
                     $"CÓDIGO DA SALA\n<size=24>{_connectionServiceContract.JoinCode}</size>";
             }
+        }
+
+        private void HandlePlayersOpened()
+        {
+            SetLobbyInteractionEnabled(false);
+            _matchSettingsPanel.SetMenuVisible(false);
+        }
+
+        private void HandlePlayersClosed()
+        {
+            _ignoreMenuInputFrame = Time.frameCount;
+            bool lobbyVisible = _lobbyPanel.activeInHierarchy && !_mapVotingController.IsVisible;
+            _matchSettingsPanel.SetMenuVisible(lobbyVisible && _connectionServiceContract != null
+                && _connectionServiceContract.IsHost);
+            SetLobbyInteractionEnabled(lobbyVisible);
         }
 
         private void HandleMatchSettingsOpened()
@@ -769,6 +807,7 @@ namespace PiGame.UI
         private void SetLobbyInteractionEnabled(bool isEnabled)
         {
             bool mapVotingIsVisible = _mapVotingController.IsVisible;
+            _playersPanel.SetEntryEnabled(isEnabled && !mapVotingIsVisible && _lobbyPanel.activeInHierarchy);
             _characterSelectionController.SetInteractionEnabled(isEnabled && !mapVotingIsVisible);
             _mapVotingController.SetInteractionEnabled(isEnabled && mapVotingIsVisible);
         }

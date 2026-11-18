@@ -33,6 +33,7 @@ namespace PiGame.UI
         [SerializeField] private Sprite[] _placementFrames;
         [SerializeField] private TMP_Text _place;
         [SerializeField] private TMP_Text _playerTag;
+        [SerializeField] private TMP_Text _teamLabel;
         [SerializeField] private TMP_Text _playerName;
         [SerializeField] private TMP_Text _characterName;
         [SerializeField] private TMP_Text _points;
@@ -64,7 +65,7 @@ namespace PiGame.UI
         private void Awake()
         {
             if (!_podium || !_information || !_spotlight || !_frame || !_place || !_playerTag
-                || !_playerName || !_characterName || !_points || !_pointsPlate || !_seatedPlateCover
+                || !_teamLabel || !_playerName || !_characterName || !_points || !_pointsPlate || !_seatedPlateCover
                 || _placementFrames == null || _placementFrames.Length != 4
                 || Array.Exists(_placementFrames, frame => !frame)
                 || !_character || !_foregroundCharacter || _characters == null
@@ -111,6 +112,10 @@ namespace PiGame.UI
             _playerTag.color = PlayerSlotColors.Get(player.PlayerSlot);
             _playerName.text = player.PlayerName.ToString();
             _characterName.text = visual.Name;
+            bool hasTeam = LobbyTeams.IsValid(player.Team);
+            _teamLabel.gameObject.SetActive(hasTeam);
+            _teamLabel.text = hasTeam ? LobbyTeams.Name(player.Team) : string.Empty;
+            _teamLabel.color = LobbyTeams.Color(player.Team);
             _frame.sprite = _placementFrames[Mathf.Clamp(place - 1, 0, _placementFrames.Length - 1)];
             _frame.color = Color.white;
         }

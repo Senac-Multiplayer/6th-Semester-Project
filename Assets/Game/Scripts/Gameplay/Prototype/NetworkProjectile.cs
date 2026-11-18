@@ -149,7 +149,7 @@ namespace PiGame.Gameplay
                     return;
                 }
 
-                if (playerState.IsInvulnerable)
+                if (!playerState.CanReceiveHitFrom(_shooterClientId) || playerState.IsInvulnerable)
                 {
                     return;
                 }

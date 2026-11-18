@@ -241,7 +241,8 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
         foreach (Collider2D col in playerHits)
         {
             NetworkPlayerState targetState = col.GetComponentInParent<NetworkPlayerState>();
-            if (targetState != null && targetState != _playerState && targetState.CanAct)
+            if (targetState != null && targetState != _playerState && targetState.CanAct
+                && targetState.CanReceiveHitFrom(OwnerClientId))
             {
                 hitOtherPlayer = true;
                 break;
@@ -271,7 +272,8 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
         foreach (Collider2D hitCollider in playerHits)
         {
             NetworkPlayerState targetState = hitCollider.GetComponentInParent<NetworkPlayerState>();
-            if (targetState != null && targetState != _playerState && targetState.CanAct)
+            if (targetState != null && targetState != _playerState && targetState.CanAct
+                && targetState.CanReceiveHitFrom(OwnerClientId))
             {
                 Vector2 knockbackDir = ((Vector2)targetState.transform.position - (Vector2)transform.position).normalized;
                 if (knockbackDir.sqrMagnitude < 0.01f)

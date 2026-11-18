@@ -68,7 +68,7 @@ namespace PiGame.UI
 
         private void Awake()
         {
-            _modeButtons[0].interactable = false;
+            _modeButtons[0].interactable = true;
             _confirmedSettings = new LobbyMatchSettingsData(
                 DefaultDurationMinutes,
                 DefaultMode,
@@ -92,6 +92,7 @@ namespace PiGame.UI
             _durationSlider.onValueChanged.AddListener(RefreshValues);
             _killLimitSlider.onValueChanged.AddListener(RefreshValues);
 
+            _modeButtons[0].onClick.AddListener(SelectTeamMode);
             _modeButtons[1].onClick.AddListener(SelectSoloMode);
         }
 
@@ -107,6 +108,7 @@ namespace PiGame.UI
             _durationSlider.onValueChanged.RemoveListener(RefreshValues);
             _killLimitSlider.onValueChanged.RemoveListener(RefreshValues);
 
+            _modeButtons[0].onClick.RemoveListener(SelectTeamMode);
             _modeButtons[1].onClick.RemoveListener(SelectSoloMode);
         }
 
@@ -196,6 +198,8 @@ namespace PiGame.UI
 
         public void SetSummaryVisible(bool isVisible) => _summaryRoot.SetActive(isVisible);
 
+        private void SelectTeamMode() => SelectMode(LobbyMatchMode.Team);
+
         private void SelectSoloMode()
         {
             SelectMode(LobbyMatchMode.Solo);
@@ -231,16 +235,6 @@ namespace PiGame.UI
 
             for (int index = 0; index < _modeButtons.Length; index++)
             {
-                if (index == 0)
-                {
-                    Button unavailableButton = _modeButtons[index];
-                    unavailableButton.targetGraphic.color = _unavailableColor;
-                    unavailableButton.transform.localScale = Vector3.one;
-                    Text unavailableLabel = unavailableButton.GetComponentInChildren<Text>(true);
-                    unavailableLabel.color = _unavailableTextColor;
-                    continue;
-                }
-
                 bool isSelected = (int)_selectedMode == index;
                 ApplySelectionVisual(_modeButtons[index], isSelected);
             }
