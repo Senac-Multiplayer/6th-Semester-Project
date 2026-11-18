@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &8010000000000000000
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2200000000, guid: d16d8e9c785b4ba0a3970ecc0baaae95, type: 3}
+      propertyPath: m_Name
+      value: ui_character_selection_panel_menu_background
+      objectReference: {fileID: 0}
+    - target: {fileID: 2440000100, guid: d16d8e9c785b4ba0a3970ecc0baaae95, type: 3}
+      propertyPath: _useMenuBackground
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2440000000, guid: d16d8e9c785b4ba0a3970ecc0baaae95, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2440000030, guid: d16d8e9c785b4ba0a3970ecc0baaae95, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2120000002, guid: d16d8e9c785b4ba0a3970ecc0baaae95, type: 3}
+      propertyPath: _cardBackground
+      value: 1
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: d16d8e9c785b4ba0a3970ecc0baaae95, type: 3}

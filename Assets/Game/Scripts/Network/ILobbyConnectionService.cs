@@ -1,4 +1,5 @@
 using System;
+using Unity.Services.Multiplayer;
 using System.Threading.Tasks;
 
 namespace PiGame.Networking
@@ -14,7 +15,8 @@ namespace PiGame.Networking
         AuthenticationFailed,
         InvalidJoinCode,
         SessionNotFound,
-        SessionConflict
+        SessionConflict,
+        NoAvailableRooms
     }
 
     public interface ILobbyConnectionService
@@ -27,7 +29,10 @@ namespace PiGame.Networking
         bool IsHost { get; }
         string JoinCode { get; }
 
-        Task StartHostAsync();
+        Task StartHostAsync(string roomName = null, bool isPrivate = true);
+        Task<QuerySessionsResults> QueryRoomsAsync(string continuationToken = null);
+        Task JoinRoomAsync(string sessionId);
+        Task QuickJoinAsync();
         Task StartClientAsync(string joinCode);
         Task ShutdownAsync();
     }

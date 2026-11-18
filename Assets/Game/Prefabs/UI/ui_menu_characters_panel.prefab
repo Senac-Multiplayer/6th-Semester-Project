@@ -66,7 +66,7 @@ MonoBehaviour:
       de seis tiros, precis\xE3o e mobilidade. Seu rolamento atravessa amea\xE7as,
       evita dano e recupera parte da muni\xE7\xE3o."
     Visual: {fileID: 2290000340}
-  - Name: IRRIGADOR
+  - Name: NEREI, IRRIGADOR
     AccentColor: {r: 0.48235294, g: 0.8156863, b: 0.9019608, a: 1}
     Description: "<color=#7BD0E6>ORIGEM</color>\nNerei lidera os irrigadores. Com
       uma m\xE1scara de respira\xE7\xE3o e um tanque de \xE1gua, pretende inundar
