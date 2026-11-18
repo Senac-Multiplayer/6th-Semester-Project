@@ -938,6 +938,12 @@ namespace PiGame.Lobby
                 }
             }
 
+            // Em empate com Aleatório, a preferência fica com os mapas específicos mais votados.
+            if (tiedOptions.Count > 1)
+            {
+                tiedOptions.Remove(LobbyMapId.Random);
+            }
+
             tiedOptions.Sort();
             return tiedOptions;
         }
