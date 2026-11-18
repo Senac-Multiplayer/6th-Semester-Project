@@ -18,6 +18,8 @@ namespace PiGame.UI
             public RuntimeAnimatorController Victory;
             public RuntimeAnimatorController Defeat;
             public float FeetOffsetY;
+            [Tooltip("Ajuste vertical adicional na pose de vitória.")]
+            public float VictoryOffsetY;
             public float OffsetX;
             public bool DefeatInFront;
             public float DefeatOffsetY;
@@ -152,7 +154,8 @@ namespace PiGame.UI
             }
             // O clip compensa os quadros; aplique a posição base apenas ao trocar a pose.
             ((RectTransform)_character.transform).anchoredPosition =
-                new Vector2(_visual.OffsetX, _visual.FeetOffsetY - _feetBehindPillar);
+                new Vector2(_visual.OffsetX, _visual.FeetOffsetY - _feetBehindPillar
+                    + (pose == 1 ? _visual.VictoryOffsetY : 0f));
             ((RectTransform)_foregroundCharacter.transform).anchoredPosition =
                 new Vector2(_visual.OffsetX, _visual.DefeatOffsetY);
         }

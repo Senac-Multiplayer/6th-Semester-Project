@@ -81,10 +81,11 @@ MonoBehaviour:
     DefeatOffsetY: 0
   - Id: 1
     Name: IRRIGADOR
-    Idle: {fileID: 9100000, guid: f46f9767f59d637df16863f8bb119252, type: 2}
-    Victory: {fileID: 0}
+    Idle: {fileID: 9100000, guid: 331422aa71b2356468fdef2be0284d55, type: 2}
+    Victory: {fileID: 9100000, guid: 33e3185d84820cc4f8c282705d27fa58, type: 2}
     Defeat: {fileID: 0}
-    FeetOffsetY: -60
+    FeetOffsetY: 6
+    VictoryOffsetY: 9
     OffsetX: 0
     DefeatInFront: 0
     DefeatOffsetY: 0

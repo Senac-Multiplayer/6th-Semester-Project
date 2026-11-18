@@ -25,6 +25,7 @@ namespace PiGame.UI
         [SerializeField] private LobbyMapDefinition[] _maps;
         [SerializeField] private Button[] _optionButtons;
         [SerializeField] private Image[] _previewImages;
+        [SerializeField] private MapCardBorderUI[] _frameOverlays;
         [SerializeField] private Image[] _nameplateImages;
         [SerializeField] private Text[] _optionLabels;
         [SerializeField] private Text[] _voterLabels;
@@ -89,6 +90,8 @@ namespace PiGame.UI
         {
             if (!_optionsGroup || !_winnerPresentation || !_winnerCard || !_winnerPreview || !_winnerMapName
                 || !_normalFrameSprite || !_selectedFrameSprite || !_normalNameplateSprite || !_selectedNameplateSprite
+                || _frameOverlays == null || _frameOverlays.Length != _optionButtons.Length
+                || Array.Exists(_frameOverlays, image => !image)
                 || _nameplateImages == null || _nameplateImages.Length != _optionButtons.Length
                 || Array.Exists(_nameplateImages, image => !image))
             {
@@ -275,7 +278,7 @@ namespace PiGame.UI
                 _optionLabels[i + 1].text = map.DisplayName.ToUpperInvariant();
                 if (i + 1 < _previewImages.Length && map.Preview != null)
                 {
-                    _previewImages[i + 1].sprite = map.Preview;
+                    SetPreviewSprite(_previewImages[i + 1], map.Preview);
                     _previewImages[i + 1].color = Color.white;
                 }
             }
@@ -429,6 +432,7 @@ namespace PiGame.UI
                 bool highlighted = isWinner || isSelected;
                 Sprite frameSprite = highlighted ? _selectedFrameSprite : _normalFrameSprite;
                 button.image.sprite = frameSprite;
+                _frameOverlays[i].Sprite = frameSprite;
                 // A roleta bloqueia os botões, mas mantém a arte do card apontado.
                 SpriteState sprites = button.spriteState;
                 sprites.disabledSprite = frameSprite;
@@ -515,9 +519,16 @@ namespace PiGame.UI
             Vector2 start = _winnerCard.parent.InverseTransformPoint(_optionButtons[index].transform.position);
             _winnerCard.anchoredPosition = Vector2.Lerp(start, Vector2.zero, progress);
             _winnerCard.localScale = Vector3.one * Mathf.Lerp(1f, _winnerScale, progress);
-            _winnerPreview.sprite = _previewImages[index].sprite;
+            SetPreviewSprite(_winnerPreview, _previewImages[index].sprite);
             _winnerPreview.enabled = _winnerPreview.sprite != null;
             _winnerMapName.text = GetMapDisplayName(_draw.MapId);
+        }
+
+        private static void SetPreviewSprite(Image preview, Sprite sprite)
+        {
+            preview.sprite = sprite;
+            if (sprite && preview.TryGetComponent<AspectRatioFitter>(out var fitter))
+                fitter.aspectRatio = sprite.rect.width / sprite.rect.height;
         }
 
         private void FitOptionsToAvailableHeight()
