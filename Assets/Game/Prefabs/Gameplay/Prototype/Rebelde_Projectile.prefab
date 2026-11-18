@@ -199,8 +199,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.RebeldeProjectile
   ShowTopMostFoldoutHeaderGroup: 1
-  _minimumSpeed: 5
-  _wallBounceSpeedLoss: 0.25
+  _minimumSpeed: 4.5
+  _wallBounceSpeedLoss: 0.85
   _playerBounceSpeedLoss: 0.5
   _fallSpeedThreshold: 3
   _collisionLayers:

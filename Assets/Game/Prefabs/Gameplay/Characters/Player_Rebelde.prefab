@@ -2122,9 +2122,9 @@ MonoBehaviour:
   _shotCooldownSeconds: 0.35
   _projectileSpawnDistance: 1.5
   _projectileVelocityStack:
-  - 7
   - 13
   - 17
+  - 22
   _coneDistance: 2
   _coneAngle: 60
   _projectileReflectMinimumSpeed: 6

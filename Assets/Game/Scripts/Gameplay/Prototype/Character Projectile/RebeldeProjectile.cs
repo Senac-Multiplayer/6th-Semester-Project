@@ -1,6 +1,7 @@
 using UnityEngine;
 using Unity.Netcode;
 using PiGame.Sound;
+using System.Collections.Generic;
 
 namespace PiGame.Gameplay 
 {
@@ -14,6 +15,9 @@ namespace PiGame.Gameplay
         [SerializeField] private float _wallBounceSpeedLoss = 0.25f;
         [SerializeField] private float _playerBounceSpeedLoss = 0.5f;
         [SerializeField] private float _fallSpeedThreshold = 3f;
+        [SerializeField] private float _maxFallingTime = 15f;
+
+        private float _fallingStartedAt;
 
         [Header("Collision")]
         [SerializeField] private LayerMask _collisionLayers;
@@ -29,8 +33,9 @@ namespace PiGame.Gameplay
 
         private bool _isStopped;
         private bool _falling;
+        private bool _isReturningToShooter;
 
-
+        private readonly HashSet<ulong> _damagedPlayers = new HashSet<ulong>();
 
         public float MinimumSpeed => _minimumSpeed;
 
@@ -64,7 +69,10 @@ namespace PiGame.Gameplay
 
             _isStopped = false;
             _falling = false; 
-            _ownerSound = ownerSound;     
+            _ownerSound = ownerSound;   
+            _damagedPlayers.Clear();  
+            _isReturningToShooter = false;
+            _fallingStartedAt = 0f;
 
         }
 
@@ -101,16 +109,24 @@ namespace PiGame.Gameplay
 
         private void FixedUpdate()
         {
-            if(!IsServer || !IsSpawned)
+            if (!IsServer || !IsSpawned || _isReturningToShooter)
                 return;
-            
-            if(_isStopped)
-                return;
-            
-            if(_falling)
+
+            // Verifica o tempo mesmo quando o projétil já parou no chão.
+            if (_falling)
             {
-                return;
+                float fallingTime = Time.time - _fallingStartedAt;
+
+                if (fallingTime >= _maxFallingTime)
+                {
+
+                    ReturnToShooterServer();
+                    return;
+                }
             }
+
+            if (_isStopped)
+                return;
 
             UpdateFlying();
         }
@@ -168,12 +184,15 @@ namespace PiGame.Gameplay
                 return;
 
             _falling = true;
+            _fallingStartedAt = Time.time;
+
             _speed = 0f;
             _solidCollider.enabled = true;
 
             _rigidbody.bodyType = RigidbodyType2D.Dynamic;
             _rigidbody.gravityScale = 1f;
             _rigidbody.linearVelocity = Vector2.down * 2f;
+
         }
 
         private void OnCollisionEnter2D(Collision2D collision)
@@ -200,6 +219,7 @@ namespace PiGame.Gameplay
 
             _rigidbody.bodyType = RigidbodyType2D.Kinematic;
             _rigidbody.gravityScale = 0f;
+
         }
 
         private void HandleCollision(RaycastHit2D hit)
@@ -225,32 +245,41 @@ namespace PiGame.Gameplay
 
         private void HandlePlayerCollision(NetworkPlayerState player, RaycastHit2D hit)
         {
-            
+            // Ignora o próprio jogador que disparou o projétil.
             if (player.OwnerClientId == _shooterClientId)
             {
-
                 transform.position +=
                     (Vector3)(_direction * _speed * Time.fixedDeltaTime);
 
                 return;
             }
 
-            if (!player.IsInvulnerable)
+            // Verifica se este jogador já recebeu dano deste projétil.
+            bool alreadyDamaged = _damagedPlayers.Contains(player.OwnerClientId);
+
+            if (!alreadyDamaged)
             {
-                player.ApplyDamageServer(
-                    _damage,
-                    _shooterClientId);
+                // Registra antes de aplicar o dano para impedir chamadas duplicadas.
+                _damagedPlayers.Add(player.OwnerClientId);
+
+                if (!player.IsInvulnerable)
+                {
+                    player.ApplyDamageServer(
+                        _damage,
+                        _shooterClientId);
+                }
             }
 
+            // Continua permitindo o ricochete, mesmo sem aplicar dano novamente.
             Bounce(
                 hit.normal,
-                _playerBounceSpeedLoss);  
+                _playerBounceSpeedLoss);
         }
 
         private void Bounce(Vector2 normal, float speedLoss)
         {
             float currentSpeed =
-                _speed - speedLoss;
+                _speed * speedLoss;
 
             if (currentSpeed <= _minimumSpeed)
             {
@@ -279,6 +308,7 @@ namespace PiGame.Gameplay
             base.ReflectServer(minimumSpeed);
 
             _falling = false;
+            _fallingStartedAt = 0f;
             _isStopped = false;
 
             _rigidbody.bodyType = RigidbodyType2D.Kinematic;
@@ -289,6 +319,32 @@ namespace PiGame.Gameplay
             _solidCollider.enabled = false;
         }
 
+        private void ReturnToShooterServer()
+        {
+            if (!IsServer || !IsSpawned || _isReturningToShooter)
+                return;
+
+            _isReturningToShooter = true;
+
+
+            if (NetworkManager.Singleton != null &&
+                NetworkManager.Singleton.ConnectedClients.TryGetValue(
+                    _shooterClientId, out var client))
+            {
+                if (client.PlayerObject != null)
+                {
+                    RebeldeCombat combat =
+                        client.PlayerObject.GetComponent<RebeldeCombat>();
+
+                    if (combat != null)
+                    {
+                        combat.AddShotServer();
+
+                    }
+                }
+            }
+            NetworkObject.Despawn();
+        }
     }
     
 }

@@ -33,6 +33,7 @@ namespace PiGame.Gameplay
         private float _abilityHitWindowUntil;
 
         private readonly HashSet<NetworkObject> _abilityProcessedTargets = new();
+        private RebeldeProjectile _activeProjectile;
         private bool _abilityActive;
         private Vector2 _abilityForward = Vector2.right;
         private float _abilityStartedAt;
@@ -109,6 +110,7 @@ namespace PiGame.Gameplay
                 }
                 rebeldeProjectile.InitializeServer(OwnerClientId, shotDirection, _projectile, _projectileVelocity, _rebeldeSound);
                 _hasShot.Value = false;
+                _activeProjectile = rebeldeProjectile;
             }
             _ammo.Value = 0;
             GetNextShot();
@@ -191,13 +193,14 @@ namespace PiGame.Gameplay
             if (!IsServer)
                 return;
 
+            _activeProjectile = null;
+
             if (_rebeldeSound != null)
             {
                 _rebeldeSound.PlayRebeldeCatch();
             }
 
             _hasShot.Value = true;
-
             _ammo.Value = 1;
         }
         private void GetNextShot()
@@ -386,12 +389,36 @@ $"[Rebelde] End | IsServer={IsServer} | Time={Time.time}"
 
         public void RefillAmmoServer()
         {
+            if (!IsServer)
+                return;
 
+            // Não permite recuperar a munição enquanto o projétil anterior
+            // ainda estiver ativo.
+            if (_activeProjectile != null && _activeProjectile.IsSpawned)
+                return;
+
+            _activeProjectile = null;
+
+            _hasShot.Value = true;
+            _ammo.Value = 1;
         }
 
         public void ClearProjectilesServer()
         {
+            if (!IsServer)
+            {
+                return;
+            }
 
+            if (_activeProjectile != null)
+            {
+                if (_activeProjectile.IsSpawned)
+                {
+                    _activeProjectile.NetworkObject.Despawn(true);
+                }
+
+                _activeProjectile = null;
+            }
         }
     }
 
