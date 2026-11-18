@@ -60,6 +60,7 @@ namespace PiGame.UI
         private PauseMenuDefinition _definition;
         private Coroutine _selectionRoutine;
         private bool _buttonsBound;
+        private PanelInputScope _controlsInputScope;
 
         public event Action ResumeRequested;
         public event Action ExitRequested;
@@ -224,6 +225,8 @@ namespace PiGame.UI
             }
             if (HasInlineOptions)
             {
+                if (_controlsInputScope != null)
+                    _controlsInputScope.enabled = false;
                 ShowInlineContent(_controlsContent);
                 _controlsView.Show();
                 return;
@@ -451,6 +454,8 @@ namespace PiGame.UI
                 _controlsButton.interactable = false;
                 return;
             }
+
+            _controlsInputScope = _controlsView.GetComponent<PanelInputScope>();
 
             _controlsView.Closed -= HandleControlsClosed;
             _controlsView.Closed += HandleControlsClosed;
