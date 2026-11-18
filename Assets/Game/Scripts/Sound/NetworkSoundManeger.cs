@@ -48,6 +48,9 @@ namespace PiGame.Sound
 
         private Coroutine _sfxFadeRoutine;
         private Coroutine _ostFadeRoutine;
+        private OSTList? _requestedOst;
+        private float _ostTargetVolume;
+        private bool _ostTransitioning;
 
         private void Awake()
         {
@@ -78,6 +81,12 @@ namespace PiGame.Sound
             RegisterMixer();
         }
 
+        public override void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+            base.OnDestroy();
+        }
+
         private void RegisterMixer()
         {
             GameAudioSettings.UseMixer(ostSource != null
@@ -106,6 +115,24 @@ namespace PiGame.Sound
         {
             if(Instance == null) return;
             Instance.PlayOSTLocal(ost, Mathf.Clamp01(volume));
+        }
+
+        public void StopLocalOST(float fadeOutSeconds = 0.15f)
+        {
+            if (ostSource == null || (_requestedOst == null && _ostTransitioning)) return;
+            if (_ostFadeRoutine != null) StopCoroutine(_ostFadeRoutine);
+            _requestedOst = null;
+            _ostTransitioning = true;
+            _ostFadeRoutine = StartCoroutine(StopOSTWithFade(Mathf.Max(0f, fadeOutSeconds)));
+        }
+
+        private IEnumerator StopOSTWithFade(float seconds)
+        {
+            yield return FadeVolume(ostSource, ostSource.volume, 0f, seconds);
+            ostSource.Stop();
+            ostSource.clip = null;
+            _ostTransitioning = false;
+            _ostFadeRoutine = null;
         }
 
         #region RPC do SFX
@@ -158,12 +185,19 @@ namespace PiGame.Sound
         {
             if (_ostDict.TryGetValue(ost, out MusicData music))
             {
-                if(_ostFadeRoutine != null)
+                if (music.clip == null || ostSource == null) return;
+                _ostTargetVolume = volume;
+                // Repetir o contexto não reinicia a faixa, o fade ou um jingle já encerrado.
+                if (_requestedOst == ost && (_ostTransitioning
+                    || (ostSource.clip == music.clip && (ostSource.isPlaying || !ostSource.loop))))
                 {
-                    StopCoroutine(_ostFadeRoutine);
+                    if (!_ostTransitioning && ostSource.isPlaying) ostSource.volume = volume;
+                    return;
                 }
-
-                _ostFadeRoutine = StartCoroutine(PlayOSTWithFade(music, volume));
+                if (_ostFadeRoutine != null) StopCoroutine(_ostFadeRoutine);
+                _requestedOst = ost;
+                _ostTransitioning = true;
+                _ostFadeRoutine = StartCoroutine(PlayOSTWithFade(music, volume, ost != OSTList.Battle_Vitoria));
             }
             else
             {
@@ -195,11 +229,12 @@ namespace PiGame.Sound
             _sfxFadeRoutine = null;
         }
 
-        private IEnumerator PlayOSTWithFade(MusicData music, float targetVolume)
+        private IEnumerator PlayOSTWithFade(MusicData music, float targetVolume, bool loop)
         {
             if (music.clip == null)
             {
                 _ostFadeRoutine = null;
+                _ostTransitioning = false;
                 yield break;
             }
 
@@ -211,12 +246,13 @@ namespace PiGame.Sound
             }
 
             ostSource.clip = music.clip;
-            ostSource.loop = true;
+            ostSource.loop = loop;
             ostSource.volume = 0f;
             ostSource.Play();
 
             yield return FadeVolume(ostSource, 0f, targetVolume, music.fadeInSeconds);
-
+            ostSource.volume = _ostTargetVolume;
+            _ostTransitioning = false;
             _ostFadeRoutine = null;
         }
 

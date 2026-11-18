@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using PiGame.Lobby;
 using PiGame.Sound;
+using PiGame.UI;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -89,12 +90,10 @@ namespace PiGame.Gameplay
                 + Mathf.Max(_resultDisplaySeconds, _resultInputDelaySeconds) - NetworkManager.ServerTime.Time))
             : 0f;
 
-        private SceneOSTManager _sceneOSTManager;
 
         private void Awake()
         {
             _scores = new NetworkList<MatchPlayerScoreData>();
-            _sceneOSTManager = FindFirstObjectByType<SceneOSTManager>();
         }
 
         public override void OnNetworkSpawn()
@@ -114,7 +113,7 @@ namespace PiGame.Gameplay
             }
 
             ScoresChanged?.Invoke();
-            PhaseChanged?.Invoke();
+            HandlePhaseChanged(_phase.Value, _phase.Value);
         }
 
         public override void OnNetworkDespawn()
@@ -326,8 +325,6 @@ namespace PiGame.Gameplay
                 return;
             }
 
-            _sceneOSTManager?.PlayVictoryOST();
-
             _winningPlayerSlot.Value = winningPlayerSlot;
             _resultStartedAt.Value = NetworkManager.ServerTime.Time;
             _phase.Value = MatchPhase.ShowingResult;
@@ -470,6 +467,10 @@ namespace PiGame.Gameplay
 
         private void HandlePhaseChanged(MatchPhase previousValue, MatchPhase currentValue)
         {
+            // Executa no host e nos clientes; quem já voltou ao lobby mantém a música do menu.
+            if (currentValue == MatchPhase.ShowingResult && gameObject.scene == SceneManager.GetActiveScene()
+                && (!LoadingScreenUI.Instance || !LoadingScreenUI.Instance.IsVisible))
+                NetworkSoundManager.Instance?.LocalOST(OSTList.Battle_Vitoria);
             PhaseChanged?.Invoke();
         }
 
