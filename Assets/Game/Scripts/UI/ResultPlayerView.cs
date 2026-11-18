@@ -61,6 +61,8 @@ namespace PiGame.UI
         private int _shownPoints = -1;
         private int _pose = -1;
         private float _riseAmount;
+        private RectTransform _spotlightRect;
+        private float _spotlightHeight;
 
         private void Awake()
         {
@@ -76,6 +78,9 @@ namespace PiGame.UI
                 return;
             }
             _pointsRestPosition = _pointsPlate.anchoredPosition;
+            _spotlightRect = _spotlight.GetComponent<RectTransform>();
+            _spotlightHeight = _spotlightRect.rect.height;
+            _spotlight.GetComponent<Image>().preserveAspect = false;
         }
 
         private void OnDisable()
@@ -133,6 +138,9 @@ namespace PiGame.UI
                 _shownPoints = points;
                 _points.text = points.ToString();
             }
+            // O feixe alcança o mesmo teto mesmo quando o vencedor tem um pilar menor.
+            _spotlightRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,
+                _spotlightHeight + _maximumRise - _riseAmount * rise);
             _spotlight.alpha = _winner ? Mathf.Clamp01(light) : 0f;
             _information.alpha = Mathf.Clamp01(information);
 
