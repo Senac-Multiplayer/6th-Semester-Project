@@ -134,7 +134,9 @@ namespace PiGame.Sound
             if (!_pendingUiEffect.HasValue) return;
             var effect = _pendingUiEffect.Value;
             _pendingUiEffect = null;
-            PlaySFXLocal(effect, 0.2f);
+            float volume = effect == SFXList.ReadyBanner ? 0.75f
+                : effect == SFXList.VolumeScroll ? 0.3f : 0.2f;
+            PlaySFXLocal(effect, volume);
         }
 
         public void StopLocalOST(float fadeOutSeconds = 0.15f)
@@ -210,6 +212,7 @@ namespace PiGame.Sound
 
         private void PlayOSTLocal(OSTList ost, float volume)
         {
+            if (ost == OSTList.Battle_Vitoria) volume = Mathf.Clamp01(volume * 1.35f);
             if (_ostDict.TryGetValue(ost, out MusicData music))
             {
                 if (music.clip == null || ostSource == null) return;
