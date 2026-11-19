@@ -1,425 +1,304 @@
-
-using UnityEngine;
-using Unity.Netcode;
 using System.Collections.Generic;
 using PiGame.Sound;
-
+using Unity.Netcode;
+using UnityEngine;
 
 namespace PiGame.Gameplay
 {
     [RequireComponent(typeof(NetworkPlayerState))]
-
     public class RebeldeCombat : NetworkBehaviour, ICharacterCombat
     {
+        private enum AbilityPhase : byte { Idle, Preparing, Swinging }
+
         [Header("Combat Settings")]
         [SerializeField] private ProjectileDefinition _projectile;
         [SerializeField, Min(0f)] private float _shotCooldownSeconds = 0.35f;
         [SerializeField, Min(0f)] private float _projectileSpawnDistance = 0.85f;
-
         [SerializeField] private float[] _projectileVelocityStack = { 5f, 10f, 15f };
 
         [Header("Ability Settings")]
         [SerializeField, Min(0f)] private float _coneDistance = 4f;
         [SerializeField, Range(0f, 180f)] private float _coneAngle = 60f;
         [SerializeField, Min(0f)] private float _projectileReflectMinimumSpeed = 3f;
-
         [SerializeField, Min(0.1f)] private float _maxAbilityHoldSeconds = 1.5f;
         [SerializeField, Min(0f)] private float _abilityCooldownSeconds = 4f;
         [SerializeField, Min(0f)] private float _playerUpwardImpulse = 3f;
-
         [SerializeField, Min(0f)] private float _abilityGraceSeconds = 0.12f;
+        [SerializeField, Min(0.1f)] private float _abilityStrikeSeconds = 0.52f;
 
-        private bool _abilityHitWindowActive;
-        private float _abilityHitWindowUntil;
-
+        private static readonly int AbilityPhaseParameter = Animator.StringToHash("abilityPhase");
+        private readonly NetworkVariable<int> _ammo = new(1);
+        private readonly NetworkVariable<AbilityPhase> _abilityPhase = new(AbilityPhase.Idle);
+        private readonly NetworkVariable<Vector2> _abilityForward = new(Vector2.right);
         private readonly HashSet<NetworkObject> _abilityProcessedTargets = new();
+        private readonly List<Collider2D> _abilityHits = new(16);
+        private readonly RaycastHit2D[] _obstructionHits = new RaycastHit2D[8];
+
         private RebeldeProjectile _activeProjectile;
-        private bool _abilityActive;
-        private Vector2 _abilityForward = Vector2.right;
-        private float _abilityStartedAt;
-        private float _abilityCooldownUntil;
-        private SpriteRenderer _facingSprite;
-        private RebeldeSoundManager _rebeldeSound;
-
-        private float _projectileVelocity;
-        private int _projectileVelocityPointer = 0;
-
-        private AmmoIndicatorsView _ammoIndicatorsView;
-
-        private NetworkVariable<int> _ammo = new NetworkVariable<int>(1, NetworkVariableReadPermission.Owner);
-
         private NetworkPlayerState _playerState;
-        private NetworkVariable<bool> _hasShot = new NetworkVariable<bool>(true);
-        public bool HasShot => _hasShot.Value;
+        private RebeldeSoundManager _rebeldeSound;
+        private AmmoIndicatorsView _ammoIndicatorsView;
+        private PlayerAnimatorController _presentation;
+        private Animator _animator;
+        private SpriteRenderer _facingSprite;
+        private ContactFilter2D _obstructionFilter;
         private float _nextShotTime;
+        private int _projectileVelocityPointer;
+        private float _abilityStartedAt;
+        private float _abilityHitWindowUntil;
+        private float _abilityStrikeUntil;
+        private float _abilityCooldownUntil;
 
+        public bool HasShot => _ammo.Value > 0;
+        public bool IsPreparingAbility => _abilityPhase.Value == AbilityPhase.Preparing;
+        public bool IsSwingingAbility => _abilityPhase.Value == AbilityPhase.Swinging;
+        public bool CanCollectProjectile => IsSpawned && _playerState.CanAct && _abilityPhase.Value == AbilityPhase.Idle;
 
-        public void Awake()
+        private void Awake()
         {
             _playerState = GetComponent<NetworkPlayerState>();
             _rebeldeSound = GetComponent<RebeldeSoundManager>();
-
-            if (_projectile == null || _projectile.Prefab == null)
-            {
-                Debug.LogError("Configure uma definição com prefab de projétil no BasicCharacterCombat.", this);
-            }
-            _facingSprite = GetComponent<SpriteRenderer>();
-            _projectileVelocity = _projectileVelocityStack[0];
-
             _ammoIndicatorsView = GetComponent<AmmoIndicatorsView>();
-        }
-        public void ShootServer(Vector2 direction)
-        {
-            if (!IsServer || !_playerState.CanAct)
+            _presentation = GetComponent<PlayerAnimatorController>();
+            _animator = GetComponent<Animator>();
+            _facingSprite = GetComponent<SpriteRenderer>();
+            _obstructionFilter = new ContactFilter2D();
+            _obstructionFilter.SetLayerMask(LayerMask.GetMask("Ground", "Wall", "Roof"));
+            _obstructionFilter.useTriggers = false;
+
+            if (!_projectile || !_projectile.Prefab || _projectile.Prefab is not RebeldeProjectile
+                || _projectileVelocityStack == null || _projectileVelocityStack.Length == 0
+                || System.Array.Exists(_projectileVelocityStack, speed => !(speed > 0f) || float.IsInfinity(speed)))
             {
-                return;
-            }
-
-            if (_ammo.Value <= 0)
-            {
-                if (_rebeldeSound != null)
-                {
-                    _rebeldeSound.PlayRebeldeEmpty();
-                    return;
-                }
-            }
-
-            if (_projectile == null || !_hasShot.Value || _projectile.Prefab == null || Time.time < _nextShotTime)
-            {
-                return;
-            }
-
-            _nextShotTime = Time.time + _shotCooldownSeconds;
-
-            Vector2 shotDirection = direction.sqrMagnitude > 0.01f
-                ? direction.normalized
-                : Vector2.right;
-
-            NetworkProjectile projectile = Instantiate(
-                _projectile.Prefab, transform.position, Quaternion.identity);
-            projectile.PlaceAtMuzzle(shotDirection, _projectileSpawnDistance);
-
-            projectile.NetworkObject.Spawn(true);
-
-            RebeldeProjectile rebeldeProjectile = projectile.GetComponent<RebeldeProjectile>();
-            if (rebeldeProjectile != null)
-            {
-                if (_rebeldeSound != null)
-                {
-                    _rebeldeSound.PlayRebeldeShot();
-                }
-                rebeldeProjectile.InitializeServer(OwnerClientId, shotDirection, _projectile, _projectileVelocity, _rebeldeSound);
-                _hasShot.Value = false;
-                _activeProjectile = rebeldeProjectile;
-            }
-            _ammo.Value = 0;
-            GetNextShot();
-        }
-        private void Update()
-        {
-            if (!IsServer)
-                return;
-
-            if (_abilityActive)
-            {
-                float heldTime = Time.time - _abilityStartedAt;
-
-                if (heldTime >= _maxAbilityHoldSeconds)
-                {
-                    _abilityActive = false;
-                    _abilityCooldownUntil = Time.time + _abilityCooldownSeconds;
-                }
-
-
-            }
-            if (_abilityHitWindowActive)
-            {
-                if (Time.time <= _abilityHitWindowUntil)
-                {
-                    // Continua verificando o cone durante a janela adicional.
-                    ExecuteAbilityCone();
-                }
-                else
-                {
-                    // A janela expirou; não processa mais alvos.
-                    _abilityHitWindowActive = false;
-                }
-            }
-
-            if (!_abilityActive &&
-                _abilityCooldownUntil > 0f &&
-                Time.time >= _abilityCooldownUntil)
-            {
-                _abilityCooldownUntil = 0f;
+                Debug.LogError("Configure o projétil do Rebelde e uma sequência de velocidades positivas no RebeldeCombat.", this);
+                enabled = false;
             }
         }
+
         public override void OnNetworkSpawn()
         {
+            if (!enabled) return;
             _ammo.OnValueChanged += HandleAmmoChanged;
-            _playerState.StateChanged += RefreshAmmoIndicators;
-
+            _abilityPhase.OnValueChanged += HandleAbilityPhaseChanged;
+            _abilityForward.OnValueChanged += HandleAbilityDirectionChanged;
+            _playerState.StateChanged += HandlePlayerStateChanged;
             if (IsServer)
             {
                 _ammo.Value = 1;
+                _playerState.SetAbilityCooldownServer(0f);
+                RefreshAbilityAvailability();
             }
-
+            ApplyAbilityPresentation();
             RefreshAmmoIndicators();
         }
 
         public override void OnNetworkDespawn()
         {
             _ammo.OnValueChanged -= HandleAmmoChanged;
-            _playerState.StateChanged -= RefreshAmmoIndicators;
+            _abilityPhase.OnValueChanged -= HandleAbilityPhaseChanged;
+            _abilityForward.OnValueChanged -= HandleAbilityDirectionChanged;
+            _playerState.StateChanged -= HandlePlayerStateChanged;
+            ClearProjectilesServer();
+            if (_presentation) _presentation.SetSkillActive(false);
+            if (_animator && _animator.runtimeAnimatorController) _animator.SetInteger(AbilityPhaseParameter, (int)AbilityPhase.Idle);
+            if (_ammoIndicatorsView) _ammoIndicatorsView.SetCount(0, false, Color.white);
         }
 
-        private void HandleAmmoChanged(int previousValue, int currentValue)
+        public void ShootServer(Vector2 direction)
         {
+            if (!IsServer || !IsSpawned || !enabled || !_playerState.CanAct
+                || Time.time < _nextShotTime) return;
+            if (!HasShot)
+            {
+                _rebeldeSound?.PlayRebeldeEmpty();
+                return;
+            }
+
+            Vector2 shotDirection = direction.sqrMagnitude > 0.01f ? direction.normalized : Vector2.right;
+            var projectile = (RebeldeProjectile)Instantiate(_projectile.Prefab, transform.position, Quaternion.identity);
+            projectile.PlaceAtMuzzle(shotDirection, _projectileSpawnDistance);
+            _activeProjectile = projectile;
+            _ammo.Value = 0;
+            _nextShotTime = Time.time + _shotCooldownSeconds;
+            projectile.NetworkObject.Spawn(true);
+            projectile.InitializeServer(OwnerClientId, shotDirection, _projectile,
+                _projectileVelocityStack[_projectileVelocityPointer], _rebeldeSound);
+            _projectileVelocityPointer = (_projectileVelocityPointer + 1) % _projectileVelocityStack.Length;
+            _rebeldeSound?.PlayRebeldeShot();
+        }
+
+        // Só o projétil em uso pode devolver a munição; callbacks antigos não liberam outro tiro.
+        public void RecoverProjectileServer(RebeldeProjectile projectile)
+        {
+            if (!IsServer || !IsSpawned || !projectile || projectile != _activeProjectile) return;
+            _activeProjectile = null;
+            _ammo.Value = 1;
+            if (_playerState.CanAct) _rebeldeSound?.PlayRebeldeCatch();
+        }
+
+        public void ClearProjectilesServer()
+        {
+            if (!IsServer) return;
+            RebeldeProjectile projectile = _activeProjectile;
+            _activeProjectile = null;
+            if (projectile && projectile.IsSpawned) projectile.NetworkObject.Despawn(true);
+            if (IsSpawned) CancelAbilityServer();
+        }
+
+        public void RefillAmmoServer()
+        {
+            if (!IsServer || !IsSpawned || (_activeProjectile && _activeProjectile.IsSpawned)) return;
+            _activeProjectile = null;
+            _ammo.Value = 1;
+            _projectileVelocityPointer = 0;
+            _nextShotTime = 0f;
+            _abilityPhase.Value = AbilityPhase.Idle;
+            _abilityCooldownUntil = 0f;
+            _abilityProcessedTargets.Clear();
+            _playerState.SetAbilityCooldownServer(0f);
+            RefreshAbilityAvailability();
+        }
+
+        public void ShootReleaseServer() { }
+        public void UpdateShootAimServer(Vector2 direction) { }
+
+        public void BeginAbilityServer(Vector2 aimDirection, Vector2 moveDirection)
+        {
+            if (!IsServer || !IsSpawned || !enabled || !_playerState.CanAct
+                || _abilityPhase.Value != AbilityPhase.Idle || Time.time < _abilityCooldownUntil) return;
+            _abilityProcessedTargets.Clear();
+            _abilityForward.Value = GetFacingDirection(aimDirection, moveDirection);
+            _abilityStartedAt = Time.time;
+            _abilityPhase.Value = AbilityPhase.Preparing;
+            RefreshAbilityAvailability();
+        }
+
+        public void EndAbilityServer(Vector2 aimDirection, Vector2 moveDirection)
+        {
+            if (!IsServer || _abilityPhase.Value != AbilityPhase.Preparing) return;
+            if (!_playerState.CanAct) { CancelAbilityServer(); return; }
+            _abilityForward.Value = GetFacingDirection(aimDirection, moveDirection);
+            SwingServer();
+        }
+
+        public void CancelAbilityServer()
+        {
+            if (!IsServer || _abilityPhase.Value == AbilityPhase.Idle) return;
+            // Pausar/morrer cancela a ação; não é uma soltura que atinge os adversários.
+            if (_abilityPhase.Value == AbilityPhase.Preparing) StartAbilityCooldown();
+            _abilityPhase.Value = AbilityPhase.Idle;
+            _abilityProcessedTargets.Clear();
+            RefreshAbilityAvailability();
+        }
+
+        private void SwingServer()
+        {
+            _abilityHitWindowUntil = Time.time + _abilityGraceSeconds;
+            _abilityStrikeUntil = Time.time + Mathf.Max(_abilityStrikeSeconds, _abilityGraceSeconds);
+            StartAbilityCooldown();
+            _abilityPhase.Value = AbilityPhase.Swinging;
+            _rebeldeSound?.PlayRebeldeSkill();
+            RefreshAbilityAvailability();
+            ExecuteAbilityCone();
+        }
+
+        private void StartAbilityCooldown()
+        {
+            _abilityCooldownUntil = Time.time + _abilityCooldownSeconds;
+            _playerState.SetAbilityCooldownServer(_abilityCooldownSeconds);
+        }
+
+        private void Update()
+        {
+            if (!IsServer || !IsSpawned || !enabled) return;
+            if (!_playerState.CanAct) { CancelAbilityServer(); RefreshAbilityAvailability(); return; }
+
+            // Atingir o limite dispara a rebatida em vez de consumir o especial sem efeito.
+            if (IsPreparingAbility && Time.time >= _abilityStartedAt + _maxAbilityHoldSeconds) SwingServer();
+            if (IsSwingingAbility && Time.time >= _abilityStrikeUntil) _abilityPhase.Value = AbilityPhase.Idle;
+            RefreshAbilityAvailability();
+        }
+
+        private void FixedUpdate()
+        {
+            if (IsServer && IsSpawned && _playerState.CanAct && IsSwingingAbility
+                && Time.time <= _abilityHitWindowUntil) ExecuteAbilityCone();
+        }
+
+        private void RefreshAbilityAvailability()
+        {
+            _playerState.SetAbilityAvailabilityServer(_playerState.CanAct
+                && _abilityPhase.Value == AbilityPhase.Idle && Time.time >= _abilityCooldownUntil,
+                _playerState.CanAct && _abilityPhase.Value != AbilityPhase.Idle);
+        }
+
+        private void ExecuteAbilityCone()
+        {
+            Physics2D.SyncTransforms();
+            Physics2D.OverlapCircle(transform.position, _coneDistance,
+                new ContactFilter2D { useTriggers = true }, _abilityHits);
+            foreach (Collider2D hit in _abilityHits)
+            {
+                Vector2 target = hit.ClosestPoint(transform.position);
+                Vector2 toTarget = target - (Vector2)transform.position;
+                if (toTarget.sqrMagnitude > 0.0001f && Vector2.Angle(_abilityForward.Value, toTarget) > _coneAngle) continue;
+                if (Physics2D.Linecast(transform.position, target, _obstructionFilter, _obstructionHits) > 0) continue;
+
+                NetworkProjectile projectile = hit.GetComponentInParent<NetworkProjectile>();
+                if (projectile)
+                {
+                    bool ownBall = projectile == _activeProjectile;
+                    if (!projectile.IsSpawned || !projectile.IsServer
+                        || (!ownBall && (projectile.ShooterClientId == OwnerClientId
+                            || !_playerState.CanReceiveHitFrom(projectile.ShooterClientId)))
+                        || !_abilityProcessedTargets.Add(projectile.NetworkObject)) continue;
+                    if (ownBall) _activeProjectile.BatServer(_abilityForward.Value, _projectileReflectMinimumSpeed);
+                    else projectile.ReflectServer(_projectileReflectMinimumSpeed);
+                    continue;
+                }
+
+                NetworkPlayerState player = hit.GetComponentInParent<NetworkPlayerState>();
+                if (!player || !player.IsSpawned || !player.IsServer || !player.CanAct || player.IsInvulnerable
+                    || player.OwnerClientId == OwnerClientId || !player.CanReceiveHitFrom(OwnerClientId)
+                    || !_abilityProcessedTargets.Add(player.NetworkObject)) continue;
+                if (player.TryGetComponent(out NetworkPlayerCombat combat)) combat.ApplyUpwardImpulseRpc(_playerUpwardImpulse);
+            }
+        }
+
+        private Vector2 GetFacingDirection(Vector2 aimDirection, Vector2 moveDirection)
+        {
+            if (Mathf.Abs(aimDirection.x) > 0.01f) return aimDirection.x < 0f ? Vector2.left : Vector2.right;
+            if (Mathf.Abs(moveDirection.x) > 0.01f) return moveDirection.x < 0f ? Vector2.left : Vector2.right;
+            return _facingSprite && _facingSprite.flipX ? Vector2.left : Vector2.right;
+        }
+
+        private void ApplyAbilityPresentation()
+        {
+            bool active = _abilityPhase.Value != AbilityPhase.Idle;
+            if (_presentation) _presentation.SetSkillActive(active);
+            ApplyAbilityFacing();
+            if (!_animator || !_animator.runtimeAnimatorController) return;
+            // A fase do servidor alimenta o controller em todos os peers; ele decide os estados e as transições.
+            _animator.SetInteger(AbilityPhaseParameter, (int)_abilityPhase.Value);
+        }
+
+        private void HandleAbilityPhaseChanged(AbilityPhase previous, AbilityPhase current) => ApplyAbilityPresentation();
+        private void HandleAbilityDirectionChanged(Vector2 previous, Vector2 current) => ApplyAbilityFacing();
+        private void ApplyAbilityFacing()
+        {
+            if (_presentation) _presentation.SetAimFacing(_abilityForward.Value, _abilityPhase.Value != AbilityPhase.Idle);
+        }
+        private void HandleAmmoChanged(int previous, int current) => RefreshAmmoIndicators();
+        private void HandlePlayerStateChanged()
+        {
+            if (IsServer && !_playerState.CanAct) CancelAbilityServer();
             RefreshAmmoIndicators();
         }
 
         private void RefreshAmmoIndicators()
         {
-            if (_ammoIndicatorsView == null)
-                return;
-
-            _ammoIndicatorsView.SetCount(
-                _ammo.Value,
-                IsOwner && _playerState.CanAct,
-                _playerState.IndicatorColor
-            );
-        }
-        public void AddShotServer()
-        {
-            if (!IsServer)
-                return;
-
-            _activeProjectile = null;
-
-            if (_rebeldeSound != null)
-            {
-                _rebeldeSound.PlayRebeldeCatch();
-            }
-
-            _hasShot.Value = true;
-            _ammo.Value = 1;
-        }
-        private void GetNextShot()
-        {
-            _projectileVelocityPointer++;
-            if (_projectileVelocityPointer >= _projectileVelocityStack.Length)
-            {
-                _projectileVelocityPointer = 0;
-            }
-
-            _projectileVelocity = _projectileVelocityStack[_projectileVelocityPointer];
-        }
-
-        //Esse personagem não precisa destes métodos, mas estão aqui pela implementação da interface
-        public void ShootReleaseServer()
-        {
-
-        }
-        public void UpdateShootAimServer(Vector2 direction)
-        {
-
-        }
-
-
-        public void BeginAbilityServer(Vector2 aimDirection, Vector2 moveDirection)
-        {
-            if (!IsServer || !_playerState.CanAct || _abilityActive || _abilityHitWindowActive)
-                return;
-
-            if (Time.time < _abilityCooldownUntil)
-            {
-                return;
-            }
-            _abilityProcessedTargets.Clear();
-
-            _abilityActive = true;
-            _abilityStartedAt = Time.time;
-
-            _rebeldeSound.PlayRebeldeSkill();
-            Debug.Log($"[Rebelde] Skill iniciada em {Time.time}");
-
-            _abilityForward = GetFacingDirection(aimDirection, moveDirection);
-        }
-        public void EndAbilityServer(Vector2 aimDirection, Vector2 moveDirection)
-        {
-            if (!IsServer)
-                return;
-
-            if (!_abilityActive)
-            {
-                return;
-            }
-
-            Debug.Log(
-$"[Rebelde] End | IsServer={IsServer} | Time={Time.time}"
-);
-
-            float heldTime = Time.time - _abilityStartedAt;
-
-            _abilityActive = false;
-
-            if (heldTime >= _maxAbilityHoldSeconds)
-            {
-                _abilityCooldownUntil = Time.time + _abilityCooldownSeconds;
-
-                return;
-            }
-
-            _abilityCooldownUntil = Time.time + _abilityCooldownSeconds;
-            _abilityForward = GetFacingDirection(aimDirection, moveDirection);
-
-            _abilityHitWindowActive = true;
-            _abilityHitWindowUntil = Time.time + _abilityGraceSeconds;
-
-            ExecuteAbilityCone();
-        }
-
-        private bool IsInsideAbilityCone(Vector2 targetPosition, Vector2 forward)
-        {
-            Vector2 toTarget = targetPosition - (Vector2)transform.position;
-
-            float distance = toTarget.magnitude;
-
-            if (distance > _coneDistance)
-            {
-                return false;
-            }
-
-            if (distance <= 0.001f)
-            {
-                return true;
-            }
-
-            float angle =
-                Vector2.Angle(
-                    forward,
-                    toTarget.normalized);
-
-            return angle <= _coneAngle;
-        }
-        private void ExecuteAbilityCone()
-        {
-            Collider2D[] hits = Physics2D.OverlapCircleAll(
-            transform.position,
-            _coneDistance);
-
-            foreach (Collider2D hit in hits)
-            {
-                if (!IsInsideAbilityCone(hit.bounds.center, _abilityForward))
-                    continue;
-
-                // Primeiro, verifica se o alvo é um projétil.
-                NetworkProjectile projectile =
-                    hit.GetComponentInParent<NetworkProjectile>();
-
-                if (projectile != null)
-                {
-                    // Não reflete projéteis disparados pelo próprio Rebelde.
-                    if (projectile.ShooterClientId == OwnerClientId)
-                        continue;
-
-                    // Impede refletir o mesmo projétil em vários frames da janela.
-                    if (!_abilityProcessedTargets.Add(projectile.NetworkObject))
-                        continue;
-
-                    projectile.ReflectServer(_projectileReflectMinimumSpeed);
-                    continue;
-                }
-
-                // Se não for projétil, verifica se é um jogador.
-                NetworkPlayerState player =
-                    hit.GetComponentInParent<NetworkPlayerState>();
-
-                if (player == null)
-                    continue;
-
-                // Não afeta o próprio Rebelde.
-                if (player.OwnerClientId == OwnerClientId)
-                    continue;
-
-                // Impede aplicar o impulso repetidamente ao mesmo jogador.
-                if (!_abilityProcessedTargets.Add(player.NetworkObject))
-                    continue;
-
-                ApplyUpwardImpulse(player);
-            }
-        }
-
-        private void ApplyUpwardImpulse(NetworkPlayerState targetPlayer)
-        {
-            if (!IsServer || targetPlayer == null)
-                return;
-
-            NetworkPlayerCombat targetCombat =
-                targetPlayer.GetComponent<NetworkPlayerCombat>();
-
-            if (targetCombat == null)
-            {
-                Debug.LogWarning(
-                    $"[Impulse] RebeldeCombat não encontrado em {targetPlayer.name}.",
-                    targetPlayer);
-                return;
-            }
-
-            targetCombat.ApplyUpwardImpulseRpc(_playerUpwardImpulse);
-        }
-
-        private Vector2 GetFacingDirection(Vector2 aimDirection, Vector2 moveDirection)
-        {
-            if (Mathf.Abs(aimDirection.x) > 0.01f)
-            {
-                return aimDirection.x < 0f ? Vector2.left : Vector2.right;
-            }
-            else if (Mathf.Abs(moveDirection.x) > 0.01f)
-            {
-                return moveDirection.x < 0f ? Vector2.left : Vector2.right;
-            }
-
-            if (_facingSprite != null)
-            {
-                return _facingSprite.flipX ? Vector2.left : Vector2.right;
-            }
-
-            return _abilityForward;
-        }
-
-        public void RefillAmmoServer()
-        {
-            if (!IsServer)
-                return;
-
-            // Não permite recuperar a munição enquanto o projétil anterior
-            // ainda estiver ativo.
-            if (_activeProjectile != null && _activeProjectile.IsSpawned)
-                return;
-
-            _activeProjectile = null;
-
-            _hasShot.Value = true;
-            _ammo.Value = 1;
-        }
-
-        public void ClearProjectilesServer()
-        {
-            if (!IsServer)
-            {
-                return;
-            }
-
-            if (_activeProjectile != null)
-            {
-                if (_activeProjectile.IsSpawned)
-                {
-                    _activeProjectile.NetworkObject.Despawn(true);
-                }
-
-                _activeProjectile = null;
-            }
+            if (_ammoIndicatorsView) _ammoIndicatorsView.SetCount(_ammo.Value,
+                _playerState.CanAct, _playerState.IndicatorColor);
         }
     }
-
 }

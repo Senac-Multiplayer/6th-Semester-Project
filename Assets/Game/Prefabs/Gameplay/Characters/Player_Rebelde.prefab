@@ -2117,7 +2117,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bd7c85847dc06ca49a6da0786a8fcef1, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RebeldeCombat
+  m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.RebeldeCombat
   ShowTopMostFoldoutHeaderGroup: 1
   _projectile: {fileID: 11400000, guid: 1fbb78d0696d84b47b6ae623750063cf, type: 2}
   _shotCooldownSeconds: 0.35
@@ -2133,6 +2133,7 @@ MonoBehaviour:
   _abilityCooldownSeconds: 4
   _playerUpwardImpulse: 10
   _abilityGraceSeconds: 0.3
+  _abilityStrikeSeconds: 0.52
 --- !u!114 &880000000000000003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2200,12 +2201,12 @@ MonoBehaviour:
       ParameterType: 4
     - name: isSkill
       NameHash: 1462408521
-      Synchronize: 1
+      Synchronize: 0
       ParameterType: 4
-    - name: skillRelease
-      NameHash: -2021422826
-      Synchronize: 1
-      ParameterType: 9
+    - name: abilityPhase
+      NameHash: 449808776
+      Synchronize: 0
+      ParameterType: 3
   AnimatorParametersExpanded: 0
 --- !u!95 &381949192463674323
 Animator:

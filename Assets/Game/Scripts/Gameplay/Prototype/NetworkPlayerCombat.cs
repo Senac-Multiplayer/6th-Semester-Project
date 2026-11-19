@@ -226,7 +226,7 @@ namespace PiGame.Gameplay
         {
             if (_localAbilityHeld)
             {
-                EndAbilityRpc(_aimDirection, _playerMove.ReadMovementDirection());
+                CancelAbilityRpc(_aimDirection, _playerMove.ReadMovementDirection());
             }
 
             _localAbilityHeld = false;
@@ -235,8 +235,8 @@ namespace PiGame.Gameplay
 
         private void SetSkillAnimation(bool isActive)
         {
-            // Rolamento de duração fixa: o Cowboy anima a ativação aceita pelo servidor.
-            if (_characterCombat is CowboyCombat) return;
+            // Cowboy e Rebelde apresentam apenas a ação aceita e replicada pelo servidor.
+            if (_characterCombat is CowboyCombat || _characterCombat is RebeldeCombat) return;
 
             if (_animator != null && _animator.runtimeAnimatorController != null)
             {
@@ -246,6 +246,7 @@ namespace PiGame.Gameplay
 
         private void TriggerSkillReleaseAnimation()
         {
+            if (_characterCombat is RebeldeCombat) return;
             if (_animator == null || _animator.runtimeAnimatorController == null)
             {
                 return;
@@ -314,6 +315,14 @@ namespace PiGame.Gameplay
             {
                 _characterCombat.EndAbilityServer(aimDirection, moveDirection);
             }
+        }
+
+        [Rpc(SendTo.Server)]
+        private void CancelAbilityRpc(Vector2 aimDirection, Vector2 moveDirection, RpcParams rpcParams = default)
+        {
+            if (rpcParams.Receive.SenderClientId != OwnerClientId) return;
+            if (_characterCombat is RebeldeCombat rebelde) rebelde.CancelAbilityServer();
+            else _characterCombat.EndAbilityServer(aimDirection, moveDirection);
         }
 
         private Vector2 ReadAimDirection()
@@ -406,7 +415,8 @@ namespace PiGame.Gameplay
             _aimIndicator.color = Color.white;
             _aimIndicator.transform.localPosition =
                 (Vector3)(_aimDirection * _aimIndicatorDistance);
-            _presentation.SetAimFacing(_aimDirection, isAiming);
+            if (_characterCombat is not RebeldeCombat rebelde || (!rebelde.IsPreparingAbility && !rebelde.IsSwingingAbility))
+                _presentation.SetAimFacing(_aimDirection, isAiming);
         }
         [Rpc(SendTo.Owner)]
         public void ApplyUpwardImpulseRpc( float impulse, RpcParams rpcParams = default)

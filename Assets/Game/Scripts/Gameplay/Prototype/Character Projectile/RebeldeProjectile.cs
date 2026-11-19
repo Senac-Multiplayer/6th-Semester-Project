@@ -8,6 +8,7 @@ namespace PiGame.Gameplay
 
     [RequireComponent(typeof(NetworkObject))]
     [RequireComponent(typeof(Collider2D))]
+    [RequireComponent(typeof(Rigidbody2D), typeof(CircleCollider2D))]
     public class RebeldeProjectile : NetworkProjectile
     {
         [Header("Projectile Settings")]
@@ -16,8 +17,11 @@ namespace PiGame.Gameplay
         [SerializeField] private float _playerBounceSpeedLoss = 0.5f;
         [SerializeField] private float _fallSpeedThreshold = 3f;
         [SerializeField] private float _maxFallingTime = 15f;
+        [SerializeField, Min(1f)] private float _maxFlightTime = 15f;
 
         private float _fallingStartedAt;
+        private float _flightExpiresAt;
+        private RebeldeCombat _shooterCombat;
 
         [Header("Collision")]
         [SerializeField] private LayerMask _collisionLayers;
@@ -28,12 +32,15 @@ namespace PiGame.Gameplay
         [SerializeField] private Collider2D _solidCollider;
         private Rigidbody2D _rigidbody;
         private BoxCollider2D _collisionBox;
+        private CircleCollider2D _collectionTrigger;
+        private readonly List<Collider2D> _collectionHits = new(8);
         private RebeldeSoundManager _ownerSound;
         private readonly RaycastHit2D[] _flightHits = new RaycastHit2D[16];
 
         private bool _isStopped;
         private bool _falling;
         private bool _isReturningToShooter;
+        private bool _pickupNeedsSeparation;
 
         private readonly HashSet<ulong> _damagedPlayers = new HashSet<ulong>();
 
@@ -44,6 +51,7 @@ namespace PiGame.Gameplay
 
             _rigidbody = GetComponent<Rigidbody2D>();
             _collisionBox = (BoxCollider2D)_solidCollider;
+            _collectionTrigger = GetComponent<CircleCollider2D>();
 
             _useLifetime = false;
             _solidCollider.enabled = false;
@@ -72,7 +80,12 @@ namespace PiGame.Gameplay
             _ownerSound = ownerSound;   
             _damagedPlayers.Clear();  
             _isReturningToShooter = false;
+            _pickupNeedsSeparation = false;
             _fallingStartedAt = 0f;
+            // O prazo de voo não é renovado por rebatidas. Nunca prender a única munição fora do mapa.
+            _flightExpiresAt = Time.time + _maxFlightTime;
+            if (NetworkManager.ConnectedClients.TryGetValue(shooterClientId, out var client) && client.PlayerObject)
+                _shooterCombat = client.PlayerObject.GetComponent<RebeldeCombat>();
 
         }
 
@@ -90,7 +103,7 @@ namespace PiGame.Gameplay
             NetworkPlayerState playerState =
                 other.GetComponentInParent<NetworkPlayerState>();
 
-            if (playerState == null)
+            if (playerState == null || !playerState.CanAct || _isReturningToShooter)
                 return;
 
 
@@ -100,17 +113,34 @@ namespace PiGame.Gameplay
             RebeldeCombat combat =
                 playerState.GetComponent<RebeldeCombat>();
 
-            if (combat == null)
+            if (combat == null || !combat.CanCollectProjectile || _pickupNeedsSeparation)
                 return;
 
-            combat.AddShotServer();
-            NetworkObject.Despawn();
+            _shooterCombat = combat;
+            ReturnToShooterServer();
+        }
+
+        private void OnTriggerStay2D(Collider2D other) => OnTriggerEnter2D(other);
+
+        public override void OnNetworkDespawn()
+        {
+            base.OnNetworkDespawn();
+            // Inclui despawn por limites, descarga da cena e destruição externa.
+            if (IsServer && _shooterCombat) _shooterCombat.RecoverProjectileServer(this);
         }
 
         private void FixedUpdate()
         {
             if (!IsServer || !IsSpawned || _isReturningToShooter)
                 return;
+
+            UpdatePickupSeparation();
+
+            if (!_falling && Time.time >= _flightExpiresAt)
+            {
+                ReturnToShooterServer();
+                return;
+            }
 
             // Verifica o tempo mesmo quando o projétil já parou no chão.
             if (_falling)
@@ -128,7 +158,23 @@ namespace PiGame.Gameplay
             if (_isStopped)
                 return;
 
+            if (_falling) return;
+
             UpdateFlying();
+        }
+
+        private void UpdatePickupSeparation()
+        {
+            if (!_pickupNeedsSeparation) return;
+            Physics2D.SyncTransforms();
+            _collectionTrigger.Overlap(new ContactFilter2D { useTriggers = true }, _collectionHits);
+            foreach (Collider2D hit in _collectionHits)
+            {
+                NetworkPlayerState player = hit.GetComponentInParent<NetworkPlayerState>();
+                if (player && player.OwnerClientId == _shooterClientId) return;
+            }
+            // Retomar a coleta só depois de observar a bola fora de todos os colliders do dono.
+            _pickupNeedsSeparation = false;
         }
 
         private void UpdateFlying()
@@ -258,17 +304,12 @@ namespace PiGame.Gameplay
             // Verifica se este jogador já recebeu dano deste projétil.
             bool alreadyDamaged = _damagedPlayers.Contains(player.OwnerClientId);
 
-            if (!alreadyDamaged)
+            if (!alreadyDamaged && player.CanAct && !player.IsInvulnerable)
             {
                 // Registra antes de aplicar o dano para impedir chamadas duplicadas.
                 _damagedPlayers.Add(player.OwnerClientId);
 
-                if (!player.IsInvulnerable)
-                {
-                    player.ApplyDamageServer(
-                        _damage,
-                        _shooterClientId);
-                }
+                player.ApplyDamageServer(_damage, _shooterClientId);
             }
 
             // Continua permitindo o ricochete, mesmo sem aplicar dano novamente.
@@ -318,6 +359,18 @@ namespace PiGame.Gameplay
             _rigidbody.angularVelocity = 0f;
 
             _solidCollider.enabled = false;
+            _damagedPlayers.Clear();
+        }
+
+        public void BatServer(Vector2 direction, float minimumSpeed)
+        {
+            if (!IsServer || !IsSpawned || _isReturningToShooter || direction.sqrMagnitude <= 0.0001f) return;
+            ReflectServer(Mathf.Max(minimumSpeed, _fallSpeedThreshold + 0.01f));
+            // A própria bola sai para o lado do golpe, inclusive quando estava parada no chão.
+            _direction = direction.normalized;
+            transform.rotation = Quaternion.FromToRotation(Vector2.right, _direction);
+            _pickupNeedsSeparation = true;
+            _flightExpiresAt = Time.time + _maxFlightTime;
         }
 
         private void ReturnToShooterServer()
@@ -328,22 +381,6 @@ namespace PiGame.Gameplay
             _isReturningToShooter = true;
 
 
-            if (NetworkManager.Singleton != null &&
-                NetworkManager.Singleton.ConnectedClients.TryGetValue(
-                    _shooterClientId, out var client))
-            {
-                if (client.PlayerObject != null)
-                {
-                    RebeldeCombat combat =
-                        client.PlayerObject.GetComponent<RebeldeCombat>();
-
-                    if (combat != null)
-                    {
-                        combat.AddShotServer();
-
-                    }
-                }
-            }
             NetworkObject.Despawn();
         }
     }
