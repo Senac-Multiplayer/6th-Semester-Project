@@ -829,8 +829,8 @@ namespace PiGame.UI
                 actions,
                 inLobby ? "PAUSE" : "OPÇÕES",
                 "VOLTAR",
-                inLobby ? "DESCONECTAR" : "SAIR DO JOGO",
-                inLobby ? "DESCONECTAR DO LOBBY?" : "DESEJA SAIR DO JOGO?"))
+                inLobby ? "DESCONECTAR" : string.Empty,
+                inLobby ? "DESCONECTAR DO LOBBY?" : string.Empty))
             {
                 enabled = false;
                 return;
@@ -873,7 +873,7 @@ namespace PiGame.UI
         {
             if (_connectionServiceContract == null || !_connectionServiceContract.IsConnected)
             {
-                QuitApplication();
+                CloseLobbyPause();
                 return;
             }
             _lobbyPause.SetBusy(true);

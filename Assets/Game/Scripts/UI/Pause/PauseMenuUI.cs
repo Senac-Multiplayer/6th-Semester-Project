@@ -188,8 +188,7 @@ namespace PiGame.UI
             _confirmationText.text = confirmationMessage;
             SetButtonLabel(_resumeButton, resumeLabel);
             SetButtonLabel(_controlsButton, "CONTROLES");
-            if (_exitButton != null)
-                SetButtonLabel(_exitButton, exitLabel);
+            ConfigureExitButton(exitLabel);
             ConfigureActions(true);
             ConfigureControlsView(actions);
             return true;
@@ -282,7 +281,7 @@ namespace PiGame.UI
             SetButtonInteractable(_resumeButton, !isBusy);
             SetButtonInteractable(_controlsButton, !isBusy);
             if (_exitButton != null)
-                SetButtonInteractable(_exitButton, !isBusy);
+                SetButtonInteractable(_exitButton, !isBusy && _exitButton.gameObject.activeSelf);
             if (_playerNameButton != null)
                 _playerNameButton.interactable = !isBusy;
             SetButtonInteractable(_confirmExitButton, !isBusy);
@@ -398,7 +397,11 @@ namespace PiGame.UI
             GamepadSettings.SetDeadzone(value);
             RefreshVolumeLabels();
         }
-        private void HandleExitClicked() => ExitRequested?.Invoke();
+        private void HandleExitClicked()
+        {
+            if (_exitButton != null && _exitButton.isActiveAndEnabled && _exitButton.interactable)
+                ExitRequested?.Invoke();
+        }
         private void HandleExitConfirmedClicked() => ExitConfirmed?.Invoke();
         private void HandleExitCanceledClicked() => ExitCanceled?.Invoke();
 
@@ -408,9 +411,25 @@ namespace PiGame.UI
             _confirmationText.text = _definition.ExitConfirmationMessage;
             SetButtonLabel(_resumeButton, _definition.ResumeLabel);
             SetButtonLabel(_controlsButton, _definition.ControlsLabel);
-            if (_exitButton != null)
-                SetButtonLabel(_exitButton, _definition.ExitLabel);
+            ConfigureExitButton(_definition.ExitLabel);
             ConfigureActions(_definition.ShowControlsButton);
+        }
+
+        private void ConfigureExitButton(string label)
+        {
+            if (_exitButton == null) return;
+            bool visible = !string.IsNullOrWhiteSpace(label);
+            SetButtonLabel(_exitButton, label);
+            _exitButton.interactable = visible;
+            _exitButton.gameObject.SetActive(visible);
+
+            if (!HasInlineOptions) return;
+            var navigation = _resumeButton.navigation;
+            navigation.selectOnDown = visible ? _exitButton : _audioCategoryButton;
+            _resumeButton.navigation = navigation;
+            navigation = _audioCategoryButton.navigation;
+            navigation.selectOnUp = visible ? _exitButton : _resumeButton;
+            _audioCategoryButton.navigation = navigation;
         }
 
         private void ConfigureActions(bool showControls)
@@ -537,7 +556,7 @@ namespace PiGame.UI
 
         private static void SetButtonLabel(Button button, string label)
         {
-            TMP_Text text = button.GetComponentInChildren<TMP_Text>();
+            TMP_Text text = button.GetComponentInChildren<TMP_Text>(true);
             if (text == null)
             {
                 Debug.LogError($"O botão {button.name} precisa de um TMP_Text filho.", button);
