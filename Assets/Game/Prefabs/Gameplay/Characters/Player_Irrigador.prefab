@@ -3023,6 +3023,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.NetworkPlayerState
   ShowTopMostFoldoutHeaderGroup: 1
   _maximumHealth: 3
+  _deathPropPrefab: {fileID: 6841368190081493115, guid: 73ba7564ec439a644b93c783509e84ea, type: 3}
 --- !u!114 &880000000000000002
 MonoBehaviour:
   m_ObjectHideFlags: 0
