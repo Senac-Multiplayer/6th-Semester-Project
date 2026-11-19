@@ -16,6 +16,7 @@ namespace PiGame.UI
         [SerializeField] private Button _playButton;
         [SerializeField] private Button _optionsButton;
         [SerializeField] private Button _creditsButton;
+        [SerializeField] private Button _charactersButton;
         [SerializeField] private Button _quitButton;
         [SerializeField] private GameObject _credits;
         [SerializeField] private Button _creditsBackButton;
@@ -32,11 +33,12 @@ namespace PiGame.UI
         public event Action PlayRequested;
         public event Action OptionsRequested;
         public event Action QuitRequested;
+        public event Action CharactersRequested;
 
         private void Awake()
         {
             if (!_visuals || !_home || !_playButton || !_optionsButton
-                || !_creditsButton || !_quitButton || !_credits || !_creditsBackButton
+                || !_creditsButton || !_charactersButton || !_quitButton || !_credits || !_creditsBackButton
                 || !_promptCatalog || _backIcons == null || _backIcons.Length == 0
                 || Array.Exists(_backIcons, icon => !icon))
             {
@@ -52,6 +54,7 @@ namespace PiGame.UI
             _optionsButton.onClick.AddListener(OpenOptions);
             _quitButton.onClick.AddListener(Quit);
             _creditsButton.onClick.AddListener(OpenCredits);
+            _charactersButton.onClick.AddListener(OpenCharacters);
             _creditsBackButton.onClick.AddListener(ShowHome);
             _returnButton = _playButton;
             RefreshBackIcons();
@@ -151,6 +154,12 @@ namespace PiGame.UI
             _home.gameObject.SetActive(false);
             _credits.SetActive(true);
             _credits.GetComponent<CreditsPanelUI>().FocusDefaultTeam();
+        }
+
+        private void OpenCharacters()
+        {
+            _returnButton = _charactersButton;
+            CharactersRequested?.Invoke();
         }
     }
 }

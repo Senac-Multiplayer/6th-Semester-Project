@@ -40,6 +40,13 @@ namespace PiGame.UI
         [SerializeField] private PlayerNamePanelUI _playerNamePanel;
         [SerializeField] private RoomBrowserPanelUI _roomBrowser;
         [SerializeField] private LobbyPlayersPanelUI _playersPanel;
+        [Header("Guia compartilhado entre menu e lobby")]
+        [SerializeField] private MenuCharactersPanelUI _charactersPanel;
+        [SerializeField] private Button _charactersEntry;
+        [SerializeField] private Image _charactersEntryIcon;
+        [SerializeField] private PiGame.Input.InputPromptCatalog _charactersPrompts;
+        private bool _guideFromLobby;
+        private bool _guideGamepad;
 
         [Header("Services")]
         [SerializeField] private NetcodeLobbyConnectionService _connectionService;
@@ -97,6 +104,10 @@ namespace PiGame.UI
             _mainMenu.PlayRequested += HandlePlayRequested;
             _mainMenu.OptionsRequested += HandleOptionsRequested;
             _mainMenu.QuitRequested += HandleQuitRequested;
+            _mainMenu.CharactersRequested += OpenMainCharacters;
+            _charactersEntry.onClick.AddListener(OpenLobbyCharacters);
+            _charactersPanel.Closed += CloseCharacters;
+            RefreshCharactersPrompt();
             _connectionPanel.BackRequested += ShowMainMenu;
             _mapVotingController.DisconnectRequested += HandleDisconnectRequested;
             _mapVotingController.VisibilityChanged += HandleMapVotingVisibilityChanged;
@@ -150,6 +161,10 @@ namespace PiGame.UI
 
         private void OnDisable()
         {
+            _charactersPanel.Hide();
+            _mainMenu.CharactersRequested -= OpenMainCharacters;
+            _charactersEntry.onClick.RemoveListener(OpenLobbyCharacters);
+            _charactersPanel.Closed -= CloseCharacters;
             _roomQueryVersion++;
             _connectionPanel.CancelConnectionRequested -= HandleCancelConnectionRequested;
             _connectionPanel.CreateRoomRequested -= HandleCreateRoom;
@@ -195,12 +210,14 @@ namespace PiGame.UI
 
         private void Update()
         {
+            UpdateCharactersPrompt();
             if (_connectionService.IsRecoveringConnection)
             {
+                _charactersPanel.Hide();
                 if (!LoadingScreenUI.Instance.IsVisible) ShowRecoveringConnection();
                 return;
             }
-            if (LoadingScreenUI.Instance.IsVisible) return;
+            if (LoadingScreenUI.Instance.IsVisible) { _charactersPanel.Hide(); return; }
             if (_lobbyPause == null || Time.frameCount == _ignoreMenuInputFrame)
             {
                 return;
@@ -212,6 +229,12 @@ namespace PiGame.UI
                 && Gamepad.current.startButton.wasPressedThisFrame;
             bool gamepadBack = Gamepad.current != null
                 && Gamepad.current.buttonEast.wasPressedThisFrame;
+
+            if (_charactersPanel.IsVisible)
+            {
+                if (keyboardBack || gamepadBack || gamepadMenu) _charactersPanel.HandleBack();
+                return;
+            }
 
             if (_playersPanel.IsOpen)
             {
@@ -313,6 +336,14 @@ namespace PiGame.UI
                 return;
             }
 
+            bool charactersShortcut = (Keyboard.current != null && Keyboard.current.hKey.wasPressedThisFrame)
+                || (Gamepad.current != null && Gamepad.current.rightShoulder.wasPressedThisFrame);
+            if (charactersShortcut && CanOpenLobbyCharacters())
+            {
+                OpenLobbyCharacters();
+                return;
+            }
+
             bool keyboardSettings = Keyboard.current != null
                 && Keyboard.current.tabKey.wasPressedThisFrame;
             bool gamepadSettings = Gamepad.current != null
@@ -354,6 +385,7 @@ namespace PiGame.UI
 
         private void ShowMainMenu()
         {
+            _charactersPanel.Hide();
             _playersPanel.Hide();
             _roomQueryVersion++;
             _roomBrowser.Hide();
@@ -687,6 +719,7 @@ namespace PiGame.UI
 
         private void ShowConnectionPanel()
         {
+            _charactersPanel.Hide();
             _playersPanel.Hide();
             _roomQueryVersion++;
             _roomBrowser.Hide();
@@ -703,6 +736,7 @@ namespace PiGame.UI
 
         private void ShowLobbyPanel()
         {
+            _charactersPanel.Hide();
             _playersPanel.Hide();
             _roomBrowser.Hide();
             _pendingConfirmation = ConfirmationAction.None;
@@ -763,6 +797,7 @@ namespace PiGame.UI
 
         private void HandleMapVotingVisibilityChanged(bool isVisible)
         {
+            if (isVisible) _charactersPanel.Hide();
             PositionSessionCode(isVisible);
             _matchSettingsPanel.SetSummaryVisible(!isVisible
                 && _connectionServiceContract != null && !_connectionServiceContract.IsHost);
@@ -806,10 +841,83 @@ namespace PiGame.UI
 
         private void SetLobbyInteractionEnabled(bool isEnabled)
         {
+            isEnabled &= !_charactersPanel.IsVisible;
             bool mapVotingIsVisible = _mapVotingController.IsVisible;
+            _charactersEntry.gameObject.SetActive(_lobbyPanel.activeInHierarchy && !mapVotingIsVisible);
+            _charactersEntry.interactable = isEnabled && !mapVotingIsVisible;
             _playersPanel.SetEntryEnabled(isEnabled && !mapVotingIsVisible && _lobbyPanel.activeInHierarchy);
             _characterSelectionController.SetInteractionEnabled(isEnabled && !mapVotingIsVisible);
             _mapVotingController.SetInteractionEnabled(isEnabled && mapVotingIsVisible);
+        }
+
+        private bool CanOpenLobbyCharacters() => _charactersEntry.gameObject.activeInHierarchy
+            && _charactersEntry.interactable && !_charactersPanel.IsVisible
+            && _connectionServiceContract != null && _connectionServiceContract.IsConnected
+            && !_mapVotingController.IsVisible && !_matchSettingsPanel.IsOpen
+            && !_playersPanel.IsOpen && !_lobbyPause.IsVisible
+            && _pendingConfirmation == ConfirmationAction.None;
+
+        private void OpenMainCharacters()
+        {
+            if (!_mainMenu.IsHomeVisible || _charactersPanel.IsVisible) return;
+            _guideFromLobby = false;
+            _mainMenu.ShowConnection();
+            PiGame.Sound.UiAudioManager.PlayButton();
+            _charactersPanel.Show();
+            _ignoreMenuInputFrame = Time.frameCount;
+        }
+
+        private void OpenLobbyCharacters()
+        {
+            if (!CanOpenLobbyCharacters()) return;
+            _guideFromLobby = true;
+            var state = FindFirstObjectByType<NetworkLobbyState>();
+            LobbyCharacterId character = state && state.TryGetPlayer(state.LocalClientId, out var me)
+                ? me.CharacterId : LobbyCharacterId.None;
+            _charactersPanel.Show(character);
+            SetLobbyInteractionEnabled(false);
+            _matchSettingsPanel.SetMenuVisible(false);
+            PiGame.Sound.UiAudioManager.PlayButton();
+            _ignoreMenuInputFrame = Time.frameCount;
+        }
+
+        private void CloseCharacters()
+        {
+            _charactersPanel.Hide();
+            _ignoreMenuInputFrame = Time.frameCount;
+            if (_guideFromLobby && _lobbyPanel.activeInHierarchy)
+            {
+                StartCoroutine(RestoreCharactersLobbyFocus());
+            }
+            else _mainMenu.ShowHome();
+        }
+
+        private System.Collections.IEnumerator RestoreCharactersLobbyFocus()
+        {
+            // O mesmo B/Enter que fecha o guia não deve cancelar o pronto ou confirmar o slot.
+            yield return null;
+            if (!_lobbyPanel.activeInHierarchy || _charactersPanel.IsVisible
+                || _mapVotingController.IsVisible || LoadingScreenUI.Instance.IsVisible) yield break;
+            SetLobbyInteractionEnabled(true);
+            _matchSettingsPanel.SetMenuVisible(_connectionServiceContract.IsHost);
+            _characterSelectionController.Focus();
+        }
+
+        private void RefreshCharactersPrompt() => _charactersEntryIcon.sprite = _charactersPrompts.GetSprite(
+            _guideGamepad ? "<Gamepad>/rightShoulder" : "<Keyboard>/h");
+
+        private void UpdateCharactersPrompt()
+        {
+            bool gamepad = _guideGamepad;
+            if (Gamepad.current != null && (Gamepad.current.rightShoulder.wasPressedThisFrame
+                || Gamepad.current.buttonSouth.wasPressedThisFrame || Gamepad.current.dpad.IsPressed()
+                || Gamepad.current.leftStick.ReadValue().sqrMagnitude > .36f)) gamepad = true;
+            else if ((Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame)
+                || (Mouse.current != null && (Mouse.current.leftButton.wasPressedThisFrame
+                    || Mouse.current.delta.ReadValue().sqrMagnitude > 4f))) gamepad = false;
+            if (gamepad == _guideGamepad) return;
+            _guideGamepad = gamepad;
+            RefreshCharactersPrompt();
         }
 
         private void InitializeLobbyPause()
