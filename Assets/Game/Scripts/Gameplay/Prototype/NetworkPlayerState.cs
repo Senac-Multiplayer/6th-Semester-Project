@@ -2,6 +2,7 @@ using System.Collections;
 using System;
 using PiGame.Lobby;
 using Unity.Netcode;
+using Unity.Collections;
 using UnityEngine;
 using PiGame.Sound;
 
@@ -11,6 +12,8 @@ namespace PiGame.Gameplay
     public class NetworkPlayerState : NetworkBehaviour
     {
         [SerializeField] private int _maximumHealth = 3;
+        [SerializeField] private GameObject _deathPropPrefab;
+        private GameObject _activeDeathProp;
 
         private readonly NetworkVariable<int> _playerSlot = new NetworkVariable<int>(-1);
         private readonly NetworkVariable<LobbyCharacterId> _characterId =
@@ -21,7 +24,22 @@ namespace PiGame.Gameplay
             new NetworkVariable<Color>(Color.white);
         private readonly NetworkVariable<int> _currentHealth = new NetworkVariable<int>();
         private readonly NetworkVariable<bool> _isAlive = new NetworkVariable<bool>(true);
-        private readonly NetworkVariable<bool> _matchActive = new NetworkVariable<bool>(true);
+        private readonly NetworkVariable<bool> _matchActive = new NetworkVariable<bool>(false);
+        private readonly NetworkVariable<bool> _indicatorsVisible = new NetworkVariable<bool>(true);
+        private readonly NetworkVariable<FixedString64Bytes> _playerName = new NetworkVariable<FixedString64Bytes>();
+        private readonly NetworkVariable<double> _abilityReadyAt = new NetworkVariable<double>(-1d);
+        private readonly NetworkVariable<float> _abilityCooldownDuration = new NetworkVariable<float>();
+        // -1: sem indicador; 0: indisponível; 1: disponível; 2: em uso (habilidade sem timer).
+        private readonly NetworkVariable<int> _abilityAvailability = new NetworkVariable<int>(-1);
+
+        private readonly NetworkVariable<LobbyTeam> _team = new(LobbyTeam.None);
+        private MatchController _matchController;
+        public LobbyTeam Team => _team.Value;
+        public bool CanReceiveHitFrom(ulong attackerClientId)
+        {
+            if (!_matchController) _matchController = FindFirstObjectByType<MatchController>();
+            return !_matchController || !_matchController.AreTeammates(attackerClientId, OwnerClientId);
+        }
 
         private SpriteRenderer[] _spriteRenderers;
         private SpriteRenderer _bodySpriteRenderer;
@@ -43,8 +61,17 @@ namespace PiGame.Gameplay
         public int CurrentHealth => _currentHealth.Value;
         public int MaximumHealth => _maximumHealth;
         public bool IsAlive => _isAlive.Value;
+        public bool IndicatorsVisible => _indicatorsVisible.Value;
         public bool CanAct => _isAlive.Value && _matchActive.Value;
         public bool IsInvulnerable => _isInvulnerable;
+        public string PlayerName => _playerName.Value.ToString();
+        // Negativo indica que a habilidade atual não tem recarga por tempo.
+        public float AbilityCooldownRemaining => _abilityReadyAt.Value < 0d ? -1f
+            : IsSpawned ? Mathf.Max(0f, (float)(_abilityReadyAt.Value - NetworkManager.ServerTime.Time)) : 0f;
+
+        public float AbilityCooldownProgress => _abilityCooldownDuration.Value <= 0f ? 1f
+            : 1f - Mathf.Clamp01(AbilityCooldownRemaining / _abilityCooldownDuration.Value);
+        public int AbilityAvailability => _abilityAvailability.Value;
 
         private void Awake()
         {
@@ -59,12 +86,15 @@ namespace PiGame.Gameplay
         public override void OnNetworkSpawn()
         {
             _playerSlot.OnValueChanged += HandleIntChanged;
+            _team.OnValueChanged += HandleTeamChanged;
             _characterId.OnValueChanged += HandleCharacterChanged;
             _inputDevice.OnValueChanged += HandleInputChanged;
             _indicatorColor.OnValueChanged += HandleColorChanged;
             _currentHealth.OnValueChanged += HandleIntChanged;
             _isAlive.OnValueChanged += HandleAliveChanged;
             _matchActive.OnValueChanged += HandleBoolChanged;
+            _indicatorsVisible.OnValueChanged += HandleBoolChanged;
+            _playerName.OnValueChanged += HandleNameChanged;
 
             ApplyAlivePresentation(_isAlive.Value);
             ApplyHealthPresentation();
@@ -75,13 +105,20 @@ namespace PiGame.Gameplay
         public override void OnNetworkDespawn()
         {
             _playerSlot.OnValueChanged -= HandleIntChanged;
+            _team.OnValueChanged -= HandleTeamChanged;
             _characterId.OnValueChanged -= HandleCharacterChanged;
             _inputDevice.OnValueChanged -= HandleInputChanged;
             _indicatorColor.OnValueChanged -= HandleColorChanged;
             _currentHealth.OnValueChanged -= HandleIntChanged;
             _isAlive.OnValueChanged -= HandleAliveChanged;
             _matchActive.OnValueChanged -= HandleBoolChanged;
+            _indicatorsVisible.OnValueChanged -= HandleBoolChanged;
+            _playerName.OnValueChanged -= HandleNameChanged;
+
+            CleanupDeathProp();
         }
+
+        private void HandleTeamChanged(LobbyTeam previous, LobbyTeam current) => StateChanged?.Invoke();
 
         public void InitializeServer(LobbyPlayerData playerData, Color indicatorColor)
         {
@@ -91,12 +128,14 @@ namespace PiGame.Gameplay
             }
 
             _playerSlot.Value = playerData.PlayerSlot;
+            _team.Value = playerData.Team;
+            _playerName.Value = playerData.PlayerName;
             _characterId.Value = playerData.CharacterId;
             _inputDevice.Value = playerData.InputDevice;
-            _indicatorColor.Value = indicatorColor;
+            _indicatorColor.Value = LobbyTeams.IsValid(playerData.Team) ? LobbyTeams.Color(playerData.Team) : indicatorColor;
             _currentHealth.Value = _maximumHealth;
             _isAlive.Value = true;
-            _matchActive.Value = true;
+            _matchActive.Value = false;
             _isInvulnerable = false;
         }
 
@@ -106,6 +145,23 @@ namespace PiGame.Gameplay
             {
                 _isInvulnerable = isInvulnerable;
             }
+        }
+
+        public void SetAbilityCooldownServer(float seconds)
+        {
+            if (!IsServer) return;
+            _abilityCooldownDuration.Value = Mathf.Max(0f, seconds);
+            _abilityReadyAt.Value = NetworkManager.ServerTime.Time + _abilityCooldownDuration.Value;
+        }
+
+        public void SetAbilityAvailabilityServer(bool available, bool active)
+        {
+            if (IsServer) _abilityAvailability.Value = active ? 2 : available ? 1 : 0;
+        }
+
+        private void HandleNameChanged(FixedString64Bytes previousValue, FixedString64Bytes currentValue)
+        {
+            StateChanged?.Invoke();
         }
 
         [Rpc(SendTo.Owner)]
@@ -139,7 +195,7 @@ namespace PiGame.Gameplay
             _knockbackRoutine = null;
         }
 
-        public void SetMatchActiveServer(bool isActive)
+        public void SetMatchActiveServer(bool isActive, bool indicatorsVisible = true)
         {
             if (!IsServer)
             {
@@ -147,6 +203,7 @@ namespace PiGame.Gameplay
             }
 
             _matchActive.Value = isActive;
+            _indicatorsVisible.Value = indicatorsVisible;
             if (!isActive && _rigidbody != null)
             {
                 _rigidbody.linearVelocity = Vector2.zero;
@@ -155,7 +212,7 @@ namespace PiGame.Gameplay
 
         public void ApplyDamageServer(int amount, ulong attackerClientId)
         {
-            if (!IsServer || !CanAct || _isInvulnerable || amount <= 0)
+            if (!IsServer || !CanAct || _isInvulnerable || amount <= 0 || !CanReceiveHitFrom(attackerClientId))
             {
                 return;
             }
@@ -179,6 +236,7 @@ namespace PiGame.Gameplay
 
             _isAlive.Value = false;
             _matchActive.Value = false;
+            SpawnDeathProp();
             if (TryGetComponent<ICharacterCombat>(out var characterCombat))
             {
                 characterCombat.ClearProjectilesServer();
@@ -192,7 +250,7 @@ namespace PiGame.Gameplay
             {
                 return;
             }
-
+            CleanupDeathProp();
             transform.position = position;
             if (_rigidbody != null)
             {
@@ -217,7 +275,36 @@ namespace PiGame.Gameplay
                 characterCombat.RefillAmmoServer();
             }
         }
+        private void SpawnDeathProp()
+        {
+            if (_deathPropPrefab != null && _activeDeathProp == null)
+            {
+                _activeDeathProp = Instantiate(_deathPropPrefab, transform.position, Quaternion.identity);
 
+                var netObj = _activeDeathProp.GetComponent<NetworkObject>();
+                if (netObj != null)
+                {
+                    netObj.Spawn();
+                }
+            }
+        }
+
+        private void CleanupDeathProp()
+        {
+            if (_activeDeathProp != null)
+            {
+                var netObj = _activeDeathProp.GetComponent<NetworkObject>();
+                if (netObj != null && netObj.IsSpawned)
+                {
+                    netObj.Despawn(true);
+                }
+                else
+                {
+                    Destroy(_activeDeathProp);
+                }
+                _activeDeathProp = null;
+            }
+        }
         [Rpc(SendTo.SpecifiedInParams)]
         private void TeleportOwnerRpc(Vector3 position, RpcParams rpcParams)
         {
@@ -253,6 +340,7 @@ namespace PiGame.Gameplay
             foreach (Collider2D playerCollider in _colliders)
             {
                 playerCollider.enabled = isAlive;
+                Debug.Log("Sumiu Colisou");
             }
 
             if (_rigidbody != null)

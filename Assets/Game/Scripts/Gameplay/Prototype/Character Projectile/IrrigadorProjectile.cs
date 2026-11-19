@@ -330,6 +330,8 @@ namespace PiGame.Gameplay
             if (playerState.OwnerClientId == _shooterClientId && !_canDoSelfDamage)
                 return;
 
+            if (!playerState.CanReceiveHitFrom(_shooterClientId)) return;
+
             if (_hasHitPlayer &&
                 _lastHitClientId == playerState.OwnerClientId)
             {

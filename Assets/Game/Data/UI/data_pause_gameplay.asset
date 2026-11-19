@@ -16,3 +16,5 @@ MonoBehaviour:
   _resumeLabel: VOLTAR
   _exitLabel: DESCONECTAR
   _exitConfirmationMessage: DESCONECTAR DA PARTIDA?
+  _showControlsButton: 1
+  _controlsLabel: OPÇÕES

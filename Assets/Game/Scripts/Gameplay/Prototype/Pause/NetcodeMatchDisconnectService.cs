@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using PiGame.Networking;
+using PiGame.UI;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -37,6 +38,7 @@ namespace PiGame.Gameplay
             }
 
             _isReturning = true;
+            if (LoadingScreenUI.Instance) LoadingScreenUI.Instance.Show();
             BindConnectionService();
 
             NetworkManager networkManager = NetworkManager.Singleton;
@@ -107,7 +109,7 @@ namespace PiGame.Gameplay
                 return;
             }
 
-            if (SceneManager.GetActiveScene().name != _lobbySceneName)
+            if (SceneManager.GetActiveScene().name != _lobbySceneName || SceneManager.sceneCount > 1)
             {
                 SceneManager.LoadScene(_lobbySceneName, LoadSceneMode.Single);
             }

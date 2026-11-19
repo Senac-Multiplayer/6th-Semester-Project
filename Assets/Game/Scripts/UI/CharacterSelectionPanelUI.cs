@@ -19,18 +19,45 @@ namespace PiGame.UI
     {
         private const float NavigationRepeatDelay = 0.4f;
         private const float NavigationRepeatRate = 0.12f;
+        private static readonly int ReadyParameter = Animator.StringToHash("Ready");
+
+        [SerializeField] private LobbySelectionBackgroundUI _background;
 
         [Header("Characters")]
         [SerializeField] private LobbyCharacterDefinition[] _characters;
 
         [Header("Player slots")]
+        [SerializeField] private RectTransform _slotsLayout;
+        [SerializeField] private RectTransform _headerBand;
+        [SerializeField] private RectTransform _footerBand;
         [SerializeField] private RectTransform[] _slotRoots;
         [SerializeField] private Image[] _slotBackgrounds;
+        [SerializeField] private Image[] _clanBackgrounds = Array.Empty<Image>();
+        [SerializeField] private Image[] _clanDetails = Array.Empty<Image>();
+        [SerializeField] private Image[] _playerNumbers;
         [SerializeField] private Image[] _characterPortraits;
         [SerializeField] private Image[] _deviceIcons;
         [SerializeField] private Text[] _slotLabels;
         [SerializeField] private Text[] _playerNameTexts;
         [SerializeField] private Text[] _statusTexts;
+        [SerializeField] private LobbyConnectionView _connectionView;
+        [SerializeField] private Image[] _characterNameplates = Array.Empty<Image>();
+        [SerializeField] private Image[] _readyChecks = Array.Empty<Image>();
+
+        private enum CardBackground { Banner, BannerWithDetails, GradientWithDetails }
+
+        [Header("Card appearance")]
+        [SerializeField] private CardBackground _cardBackground = CardBackground.GradientWithDetails;
+        [SerializeField] private bool _useCharacterBorderColors;
+        [SerializeField] private Sprite _bronzeBorder;
+        [SerializeField] private Image[] _cardBorders;
+        [SerializeField] private Image[] _selectionBanners;
+        [SerializeField] private Image[] _clanEmblems;
+
+        [Header("Ready banners")]
+        [SerializeField] private Animator[] _readyBanners = Array.Empty<Animator>();
+        [SerializeField] private Image[] _readyBannerCloths = Array.Empty<Image>();
+        [SerializeField] private Image[] _readyBannerMotifs;
 
         [Header("Character navigation")]
         [SerializeField] private RectTransform _browseControlsRoot;
@@ -40,17 +67,23 @@ namespace PiGame.UI
         [Header("Input icons")]
         [SerializeField] private Sprite _keyboardDeviceSprite;
         [SerializeField] private Sprite _gamepadDeviceSprite;
+        [SerializeField] private float _gamepadDeviceOffsetY = -3f;
         [SerializeField] private Image _confirmLegendIcon;
         [SerializeField] private Image _backLegendIcon;
+        [SerializeField] private Image _upLegendIcon;
+        [SerializeField] private Image _downLegendIcon;
+        [SerializeField] private Image _pauseLegendIcon;
         [SerializeField] private InputPromptCatalog _promptCatalog;
         [SerializeField] private Text _instructionText;
 
         public event Action<int, LobbyInputDeviceKind> BrowseRequested;
         public event Action<LobbyInputDeviceKind> SubmitRequested;
         public event Action BackRequested;
+        public bool InteractionEnabled => _interactionEnabled && gameObject.activeInHierarchy;
 
         private LobbyInputDeviceKind _lastInputDevice = LobbyInputDeviceKind.Keyboard;
         private Gamepad _lastGamepad;
+        private Vector2[] _deviceIconPositions;
         private bool _interactionEnabled = true;
         private int _localPlayerSlot = -1;
         private bool _localPlayerIsReady = true;
@@ -60,13 +93,70 @@ namespace PiGame.UI
         private int _lockingPlayerSlot = -1;
         private Vector2 _blockedSlotOriginalPosition;
         private Coroutine _blockedFeedbackRoutine;
+        private Coroutine _browsePulseRoutine;
 
         private void Awake()
         {
+            if (!_connectionView || !_background || !_slotsLayout
+                || !_upLegendIcon || !_downLegendIcon || !_pauseLegendIcon)
+            {
+                Debug.LogError("Configure o fundo, a área dos slots e os indicadores de conexão no seletor de personagens.", this);
+                enabled = false;
+                return;
+            }
+            if (_readyBanners.Length != _slotRoots.Length || _readyBannerCloths.Length != _slotRoots.Length
+                || _characterNameplates.Length != _slotRoots.Length || _readyChecks.Length != _slotRoots.Length
+                || Array.Exists(_readyBanners, banner => !banner) || Array.Exists(_readyBannerCloths, cloth => !cloth)
+                || Array.Exists(_characterNameplates, plate => !plate) || Array.Exists(_readyChecks, check => !check))
+            {
+                Debug.LogError("Configure bandeira, placa do personagem e ícone de pronto para cada slot no CharacterSelectionPanelUI.", this);
+                enabled = false;
+                return;
+            }
+            if (_clanBackgrounds.Length != _slotRoots.Length || _clanDetails.Length != _slotRoots.Length
+                || Array.Exists(_clanBackgrounds, image => !image) || Array.Exists(_clanDetails, image => !image)
+                || Array.Exists(_characters, character => !character || !character.LobbyBackground || !character.LobbyBackgroundDetails))
+            {
+                Debug.LogError("Configure fundos e detalhes dos clãs no prefab e nos assets de personagem.", this);
+                enabled = false;
+                return;
+            }
+            if (_playerNumbers.Length != _slotRoots.Length
+                || _readyBannerMotifs.Length != _slotRoots.Length
+                || Array.Exists(_playerNumbers, image => !image)
+                || Array.Exists(_readyBannerMotifs, image => !image)
+                || Array.Exists(_characters, character => !character.LobbyBanner
+                    || !character.LobbyUp || !character.LobbyDown || !character.LobbyUpPressed || !character.LobbyDownPressed))
+            {
+                Debug.LogError("Configure bandeiras, números e setas dos quatro clãs no seletor.", this);
+                enabled = false;
+                return;
+            }
+            if (_clanEmblems.Length != _slotRoots.Length || Array.Exists(_clanEmblems, image => !image)
+                || !_bronzeBorder || _cardBorders.Length != _slotRoots.Length
+                || _selectionBanners.Length != _slotRoots.Length
+                || Array.Exists(_cardBorders, image => !image) || Array.Exists(_selectionBanners, image => !image)
+                || Array.Exists(_characters, character => !character.LobbyFrame))
+            {
+                Debug.LogError("Configure molduras e bandeiras de fundo para os quatro cards do lobby.", this);
+                enabled = false;
+                return;
+            }
+            CacheDeviceIconPositions();
+
             DisableAutomaticNavigation(_previousCharacterButton);
             DisableAutomaticNavigation(_nextCharacterButton);
 
             RefreshLegend();
+        }
+
+        private void CacheDeviceIconPositions()
+        {
+            // O controlador pode renderizar um painel ainda inativo, antes do Awake.
+            if (_deviceIconPositions != null) return;
+            _deviceIconPositions = new Vector2[_deviceIcons.Length];
+            for (int i = 0; i < _deviceIcons.Length; i++)
+                _deviceIconPositions[i] = _deviceIcons[i].rectTransform.anchoredPosition;
         }
 
         private void OnEnable()
@@ -82,6 +172,7 @@ namespace PiGame.UI
             _nextCharacterButton.onClick.RemoveListener(HandleNextCharacterClicked);
             ResetNavigationInput();
             StopBlockedFeedback(false);
+            ResetBrowsePulse();
         }
 
         private void Update()
@@ -99,6 +190,24 @@ namespace PiGame.UI
             }
 
             ProcessNavigationInput();
+        }
+
+        private void LateUpdate()
+        {
+            Vector2 available = ((RectTransform)transform).rect.size;
+            float headerHeight = _headerBand ? _headerBand.rect.height : 130f;
+            float footerHeight = _footerBand ? _footerBand.rect.height : 130f;
+            // O espaço da apresentação acompanha as barras, sem esticar as artes dos cards.
+            float scale = Mathf.Clamp(Mathf.Min((available.y - headerHeight - footerHeight) / 820f,
+                (available.x - 80f) / _slotsLayout.rect.width), 0.1f, 1f);
+            _slotsLayout.localScale = Vector3.one * scale;
+            _slotsLayout.anchoredPosition = new Vector2(_slotsLayout.anchoredPosition.x,
+                (footerHeight - headerHeight) * 0.5f - 20f * scale);
+            _browseControlsRoot.localScale = _slotsLayout.localScale;
+
+            // Os botões acompanham o slot local ao redimensionar a janela.
+            if (_browseControlsRoot.gameObject.activeSelf)
+                PositionBrowseControls();
         }
 
         public void OnSubmit(BaseEventData eventData)
@@ -161,6 +270,9 @@ namespace PiGame.UI
             ulong localClientId,
             bool requireUniqueCharacters)
         {
+            if (!enabled) return;
+            CacheDeviceIconPositions();
+            _connectionView.SetPlayers(players);
             _localPlayerSlot = -1;
             _localPlayerIsReady = true;
 
@@ -251,7 +363,39 @@ namespace PiGame.UI
         private void RequestBrowse(int direction, LobbyInputDeviceKind inputDevice)
         {
             ClearCharacterBlockedFeedback();
+            ResetBrowsePulse();
+            _browsePulseRoutine = StartCoroutine(PulseBrowseFeedback(
+                direction < 0 ? _previousCharacterButton.transform : _nextCharacterButton.transform));
             BrowseRequested?.Invoke(direction, inputDevice);
+        }
+
+        private IEnumerator PulseBrowseFeedback(Transform arrow)
+        {
+            const float duration = 0.18f;
+            float elapsed = 0f;
+            Button arrowButton = arrow.GetComponent<Button>();
+            while (elapsed < duration)
+            {
+                float pulse = Mathf.Sin(elapsed / duration * Mathf.PI);
+                arrowButton.image.overrideSprite = arrowButton.spriteState.pressedSprite;
+                arrow.localScale = Vector3.one * (1f + 0.25f * pulse);
+                elapsed += Time.unscaledDeltaTime;
+                yield return null;
+            }
+            arrowButton.image.overrideSprite = null;
+            arrow.localScale = Vector3.one;
+            _browsePulseRoutine = null;
+        }
+
+        private void ResetBrowsePulse()
+        {
+            if (_browsePulseRoutine != null)
+                StopCoroutine(_browsePulseRoutine);
+            _browsePulseRoutine = null;
+            _previousCharacterButton.image.overrideSprite = null;
+            _nextCharacterButton.image.overrideSprite = null;
+            _previousCharacterButton.transform.localScale = Vector3.one;
+            _nextCharacterButton.transform.localScale = Vector3.one;
         }
 
         private void RefreshBrowseControls()
@@ -263,8 +407,13 @@ namespace PiGame.UI
             _browseControlsRoot.gameObject.SetActive(shouldShow);
             if (shouldShow)
             {
-                _browseControlsRoot.anchoredPosition = _slotRoots[_localPlayerSlot].anchoredPosition;
+                PositionBrowseControls();
             }
+        }
+
+        private void PositionBrowseControls()
+        {
+            _browseControlsRoot.position = _slotRoots[_localPlayerSlot].position;
         }
 
         public void Focus()
@@ -282,18 +431,47 @@ namespace PiGame.UI
             bool isCharacterLocked)
         {
             LobbyCharacterDefinition character = FindCharacter(player.CharacterId);
+            if (isLocalPlayer) _background.ShowCharacter(character);
             _playerNameTexts[slot].text = player.PlayerName.ToString();
-            _slotRoots[slot].localScale = isLocalPlayer && !player.IsReady
-                ? Vector3.one * 1.03f
-                : Vector3.one;
+            _playerNumbers[slot].color = PlayerSlotColors.Get(slot);
+            _slotRoots[slot].localScale = Vector3.one;
+            _readyBanners[slot].gameObject.SetActive(true);
+            Color characterColor = character != null ? character.Color : Color.gray;
+            _clanEmblems[slot].color = Color.Lerp(characterColor, Color.white, 0.35f);
+            _readyBannerCloths[slot].color = Color.Lerp(characterColor, Color.black, 0.18f);
+            _readyBanners[slot].SetBool(ReadyParameter, player.IsReady);
+            _readyChecks[slot].gameObject.SetActive(player.IsReady);
 
-            Color slotColor = PlayerSlotColors.Get(slot);
-            slotColor.a = isCharacterLocked ? 0.38f : isLocalPlayer ? 1f : 0.88f;
-            _slotBackgrounds[slot].color = slotColor;
+            _slotBackgrounds[slot].color = Color.clear;
+            _clanBackgrounds[slot].gameObject.SetActive(character != null);
+            _clanDetails[slot].gameObject.SetActive(character != null && _cardBackground != CardBackground.Banner);
+            _selectionBanners[slot].gameObject.SetActive(character != null && _cardBackground != CardBackground.GradientWithDetails);
+            _cardBorders[slot].sprite = _useCharacterBorderColors && character != null ? character.LobbyFrame : _bronzeBorder;
+            _cardBorders[slot].type = _useCharacterBorderColors && character != null ? Image.Type.Simple : Image.Type.Sliced;
+            if (character != null)
+            {
+                _clanBackgrounds[slot].sprite = character.LobbyBackground;
+                _clanDetails[slot].sprite = character.LobbyBackgroundDetails;
+                _clanDetails[slot].rectTransform.anchoredPosition = character.LobbyDetailsOffset;
+                _clanDetails[slot].rectTransform.localScale = Vector3.one * character.LobbyDetailsScale;
+                _readyBannerMotifs[slot].sprite = character.LobbyBanner;
+                _readyBannerMotifs[slot].rectTransform.anchoredPosition = character.LobbyReadyBannerOffset;
+                _selectionBanners[slot].sprite = character.LobbyBanner;
+
+                if (isLocalPlayer)
+                {
+                    ConfigureArrow(_previousCharacterButton, character.LobbyUp, character.LobbyUpPressed);
+                    ConfigureArrow(_nextCharacterButton, character.LobbyDown, character.LobbyDownPressed);
+                }
+            }
+            _characterNameplates[slot].gameObject.SetActive(true);
+            _characterNameplates[slot].color = Color.white;
 
             Image portrait = _characterPortraits[slot];
             portrait.gameObject.SetActive(true);
             portrait.sprite = character != null ? character.Portrait : null;
+            portrait.rectTransform.localScale = Vector3.one * (character != null ? character.LobbyPortraitScale : 1f);
+            portrait.rectTransform.anchoredPosition = new Vector2(0f, character != null ? character.LobbyPortraitOffsetY : 0f);
             Color portraitColor = character != null && character.Portrait == null
                 ? Color.Lerp(character.Color, Color.black, 0.38f)
                 : Color.white;
@@ -310,13 +488,15 @@ namespace PiGame.UI
             Sprite deviceSprite = GetDeviceSprite(player.InputDevice);
             deviceIcon.gameObject.SetActive(deviceSprite != null);
             deviceIcon.sprite = deviceSprite;
+            deviceIcon.rectTransform.anchoredPosition = _deviceIconPositions[slot]
+                + Vector2.up * (player.InputDevice == LobbyInputDeviceKind.Gamepad ? _gamepadDeviceOffsetY : 0f);
 
             Text statusText = _statusTexts[slot];
             if (player.IsReady)
             {
                 statusText.text = "PRONTO";
-                statusText.fontSize = 28;
-                statusText.color = new Color(0.42f, 1f, 0.58f, 1f);
+                statusText.fontSize = 20;
+                statusText.color = Color.white;
             }
             else
             {
@@ -329,27 +509,45 @@ namespace PiGame.UI
             }
         }
 
+        private static void ConfigureArrow(Button button, Sprite normal, Sprite pressed)
+        {
+            button.image.sprite = normal;
+            SpriteState states = button.spriteState;
+            states.highlightedSprite = pressed;
+            states.selectedSprite = pressed;
+            states.pressedSprite = pressed;
+            button.spriteState = states;
+        }
+
         private void RenderEmptySlot(int slot)
         {
+            _readyBanners[slot].gameObject.SetActive(false);
+            _readyChecks[slot].gameObject.SetActive(false);
+            _characterNameplates[slot].gameObject.SetActive(false);
             _playerNameTexts[slot].text = string.Empty;
             _slotRoots[slot].localScale = Vector3.one;
-            Color emptyColor = PlayerSlotColors.Get(slot);
-            emptyColor.a = 0.28f;
-            _slotBackgrounds[slot].color = emptyColor;
+
+            _playerNumbers[slot].color = PlayerSlotColors.Get(slot);
+            _clanBackgrounds[slot].gameObject.SetActive(false);
+            _clanDetails[slot].gameObject.SetActive(false);
+            _selectionBanners[slot].gameObject.SetActive(false);
+            _cardBorders[slot].sprite = _bronzeBorder;
+            _cardBorders[slot].type = Image.Type.Sliced;
+            _slotBackgrounds[slot].color = new Color(0.12f, 0.14f, 0.18f, 1f);
             _characterPortraits[slot].gameObject.SetActive(false);
             _deviceIcons[slot].gameObject.SetActive(false);
-            _slotLabels[slot].text = "AGUARDANDO";
+            _slotLabels[slot].text = string.Empty;
             _slotLabels[slot].color = new Color(1f, 1f, 1f, 0.65f);
-            _statusTexts[slot].text = "AGUARDANDO";
-            _statusTexts[slot].fontSize = 16;
-            _statusTexts[slot].color = new Color(0.58f, 0.58f, 0.64f, 1f);
+            _statusTexts[slot].text = "AGUARDANDO JOGADOR";
+            _statusTexts[slot].fontSize = 12;
+            _statusTexts[slot].color = new Color(0.8f, 0.8f, 0.84f, 1f);
         }
 
         private void RenderChoosingStatus(int slot, bool isLocalPlayer)
         {
             Text statusText = _statusTexts[slot];
             statusText.text = "ESCOLHENDO...";
-            statusText.fontSize = isLocalPlayer ? 18 : 16;
+            statusText.fontSize = 12;
             statusText.color = isLocalPlayer
                 ? Color.white
                 : new Color(0.78f, 0.78f, 0.84f, 1f);
@@ -359,7 +557,7 @@ namespace PiGame.UI
         {
             Text statusText = _statusTexts[slot];
             statusText.text = $"BLOQUEADO - {GetColoredPlayerLabel(lockingPlayerSlot)}";
-            statusText.fontSize = 18;
+            statusText.fontSize = 12;
             statusText.color = new Color(1f, 0.42f, 0.38f, 1f);
         }
 
@@ -555,6 +753,12 @@ namespace PiGame.UI
         private void RefreshLegend()
         {
             bool usesGamepad = _lastInputDevice == LobbyInputDeviceKind.Gamepad;
+            _upLegendIcon.sprite = _promptCatalog.GetSprite(
+                usesGamepad ? "<Gamepad>/dpad/up" : "<Keyboard>/upArrow");
+            _downLegendIcon.sprite = _promptCatalog.GetSprite(
+                usesGamepad ? "<Gamepad>/dpad/down" : "<Keyboard>/downArrow");
+            _pauseLegendIcon.sprite = _promptCatalog.GetSprite(
+                usesGamepad ? "<Gamepad>/start" : "<Keyboard>/escape");
             if (_confirmLegendIcon != null)
             {
                 _confirmLegendIcon.sprite = _promptCatalog.GetSprite(
@@ -564,7 +768,7 @@ namespace PiGame.UI
             if (_backLegendIcon != null)
             {
                 _backLegendIcon.sprite = _promptCatalog.GetSprite(
-                    usesGamepad ? "<Gamepad>/buttonEast" : "<Keyboard>/escape");
+                    usesGamepad ? "<Gamepad>/buttonEast" : "<Keyboard>/backspace");
             }
 
             if (_instructionText != null)

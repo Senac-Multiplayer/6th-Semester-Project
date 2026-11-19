@@ -12,6 +12,36 @@ namespace PiGame.Lobby
         [SerializeField] private Sprite _portrait;
         [SerializeField] private NetworkObject _playerPrefab;
 
+        [Header("Artes do seletor do lobby")]
+        [SerializeField, Min(0.1f)] private float _lobbyPortraitScale = 1f;
+        [SerializeField] private float _lobbyPortraitOffsetY;
+        [SerializeField] private Sprite _lobbyBackground;
+        [SerializeField] private Sprite _lobbyBackgroundDetails;
+        [SerializeField] private Vector2 _lobbyDetailsOffset;
+        [SerializeField, Min(0.1f)] private float _lobbyDetailsScale = 1f;
+
+        [SerializeField] private Sprite _lobbyFrame;
+        [SerializeField] private Sprite _lobbyBanner;
+        [SerializeField] private Vector2 _lobbyReadyBannerOffset = new Vector2(0f, 20f);
+        [SerializeField] private Sprite _lobbyUp;
+        [SerializeField] private Sprite _lobbyUpPressed;
+        [SerializeField] private Sprite _lobbyDown;
+        [SerializeField] private Sprite _lobbyDownPressed;
+
+        public float LobbyPortraitScale => _lobbyPortraitScale;
+        public float LobbyPortraitOffsetY => _lobbyPortraitOffsetY;
+        public Sprite LobbyFrame => _lobbyFrame;
+        public Sprite LobbyBanner => _lobbyBanner;
+        public Vector2 LobbyReadyBannerOffset => _lobbyReadyBannerOffset;
+        public Sprite LobbyUp => _lobbyUp;
+        public Sprite LobbyUpPressed => _lobbyUpPressed;
+        public Sprite LobbyDown => _lobbyDown;
+        public Sprite LobbyDownPressed => _lobbyDownPressed;
+
+        public Sprite LobbyBackground => _lobbyBackground;
+        public Sprite LobbyBackgroundDetails => _lobbyBackgroundDetails;
+        public Vector2 LobbyDetailsOffset => _lobbyDetailsOffset;
+        public float LobbyDetailsScale => _lobbyDetailsScale;
         public LobbyCharacterId Id => _id;
         public string DisplayName => _displayName;
         public Color Color => _color;

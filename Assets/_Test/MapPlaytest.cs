@@ -75,6 +75,7 @@ namespace PiGame.Testing
                 yield break;
             }
 
+            yield return new WaitUntil(() => _player.CanAct);
             _spawnIndex = Mathf.Clamp(_initialSpawn - 1, 0, _spawnPoints.childCount - 1);
             _testing = true;
             ResetSpawn();

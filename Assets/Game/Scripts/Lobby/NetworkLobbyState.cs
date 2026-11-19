@@ -4,13 +4,12 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using PiGame.Networking;
 
 namespace PiGame.Lobby
 {
     public class NetworkLobbyState : NetworkBehaviour, ILobbyState
     {
-        public const float RandomMapDrawSeconds = 1.5f;
-
         private static readonly LobbyMatchSettingsData InitialMatchSettings = new(
             3,
             LobbyMatchMode.Solo,
@@ -21,16 +20,17 @@ namespace PiGame.Lobby
         [SerializeField] private LobbyMapDefinition[] _maps;
         
         [SerializeField, Min(0.1f)] private float _mapResultDisplaySeconds = 2.5f;
+        [SerializeField, Min(0f)] private float _characterReadyDisplaySeconds = 0.7f;
 
         private readonly NetworkList<LobbyPlayerData> _players = new();
         private readonly NetworkList<LobbyMapVoteData> _mapVotes = new();
         private readonly NetworkVariable<LobbyStage> _stage = new(LobbyStage.CharacterSelection);
-        private readonly NetworkVariable<LobbyMapId> _winningMap = new(LobbyMapId.None);
-        private readonly NetworkVariable<bool> _isRandomMapResult = new(false);
+        private readonly NetworkVariable<LobbyMapDrawData> _mapDraw = new(LobbyMapDrawData.Empty);
         private readonly NetworkVariable<LobbyMatchSettingsData> _matchSettings =
             new(InitialMatchSettings);
 
         private Coroutine _matchStartRoutine;
+        private Coroutine _mapVotingRoutine;
         private bool _localNameSubmitted;
 
         public event Action PlayersChanged;
@@ -46,21 +46,105 @@ namespace PiGame.Lobby
             ? NetworkManager.LocalClientId
             : ulong.MaxValue;
         public LobbyStage Stage => _stage.Value;
-        public LobbyMapId WinningMap => _winningMap.Value;
-        public bool IsRandomMapResult => _isRandomMapResult.Value;
+        public LobbyMapDrawData MapDraw => _mapDraw.Value;
+        public double ServerTime => IsSpawned ? NetworkManager.ServerTime.Time : 0d;
         public LobbyMatchSettingsData MatchSettings => _matchSettings.Value;
-        private int MinimumPlayers => Mathf.Max(1, MatchSettings.MinimumPlayers);
+        private int MinimumPlayers => MatchSettings.Mode == LobbyMatchMode.Team
+            ? LobbyTeams.PlayerCount : Mathf.Max(1, MatchSettings.MinimumPlayers);
         public int SelectableCharacterCount => _rules.AvailableCharacterCount;
         public bool RequireUniqueCharacters => MatchSettings.RequireUniqueCharacters;
         public bool LocalClientIsHost => NetworkManager != null && NetworkManager.IsHost;
-        private bool CanStartMatch => _players.Count >= MinimumPlayers && AllPlayersReady;
+        private bool CanStartMatch => _players.Count >= MinimumPlayers && AllPlayersReady && HasValidTeams;
+
+        private bool HasValidTeams => MatchSettings.Mode != LobbyMatchMode.Team
+            || (_players.Count == LobbyTeams.PlayerCount
+                && CountTeam(LobbyTeam.Blue) == LobbyTeams.TeamSize
+                && CountTeam(LobbyTeam.Orange) == LobbyTeams.TeamSize);
+
+        public const string KickedDisconnectReason = "Expulso pelo host.";
+
+        public bool CanKickPlayer(ulong clientId) => IsSpawned && IsServer && LocalClientIsHost
+            && Stage == LobbyStage.CharacterSelection && clientId != LocalClientId
+            && TryGetPlayer(clientId, out _) && NetworkManager.ConnectedClients.ContainsKey(clientId);
+
+        public bool KickPlayer(ulong clientId)
+        {
+            if (!CanKickPlayer(clientId)) return false;
+            // Evita iniciar a votação enquanto a desconexão ainda está sendo processada.
+            ReturnToCharacterSelectionServer();
+            NetworkManager.DisconnectClient(clientId, KickedDisconnectReason);
+            return true;
+        }
+
+        private int CountTeam(LobbyTeam team, ulong exceptClient = ulong.MaxValue)
+        {
+            int count = 0;
+            for (int i = 0; i < _players.Count; i++)
+                if (_players[i].ClientId != exceptClient && _players[i].Team == team) count++;
+            return count;
+        }
+
+        private LobbyTeam AvailableTeam(LobbyTeam preferred = LobbyTeam.None)
+        {
+            if (MatchSettings.Mode != LobbyMatchMode.Team) return LobbyTeam.None;
+            if (LobbyTeams.IsValid(preferred) && CountTeam(preferred) < LobbyTeams.TeamSize) return preferred;
+            return CountTeam(LobbyTeam.Blue) <= CountTeam(LobbyTeam.Orange) ? LobbyTeam.Blue : LobbyTeam.Orange;
+        }
+
+        public void RequestTeam(LobbyTeam team)
+        {
+            if (IsSpawned && _stage.Value == LobbyStage.CharacterSelection
+                && MatchSettings.Mode == LobbyMatchMode.Team
+                && (LobbyTeams.IsValid(team) || team == LobbyTeam.None)) SetTeamRpc(team);
+        }
+
+        [Rpc(SendTo.Server)]
+        private void SetTeamRpc(LobbyTeam team, RpcParams rpcParams = default)
+        {
+            TrySetTeamServer(rpcParams.Receive.SenderClientId, team);
+        }
+
+        private void TrySetTeamServer(ulong clientId, LobbyTeam team)
+        {
+            if (!IsServer || _stage.Value != LobbyStage.CharacterSelection || MatchSettings.Mode != LobbyMatchMode.Team
+                || (!LobbyTeams.IsValid(team) && team != LobbyTeam.None)) return;
+            int index = FindPlayerIndex(clientId);
+            if (index < 0) return;
+            LobbyPlayerData player = _players[index];
+            if (player.Team == team || (LobbyTeams.IsValid(team)
+                && CountTeam(team, player.ClientId) >= LobbyTeams.TeamSize)) return;
+            StopMapVotingRoutine();
+            player.Team = team;
+            player.IsReady = false;
+            _players[index] = player;
+        }
+
+        private void AssignTeamsServer()
+        {
+            bool teamMode = MatchSettings.Mode == LobbyMatchMode.Team;
+            int blue = 0, orange = 0;
+            for (int i = 0; i < _players.Count; i++)
+            {
+                LobbyPlayerData player = _players[i];
+                LobbyTeam team = player.Team;
+                if (!teamMode) team = LobbyTeam.None;
+                else if (!LobbyTeams.IsValid(team) || (team == LobbyTeam.Blue ? blue : orange) >= LobbyTeams.TeamSize)
+                    team = blue <= orange ? LobbyTeam.Blue : LobbyTeam.Orange;
+                if (team == LobbyTeam.Blue) blue++;
+                if (team == LobbyTeam.Orange) orange++;
+                player.Team = team;
+                player.IsReady = false;
+                _players[i] = player;
+            }
+            StopMapVotingRoutine();
+        }
 
 
         private bool AllMapVotesConfirmed
         {
             get
             {
-                if (_players.Count < MinimumPlayers || _mapVotes.Count != _players.Count)
+                if (_players.Count < MinimumPlayers || _mapVotes.Count != _players.Count || !HasValidTeams)
                 {
                     return false;
                 }
@@ -120,8 +204,7 @@ namespace PiGame.Lobby
             _players.OnListChanged += HandlePlayersChanged;
             _mapVotes.OnListChanged += HandleMapVotesChanged;
             _stage.OnValueChanged += HandleStageChanged;
-            _winningMap.OnValueChanged += HandleWinningMapChanged;
-            _isRandomMapResult.OnValueChanged += HandleRandomMapResultChanged;
+            _mapDraw.OnValueChanged += HandleMapDrawChanged;
             _matchSettings.OnValueChanged += HandleMatchSettingsChanged;
 
             if (IsServer)
@@ -139,6 +222,9 @@ namespace PiGame.Lobby
                 _matchSettings.Value = previousMatch != null
                     ? previousMatch.MatchSettings
                     : CreateInitialMatchSettings();
+                if (NetcodeLobbyConnectionService.Instance != null
+                    && NetcodeLobbyConnectionService.Instance.TryConsumeRecoveredSettings(out var recoveredSettings))
+                    _matchSettings.Value = recoveredSettings;
                 NetworkManager.OnClientConnectedCallback += HandleClientConnected;
                 NetworkManager.OnClientDisconnectCallback += HandleClientDisconnected;
 
@@ -184,10 +270,10 @@ namespace PiGame.Lobby
             LocalPlayerName.Saved -= HandleLocalNameSaved;
             _mapVotes.OnListChanged -= HandleMapVotesChanged;
             _stage.OnValueChanged -= HandleStageChanged;
-            _winningMap.OnValueChanged -= HandleWinningMapChanged;
-            _isRandomMapResult.OnValueChanged -= HandleRandomMapResultChanged;
+            _mapDraw.OnValueChanged -= HandleMapDrawChanged;
             _matchSettings.OnValueChanged -= HandleMatchSettingsChanged;
 
+            StopMapVotingRoutine();
             StopMatchStartRoutine();
 
             if (NetworkManager != null && IsServer)
@@ -342,17 +428,17 @@ namespace PiGame.Lobby
             ReturnToCharacterSelectionRpc();
         }
 
-        public void RequestMatchSettings(int durationMinutes, LobbyMatchMode mode)
+        public void RequestMatchSettings(int durationMinutes, LobbyMatchMode mode, int killLimit)
         {
             if (!IsSpawned
                 || _stage.Value != LobbyStage.CharacterSelection
                 || !LocalClientIsHost
-                || !AreValidMatchSettings(durationMinutes, mode))
+                || !AreValidMatchSettings(durationMinutes, mode, killLimit))
             {
                 return;
             }
 
-            SetMatchSettingsRpc(durationMinutes, mode);
+            SetMatchSettingsRpc(durationMinutes, mode, killLimit);
         }
 
         [Rpc(SendTo.Server)]
@@ -411,7 +497,8 @@ namespace PiGame.Lobby
             }
 
             LobbyPlayerData player = _players[playerIndex];
-            if (isReady && !IsValidCharacter(player.CharacterId))
+            if (isReady && (!IsValidCharacter(player.CharacterId)
+                || (MatchSettings.Mode == LobbyMatchMode.Team && !LobbyTeams.IsValid(player.Team))))
             {
                 return;
             }
@@ -543,12 +630,13 @@ namespace PiGame.Lobby
         private void SetMatchSettingsRpc(
             int durationMinutes,
             LobbyMatchMode mode,
+            int killLimit,
             RpcParams rpcParams = default)
         {
             if (_stage.Value != LobbyStage.CharacterSelection
                 || NetworkManager == null
                 || rpcParams.Receive.SenderClientId != NetworkManager.ServerClientId
-                || !AreValidMatchSettings(durationMinutes, mode))
+                || !AreValidMatchSettings(durationMinutes, mode, killLimit))
             {
                 return;
             }
@@ -557,8 +645,11 @@ namespace PiGame.Lobby
             _matchSettings.Value = new LobbyMatchSettingsData(
                 durationMinutes,
                 mode,
-                currentSettings.MinimumPlayers,
-                currentSettings.RequireUniqueCharacters);
+                mode == LobbyMatchMode.Team ? LobbyTeams.PlayerCount
+                    : currentSettings.Mode == LobbyMatchMode.Team ? _rules.MinimumPlayers : currentSettings.MinimumPlayers,
+                currentSettings.RequireUniqueCharacters,
+                killLimit);
+            if (currentSettings.Mode != mode) AssignTeamsServer();
         }
 
         private void HandlePlayersChanged(NetworkListEvent<LobbyPlayerData> changeEvent)
@@ -590,15 +681,11 @@ namespace PiGame.Lobby
 
         private void HandleStageChanged(LobbyStage previousStage, LobbyStage currentStage)
         {
+            if (IsServer) NetcodeLobbyConnectionService.Instance?.SetRoomJoinable(currentStage == LobbyStage.CharacterSelection);
             StageChanged?.Invoke();
         }
 
-        private void HandleWinningMapChanged(LobbyMapId previousMap, LobbyMapId currentMap)
-        {
-            StageChanged?.Invoke();
-        }
-
-        private void HandleRandomMapResultChanged(bool previousValue, bool currentValue)
+        private void HandleMapDrawChanged(LobbyMapDrawData previousValue, LobbyMapDrawData currentValue)
         {
             StageChanged?.Invoke();
         }
@@ -607,29 +694,25 @@ namespace PiGame.Lobby
             LobbyMatchSettingsData previousSettings,
             LobbyMatchSettingsData currentSettings)
         {
+            NetcodeLobbyConnectionService.Instance?.RememberMatchSettings(currentSettings);
             MatchSettingsChanged?.Invoke();
         }
 
-        private static bool AreValidMatchSettings(int durationMinutes, LobbyMatchMode mode)
+        private static bool AreValidMatchSettings(int durationMinutes, LobbyMatchMode mode, int killLimit)
         {
-            return durationMinutes >= 2
-                && durationMinutes <= 5
-                && mode == LobbyMatchMode.Solo;
+            return (durationMinutes == 0 || (durationMinutes >= 2 && durationMinutes <= 10))
+                && (mode == LobbyMatchMode.Solo || mode == LobbyMatchMode.Team)
+                && killLimit >= 2 && killLimit <= 100;
         }
 
         private LobbyMatchSettingsData CreateInitialMatchSettings()
         {
             LobbyMatchMode initialMode = _rules.DefaultMatchMode;
-            if (initialMode == LobbyMatchMode.Team)
-            {
-                Debug.LogWarning("Modo Equipe indisponível por enquanto. Iniciando em Solo.", this);
-                initialMode = LobbyMatchMode.Solo;
-            }
-
             return new LobbyMatchSettingsData(
-                Mathf.Clamp(_rules.DefaultDurationMinutes, 2, 5),
+                Mathf.Clamp(_rules.DefaultDurationMinutes, 2, 10),
                 initialMode,
-                Mathf.Clamp(_rules.MinimumPlayers, 1, _rules.MaximumPlayers),
+                initialMode == LobbyMatchMode.Team ? LobbyTeams.PlayerCount
+                    : Mathf.Clamp(_rules.MinimumPlayers, 1, _rules.MaximumPlayers),
                 _rules.RequireUniqueCharacters);
         }
 
@@ -657,13 +740,17 @@ namespace PiGame.Lobby
                 _mapVotes.RemoveAt(voteIndex);
             }
 
-            if (_stage.Value != LobbyStage.CharacterSelection && _players.Count < 2)
+            if (_stage.Value != LobbyStage.CharacterSelection
+                && (_players.Count < 2 || (!HasValidTeams
+                    && (_stage.Value == LobbyStage.MapVoting || _matchStartRoutine != null))))
             {
                 ReturnToCharacterSelectionServer();
                 return;
             }
 
-            if (_stage.Value == LobbyStage.MapVoting)
+            if (_stage.Value == LobbyStage.CharacterSelection)
+                TryBeginMapVotingServer();
+            else if (_stage.Value == LobbyStage.MapVoting)
             {
                 TryResolveMapVoteServer();
             }
@@ -708,7 +795,8 @@ namespace PiGame.Lobby
                 initialCharacter,
                 inputDevice,
                 false,
-                hasPreviousPlayer ? previousPlayer.PlayerName.ToString() : "Jogador"));
+                hasPreviousPlayer ? previousPlayer.PlayerName.ToString() : "Jogador",
+                AvailableTeam(hasPreviousPlayer ? previousPlayer.Team : LobbyTeam.None)));
         }
 
         private static bool TryFindPreviousPlayer(
@@ -850,18 +938,34 @@ namespace PiGame.Lobby
         {
             if (!IsServer || _stage.Value != LobbyStage.CharacterSelection || !CanStartMatch)
             {
+                StopMapVotingRoutine();
                 return;
             }
+            if (_mapVotingRoutine == null)
+                _mapVotingRoutine = StartCoroutine(BeginMapVotingAfterReady());
+        }
+
+        private IEnumerator BeginMapVotingAfterReady()
+        {
+            // Deixa a ultima bandeira descer antes de trocar a tela; cancelar o pronto interrompe a espera.
+            yield return new WaitForSecondsRealtime(_characterReadyDisplaySeconds);
+            _mapVotingRoutine = null;
+            if (!IsServer || _stage.Value != LobbyStage.CharacterSelection || !CanStartMatch)
+                yield break;
 
             _mapVotes.Clear();
             for (int i = 0; i < _players.Count; i++)
-            {
                 _mapVotes.Add(new LobbyMapVoteData(_players[i].ClientId));
-            }
 
-            _winningMap.Value = LobbyMapId.None;
-            _isRandomMapResult.Value = false;
+            _mapDraw.Value = LobbyMapDrawData.Empty;
             _stage.Value = LobbyStage.MapVoting;
+        }
+
+        private void StopMapVotingRoutine()
+        {
+            if (_mapVotingRoutine == null) return;
+            StopCoroutine(_mapVotingRoutine);
+            _mapVotingRoutine = null;
         }
 
         private void TryResolveMapVoteServer()
@@ -871,7 +975,8 @@ namespace PiGame.Lobby
                 return;
             }
 
-            LobbyMapId winningOption = ResolveWinningVoteOption();
+            List<LobbyMapId> options = ResolveTopVoteOptions();
+            LobbyMapId winningOption = options[UnityEngine.Random.Range(0, options.Count)];
             LobbyMapId concreteMap = winningOption == LobbyMapId.Random
                 ? PickRandomConcreteMap()
                 : winningOption;
@@ -882,16 +987,20 @@ namespace PiGame.Lobby
                 return;
             }
 
-            _isRandomMapResult.Value = winningOption == LobbyMapId.Random;
-            _winningMap.Value = concreteMap;
+            var draw = new LobbyMapDrawData
+            {
+                WinningOption = winningOption,
+                MapId = concreteMap,
+                StartsAt = ServerTime + 0.35d
+            };
+            foreach (LobbyMapId option in options) draw.Options.Add(option);
+            _mapDraw.Value = draw;
             _stage.Value = LobbyStage.MatchStarting;
             StopMatchStartRoutine();
-            _matchStartRoutine = StartCoroutine(RequestMatchStartAfterResult(
-                concreteMap,
-                _isRandomMapResult.Value));
+            _matchStartRoutine = StartCoroutine(RequestMatchStartAfterResult(draw));
         }
 
-        private LobbyMapId ResolveWinningVoteOption()
+        private List<LobbyMapId> ResolveTopVoteOptions()
         {
             Dictionary<LobbyMapId, int> voteCounts = new();
             int highestCount = 0;
@@ -914,7 +1023,14 @@ namespace PiGame.Lobby
                 }
             }
 
-            return tiedOptions[UnityEngine.Random.Range(0, tiedOptions.Count)];
+            // Em empate com Aleatório, a preferência fica com os mapas específicos mais votados.
+            if (tiedOptions.Count > 1)
+            {
+                tiedOptions.Remove(LobbyMapId.Random);
+            }
+
+            tiedOptions.Sort();
+            return tiedOptions;
         }
 
         private LobbyMapId PickRandomConcreteMap()
@@ -946,20 +1062,19 @@ namespace PiGame.Lobby
                 : LobbyMapId.None;
         }
 
-        private IEnumerator RequestMatchStartAfterResult(LobbyMapId mapId, bool isRandomResult)
+        private IEnumerator RequestMatchStartAfterResult(LobbyMapDrawData draw)
         {
-            if (isRandomResult)
-            {
-                yield return new WaitForSecondsRealtime(RandomMapDrawSeconds);
-            }
-
-            yield return new WaitForSecondsRealtime(_mapResultDisplaySeconds);
+            double finishAt = draw.StartsAt + draw.Duration + _mapResultDisplaySeconds;
+            while (ServerTime < finishAt) yield return null;
 
             _matchStartRoutine = null;
-            if (IsServer && _stage.Value == LobbyStage.MatchStarting && _winningMap.Value == mapId)
-            {
-                MatchStartRequested?.Invoke(mapId);
-            }
+            if (IsServer && _stage.Value == LobbyStage.MatchStarting && _mapDraw.Value.Equals(draw))
+                MatchStartRequested?.Invoke(draw.MapId);
+        }
+
+        public void PrepareNextMatchServer()
+        {
+            ReturnToCharacterSelectionServer();
         }
 
         private void ReturnToCharacterSelectionServer()
@@ -969,10 +1084,10 @@ namespace PiGame.Lobby
                 return;
             }
 
+            StopMapVotingRoutine();
             StopMatchStartRoutine();
             _mapVotes.Clear();
-            _winningMap.Value = LobbyMapId.None;
-            _isRandomMapResult.Value = false;
+            _mapDraw.Value = LobbyMapDrawData.Empty;
 
             for (int i = 0; i < _players.Count; i++)
             {
@@ -986,11 +1101,11 @@ namespace PiGame.Lobby
 
         private void ResetReplicatedSessionStateServer()
         {
+            StopMapVotingRoutine();
             StopMatchStartRoutine();
             _players.Clear();
             _mapVotes.Clear();
-            _winningMap.Value = LobbyMapId.None;
-            _isRandomMapResult.Value = false;
+            _mapDraw.Value = LobbyMapDrawData.Empty;
             _stage.Value = LobbyStage.CharacterSelection;
         }
 

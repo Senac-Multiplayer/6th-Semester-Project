@@ -15,7 +15,6 @@ namespace PiGame.UI
         [SerializeField] private ConfirmationPanelUI _conflictPanel;
         [SerializeField] private Button _resetKeyboardButton;
         [SerializeField] private Button _resetGamepadButton;
-        [SerializeField] private Button _backButton;
         [SerializeField] private InputPromptCatalog _promptCatalog;
 
         private InputActionAsset _actions;
@@ -47,7 +46,7 @@ namespace PiGame.UI
 
             if (_root == null || _conflictPanel == null
                 || _resetKeyboardButton == null || _resetGamepadButton == null
-                || _backButton == null || _promptCatalog == null)
+                || _promptCatalog == null)
             {
                 Debug.LogError("ControlsSettingsUI possui referências obrigatórias ausentes.", this);
                 enabled = false;
@@ -98,6 +97,7 @@ namespace PiGame.UI
             if (!IsVisible)
                 return false;
 
+            PiGame.Sound.UiAudioManager.PlayButton();
             if (_conflictPanel.gameObject.activeSelf)
             {
                 CancelConflict();
@@ -135,7 +135,6 @@ namespace PiGame.UI
         {
             _resetKeyboardButton.onClick.AddListener(ResetKeyboard);
             _resetGamepadButton.onClick.AddListener(ResetGamepad);
-            _backButton.onClick.AddListener(HideFromButton);
             _conflictPanel.Confirmed += ConfirmConflict;
             _conflictPanel.Canceled += CancelConflict;
 
@@ -152,7 +151,6 @@ namespace PiGame.UI
         {
             _resetKeyboardButton.onClick.RemoveListener(ResetKeyboard);
             _resetGamepadButton.onClick.RemoveListener(ResetGamepad);
-            _backButton.onClick.RemoveListener(HideFromButton);
             _conflictPanel.Confirmed -= ConfirmConflict;
             _conflictPanel.Canceled -= CancelConflict;
 
@@ -192,7 +190,7 @@ namespace PiGame.UI
                 return;
             }
 
-            _conflictPanel.Show("ESTE BOTÃO JÁ ESTÁ EM USO. DESEJA TROCAR OS CONTROLES?");
+            _conflictPanel.Show("ESTE BOTÃO JÁ ESTÁ EM USO. DESEJA TROCAR OS CONTROLES?", "TROCAR", false);
         }
 
         private void ConfirmConflict()
@@ -248,8 +246,6 @@ namespace PiGame.UI
             _bindingService.ResetBindingGroup(group);
             RefreshBindings();
         }
-
-        private void HideFromButton() => Hide();
 
         private void RefreshBindings()
         {

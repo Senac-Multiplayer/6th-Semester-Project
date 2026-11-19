@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using PiGame.Sound;
 using Unity.Netcode;
 using UnityEngine;
@@ -12,45 +13,53 @@ namespace PiGame.Gameplay
         [SerializeField, Min(0.01f)] private float _reloadSeconds = 1.5f;
         [SerializeField, Min(0f)] private float _shotCooldownSeconds = 0.35f;
         [SerializeField, Min(0f)] private float _projectileSpawnDistance = 0.5f;
+        [SerializeField, Min(0f)] private float _verticalSpawnDistance = 0.7f; //Adição do felipe
         [SerializeField, Min(0.01f)] private float _rollSeconds = 0.2f;
+        [SerializeField, Min(0f)] private float _rollCooldownSeconds = 6f;
         [SerializeField, Min(0f)] private float _rollSpeed = 16f;
         [SerializeField] private LayerMask _rollPassThroughLayers;
         [SerializeField] private SpriteRenderer[] _ammoIndicators;
         [SerializeField] private Color _rollTint = new Color(0.45f, 0.45f, 0.45f, 0.65f);
 
         private readonly NetworkVariable<int> _ammo = new NetworkVariable<int>(
-            0, NetworkVariableReadPermission.Owner);
+            0, NetworkVariableReadPermission.Everyone);
         private readonly NetworkVariable<float> _rollDirectionX = new NetworkVariable<float>(1f);
         private readonly NetworkVariable<bool> _isRolling = new NetworkVariable<bool>();
+        private readonly NetworkVariable<bool> _passThroughPlayers = new NetworkVariable<bool>();
+        private readonly List<Collider2D> _rollOverlaps = new List<Collider2D>();
 
         private NetworkPlayerState _playerState;
         private PlayerMove _playerMove;
         private Collider2D _bodyCollider;
         private SpriteRenderer _bodySprite;
+        private PlayerAnimatorController _presentation;
         private Color _colorBeforeRoll;
         private CowboySoundManager _cowboySound;
         private bool _visualRollActive;
+        private bool _playerCollisionRestoreRequested;
         private LayerMask _originalExcludedLayers;
         private bool _isReloading;
         private bool _couldActLastFrame;
         private float _reloadEndsAt;
         private float _rollEndsAt;
+        private float _nextRollAt;
         private float _nextShotAt;
-
+        private Vector2 _lastShotDirection = Vector2.right;
         private void Awake()
         {
             _playerState = GetComponent<NetworkPlayerState>();
             _playerMove = GetComponent<PlayerMove>();
             _bodyCollider = GetComponent<Collider2D>();
             _bodySprite = GetComponent<SpriteRenderer>();
+            _presentation = GetComponent<PlayerAnimatorController>();
             _cowboySound = GetComponent<CowboySoundManager>();
             _originalExcludedLayers = _bodyCollider.excludeLayers;
 
-            if (_projectile == null || _projectile.Prefab == null
+            if (_presentation == null || _projectile == null || _projectile.Prefab == null
                 || _rollPassThroughLayers.value == 0
                 || _ammoIndicators == null || _ammoIndicators.Length != _maximumAmmo)
             {
-                Debug.LogError("Configure o projétil, as camadas e os indicadores de munição no CowboyCombat.", this);
+                Debug.LogError("Configure PlayerAnimatorController, projétil, camadas e indicadores de munição no CowboyCombat.", this);
                 enabled = false;
                 return;
             }
@@ -78,17 +87,19 @@ namespace PiGame.Gameplay
             _ammo.OnValueChanged += HandleAmmoChanged;
             _rollDirectionX.OnValueChanged += HandleRollDirectionChanged;
             _isRolling.OnValueChanged += HandleRollingChanged;
+            _passThroughPlayers.OnValueChanged += HandlePlayerCollisionChanged;
             _playerState.StateChanged += RefreshAmmoIndicators;
 
             if (IsServer)
             {
                 _ammo.Value = _maximumAmmo;
                 _couldActLastFrame = _playerState.CanAct;
+                _playerState.SetAbilityCooldownServer(0f);
             }
 
             foreach (SpriteRenderer indicator in _ammoIndicators)
             {
-                indicator.gameObject.SetActive(IsOwner);
+                indicator.gameObject.SetActive(true);
             }
 
             ApplyRollState();
@@ -100,6 +111,7 @@ namespace PiGame.Gameplay
             _ammo.OnValueChanged -= HandleAmmoChanged;
             _rollDirectionX.OnValueChanged -= HandleRollDirectionChanged;
             _isRolling.OnValueChanged -= HandleRollingChanged;
+            _passThroughPlayers.OnValueChanged -= HandlePlayerCollisionChanged;
             _playerState.StateChanged -= RefreshAmmoIndicators;
 
             if (IsServer)
@@ -108,6 +120,7 @@ namespace PiGame.Gameplay
             }
 
             _bodyCollider.excludeLayers = _originalExcludedLayers;
+            _playerCollisionRestoreRequested = false;
             if (_visualRollActive)
             {
                 _bodySprite.color = _colorBeforeRoll;
@@ -116,6 +129,65 @@ namespace PiGame.Gameplay
             if (IsOwner)
             {
                 _playerMove.EndHorizontalMovementOverride();
+            }
+        }
+
+        private void FixedUpdate()
+        {
+            if (!IsSpawned || _isRolling.Value) return;
+            if (IsOwner && _passThroughPlayers.Value) UpdatePlayerCollisionState();
+            if (!_passThroughPlayers.Value
+                && _bodyCollider.excludeLayers.value != _originalExcludedLayers.value)
+                ApplyRollCollisions();
+        }
+
+        private void UpdatePlayerCollisionState()
+        {
+            if (_playerCollisionRestoreRequested || OverlapsPlayer()) return;
+
+            _playerCollisionRestoreRequested = true;
+            RestorePlayerCollisionsRpc();
+        }
+
+        private bool OverlapsPlayer()
+        {
+            var filter = new ContactFilter2D();
+            filter.SetLayerMask(_rollPassThroughLayers.value & (1 << gameObject.layer));
+            filter.useTriggers = false;
+            _bodyCollider.Overlap(filter, _rollOverlaps);
+
+            foreach (Collider2D other in _rollOverlaps)
+            {
+                if (other.attachedRigidbody == _bodyCollider.attachedRigidbody) continue;
+                if (other.TryGetComponent<NetworkPlayerState>(out _)
+                    && _bodyCollider.Distance(other).isOverlapped)
+                {
+                    // Não reativar contato dentro de outro jogador: a separação física
+                    // pode empurrar o Cowboy contra o piso ou a parede da quina.
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        private void RestorePlayerCollisionsRpc()
+        {
+            if (!_isRolling.Value) _passThroughPlayers.Value = false;
+        }
+
+        private void ApplyRollCollisions()
+        {
+            int excludedLayers = _originalExcludedLayers.value;
+            if (_isRolling.Value) excludedLayers |= _rollPassThroughLayers.value;
+            else if (_passThroughPlayers.Value
+                || (_bodyCollider.excludeLayers.value != _originalExcludedLayers.value && OverlapsPlayer()))
+                excludedLayers |= _rollPassThroughLayers.value & (1 << gameObject.layer);
+
+            if (_bodyCollider.excludeLayers.value != excludedLayers)
+            {
+                _bodyCollider.excludeLayers = excludedLayers;
             }
         }
 
@@ -191,14 +263,20 @@ namespace PiGame.Gameplay
             Vector2 shotDirection = direction.sqrMagnitude > 0.01f
                 ? direction.normalized
                 : Vector2.right;
+
+            _lastShotDirection = shotDirection; 
+
+            float distanceToUse = Mathf.Abs(shotDirection.y) > Mathf.Abs(shotDirection.x)
+                ? _verticalSpawnDistance
+                : _projectileSpawnDistance;
+
             Vector3 spawnPosition = transform.position
                 + (Vector3)(shotDirection * _projectileSpawnDistance);
 
-            NetworkProjectile projectile = Instantiate(
-                _projectile.Prefab, spawnPosition, Quaternion.identity);
+            NetworkProjectile projectile = Instantiate(_projectile.Prefab, transform.position, Quaternion.identity);
+            projectile.PlaceAtMuzzle(shotDirection, distanceToUse);
             projectile.NetworkObject.Spawn(true);
-            projectile.InitializeServer(
-                OwnerClientId, shotDirection, _playerState.IndicatorColor, _projectile);
+            projectile.InitializeServer(OwnerClientId, shotDirection, _playerState.IndicatorColor, _projectile);
 
             _ammo.Value--;
 
@@ -224,7 +302,7 @@ namespace PiGame.Gameplay
 
         public void BeginAbilityServer(Vector2 aimDirection, Vector2 moveDirection)
         {
-            if (!IsServer || !enabled || !_playerState.CanAct || _isRolling.Value
+            if (!IsServer || !enabled || !_playerState.CanAct || _isRolling.Value || Time.time < _nextRollAt
                 || !_playerMove.CanBeginWallRestrictedAbility())
             {
                 return;
@@ -238,7 +316,10 @@ namespace PiGame.Gameplay
             _isReloading = false;
             _rollDirectionX.Value = moveDirection.x < 0f ? -1f : 1f;
             _rollEndsAt = Time.time + _rollSeconds;
+            _nextRollAt = Time.time + _rollCooldownSeconds;
+            _playerState.SetAbilityCooldownServer(_rollCooldownSeconds);
             _playerState.SetInvulnerableServer(true);
+            _passThroughPlayers.Value = true;
             _isRolling.Value = true;
         }
 
@@ -266,6 +347,12 @@ namespace PiGame.Gameplay
             ApplyRollState();
         }
 
+        private void HandlePlayerCollisionChanged(bool previousValue, bool currentValue)
+        {
+            if (!currentValue) _playerCollisionRestoreRequested = false;
+            ApplyRollCollisions();
+        }
+
         private void HandleAmmoChanged(int previousValue, int currentValue)
         {
             RefreshAmmoIndicators();
@@ -275,7 +362,7 @@ namespace PiGame.Gameplay
         {
             for (int index = 0; index < _ammoIndicators.Length; index++)
             {
-                bool visible = IsOwner && _playerState.CanAct
+                bool visible = _playerState.CanAct
                     && index < _ammo.Value;
                 _ammoIndicators[index].color = _playerState.IndicatorColor;
                 _ammoIndicators[index].enabled = visible;
@@ -301,9 +388,14 @@ namespace PiGame.Gameplay
                 _bodySprite.color = _colorBeforeRoll;
                 _visualRollActive = false;
             }
-            _bodyCollider.excludeLayers = rolling
-                ? _originalExcludedLayers.value | _rollPassThroughLayers.value
-                : _originalExcludedLayers.value;
+            if (IsOwner)
+            {
+                _presentation.SetSkillActive(rolling);
+                // O dono avisa ao servidor quando já é seguro restaurar o contato em todas as cópias.
+                if (rolling) _playerCollisionRestoreRequested = false;
+                else if (_passThroughPlayers.Value) UpdatePlayerCollisionState();
+            }
+            ApplyRollCollisions();
 
             if (!IsOwner)
             {

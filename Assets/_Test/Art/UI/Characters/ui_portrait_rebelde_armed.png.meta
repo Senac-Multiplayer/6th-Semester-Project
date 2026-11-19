@@ -19,7 +19,7 @@ TextureImporter:
     wrapV: 1
     wrapW: 1
   nPOTScale: 0
-  spriteMode: 1
+  spriteMode: 2
   spriteExtrude: 1
   spriteMeshType: 0
   alignment: 0
@@ -40,7 +40,29 @@ TextureImporter:
     overridden: 0
   spriteSheet:
     serializedVersion: 2
-    sprites: []
+    sprites:
+    - serializedVersion: 2
+      name: ui_portrait_rebelde_armed
+      rect:
+        serializedVersion: 2
+        x: 20
+        y: 21
+        width: 24
+        height: 38
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c8d1859a7291421185a28c981934d204
+      internalID: 21300000
+      vertices: []
+      indices:
+      edges: []
+      weights: []
     outline: []
     physicsShape: []
     bones: []
@@ -51,7 +73,8 @@ TextureImporter:
     edges: []
     weights: []
     secondaryTextures: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      ui_portrait_rebelde_armed: 21300000
   userData:
   assetBundleName:
   assetBundleVariant:

@@ -7,7 +7,7 @@ namespace PiGame.Sound
 {
     public enum SFXList { WallJump, PlayerJump, Hit, DeathHit, DrawRoulette, VolumeScroll, LevelSelect, UiButton, DownPlatform, UpPlatform, WhirlPlatform,
     StuckNail, ShootNail, IrrigadorPull, IrrigadorSkill, DeserticoRoll, DeserticoShot, DeserticoEmpty, DeserticoReload, RebeldeBounce, RebeldeCatch, RebeldeEmpty, RebeldeSkill,
-    RebeldeShot, FumaceiroEmpty, FumaceiroCatch, FumaceiroThrow, FumaceiroSkill, PlayerRespawn
+    RebeldeShot, FumaceiroEmpty, FumaceiroCatch, FumaceiroThrow, FumaceiroSkill, PlayerRespawn, CharacterBrowse, ReadyBanner, MatchStart
         }
     public enum OSTList { Battle_Desertico, Battle_Fumaceiro, Battle_Irrigador, Battle_Rebelde, Battle_Vitoria, Menu_Titulo, Menu_Screens }
 
@@ -46,8 +46,11 @@ namespace PiGame.Sound
         private Dictionary<SFXList, SoundData> _sfxDict = new();
         private Dictionary<OSTList, MusicData> _ostDict = new();
 
-        private Coroutine _sfxFadeRoutine;
+        private SFXList? _pendingUiEffect;
         private Coroutine _ostFadeRoutine;
+        private OSTList? _requestedOst;
+        private float _ostTargetVolume;
+        private bool _ostTransitioning;
 
         private void Awake()
         {
@@ -58,6 +61,7 @@ namespace PiGame.Sound
             }
             Instance = this;
             RegisterMixer();
+            if (sfxSource) sfxSource.volume = 1f;
 
             foreach (var item in sfxList)
             {
@@ -76,6 +80,12 @@ namespace PiGame.Sound
         {
             Instance = this;
             RegisterMixer();
+        }
+
+        public override void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+            base.OnDestroy();
         }
 
         private void RegisterMixer()
@@ -106,6 +116,45 @@ namespace PiGame.Sound
         {
             if(Instance == null) return;
             Instance.PlayOSTLocal(ost, Mathf.Clamp01(volume));
+        }
+
+        // O botão e seu atalho podem disparar no mesmo frame. Um único efeito local é suficiente.
+        public void LocalUISFX(SFXList effect)
+        {
+            if (!_pendingUiEffect.HasValue || UiPriority(effect) > UiPriority(_pendingUiEffect.Value))
+                _pendingUiEffect = effect;
+        }
+
+        private static int UiPriority(SFXList effect) => effect == SFXList.MatchStart ? 4
+            : effect == SFXList.ReadyBanner ? 3 : (effect == SFXList.CharacterBrowse || effect == SFXList.LevelSelect) ? 2
+            : effect == SFXList.UiButton ? 1 : 0;
+
+        private void LateUpdate()
+        {
+            if (!_pendingUiEffect.HasValue) return;
+            var effect = _pendingUiEffect.Value;
+            _pendingUiEffect = null;
+            float volume = effect == SFXList.ReadyBanner ? 0.75f
+                : effect == SFXList.VolumeScroll ? 0.3f : 0.2f;
+            PlaySFXLocal(effect, volume);
+        }
+
+        public void StopLocalOST(float fadeOutSeconds = 0.15f)
+        {
+            if (ostSource == null || (_requestedOst == null && _ostTransitioning)) return;
+            if (_ostFadeRoutine != null) StopCoroutine(_ostFadeRoutine);
+            _requestedOst = null;
+            _ostTransitioning = true;
+            _ostFadeRoutine = StartCoroutine(StopOSTWithFade(Mathf.Max(0f, fadeOutSeconds)));
+        }
+
+        private IEnumerator StopOSTWithFade(float seconds)
+        {
+            yield return FadeVolume(ostSource, ostSource.volume, 0f, seconds);
+            ostSource.Stop();
+            ostSource.clip = null;
+            _ostTransitioning = false;
+            _ostFadeRoutine = null;
         }
 
         #region RPC do SFX
@@ -141,12 +190,19 @@ namespace PiGame.Sound
         {
             if (_sfxDict.TryGetValue(sfx, out SoundData sound))
             {
-                if(_sfxFadeRoutine != null)
+                if (!sound.clip || !sfxSource) return;
+                if (sound.fadeInSeconds <= 0f && sound.fadeOutSeconds <= 0f)
+                    sfxSource.PlayOneShot(sound.clip, volume);
+                else
                 {
-                    StopCoroutine(_sfxFadeRoutine);
+                    // Cada fade usa sua própria voz; não altera os efeitos já em reprodução.
+                    var voice = gameObject.AddComponent<AudioSource>();
+                    voice.playOnAwake = false;
+                    voice.outputAudioMixerGroup = sfxSource.outputAudioMixerGroup;
+                    voice.spatialBlend = sfxSource.spatialBlend;
+                    voice.pitch = sfxSource.pitch;
+                    StartCoroutine(PlaySFXWithFade(sound, volume, voice));
                 }
-
-                _sfxFadeRoutine = StartCoroutine(PlaySFXWithFade(sound, volume));
             }
             else
             {
@@ -156,14 +212,22 @@ namespace PiGame.Sound
 
         private void PlayOSTLocal(OSTList ost, float volume)
         {
+            if (ost == OSTList.Battle_Vitoria) volume = Mathf.Clamp01(volume * 1.35f);
             if (_ostDict.TryGetValue(ost, out MusicData music))
             {
-                if(_ostFadeRoutine != null)
+                if (music.clip == null || ostSource == null) return;
+                _ostTargetVolume = volume;
+                // Repetir o contexto não reinicia a faixa, o fade ou um jingle já encerrado.
+                if (_requestedOst == ost && (_ostTransitioning
+                    || (ostSource.clip == music.clip && (ostSource.isPlaying || !ostSource.loop))))
                 {
-                    StopCoroutine(_ostFadeRoutine);
+                    if (!_ostTransitioning && ostSource.isPlaying) ostSource.volume = volume;
+                    return;
                 }
-
-                _ostFadeRoutine = StartCoroutine(PlayOSTWithFade(music, volume));
+                if (_ostFadeRoutine != null) StopCoroutine(_ostFadeRoutine);
+                _requestedOst = ost;
+                _ostTransitioning = true;
+                _ostFadeRoutine = StartCoroutine(PlayOSTWithFade(music, volume, ost != OSTList.Battle_Vitoria));
             }
             else
             {
@@ -171,35 +235,24 @@ namespace PiGame.Sound
             }
         }
 
-        private IEnumerator PlaySFXWithFade(SoundData sound, float targetVolume)
+        private IEnumerator PlaySFXWithFade(SoundData sound, float targetVolume, AudioSource voice)
         {
-            if (sound.clip == null)
-            {
-                _sfxFadeRoutine = null;
-                yield break;
-            }
-
-            sfxSource.volume = 0f;
-            sfxSource.PlayOneShot(sound.clip);
-
-            yield return FadeVolume(sfxSource, 0f, targetVolume, sound.fadeInSeconds);
-
-            float fadeOutStart = Mathf.Max(sound.fadeInSeconds, sound.clip.length - sound.fadeOutSeconds);
-            float remainingTime = Mathf.Max(0f, fadeOutStart - sound.fadeInSeconds);
-
-            yield return new WaitForSecondsRealtime(remainingTime);
-
-            yield return FadeVolume(sfxSource, targetVolume, 0f, sound.fadeOutSeconds);
-
-            sfxSource.volume = targetVolume;
-            _sfxFadeRoutine = null;
+            voice.clip = sound.clip;
+            voice.volume = 0f;
+            voice.Play();
+            yield return FadeVolume(voice, 0f, targetVolume, sound.fadeInSeconds);
+            float fadeStart = Mathf.Max(sound.fadeInSeconds, sound.clip.length - sound.fadeOutSeconds);
+            yield return new WaitForSecondsRealtime(Mathf.Max(0f, fadeStart - sound.fadeInSeconds));
+            yield return FadeVolume(voice, targetVolume, 0f, sound.fadeOutSeconds);
+            Destroy(voice);
         }
 
-        private IEnumerator PlayOSTWithFade(MusicData music, float targetVolume)
+        private IEnumerator PlayOSTWithFade(MusicData music, float targetVolume, bool loop)
         {
             if (music.clip == null)
             {
                 _ostFadeRoutine = null;
+                _ostTransitioning = false;
                 yield break;
             }
 
@@ -211,12 +264,13 @@ namespace PiGame.Sound
             }
 
             ostSource.clip = music.clip;
-            ostSource.loop = true;
+            ostSource.loop = loop;
             ostSource.volume = 0f;
             ostSource.Play();
 
             yield return FadeVolume(ostSource, 0f, targetVolume, music.fadeInSeconds);
-
+            ostSource.volume = _ostTargetVolume;
+            _ostTransitioning = false;
             _ostFadeRoutine = null;
         }
 

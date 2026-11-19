@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using PiGame.Lobby;
 using PiGame.Sound;
+using PiGame.UI;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -11,9 +12,26 @@ namespace PiGame.Gameplay
 {
     public class MatchController : NetworkBehaviour
     {
-        [SerializeField] private int _killLimit = 2;
+        private readonly NetworkVariable<int> _killLimit = new NetworkVariable<int>(3);
         [SerializeField] private float _respawnDelaySeconds = 2f;
+        [Header("Apresentação da partida")]
+        [Tooltip("Desative para mostrar a contagem somente depois de apresentar os jogadores.")]
+        [SerializeField] private bool _countdownDuringPresentation = true;
+        [Tooltip("Duração total da apresentação com contagem. Os dois segundos finais ficam reservados ao mapa inteiro.")]
+        [SerializeField, Min(3f)] private float _presentationSeconds = 6f;
+        [Tooltip("Tempo por jogador no modo de contagem após a apresentação.")]
+        [SerializeField, Min(1f)] private float _secondsPerPlayer = 1f;
+        [SerializeField, Min(0.1f)] private float _cameraReturnSeconds = 1f;
+        private readonly NetworkVariable<double> _introStartsAt = new NetworkVariable<double>();
+        private readonly NetworkVariable<int> _introPlayerCount = new NetworkVariable<int>();
+        private readonly HashSet<ulong> _introReady = new HashSet<ulong>();
+        [Header("Tela de resultado")]
+        [Tooltip("Espera para assistir à subida dos pilares antes de liberar o retorno.")]
+        [SerializeField, Min(0f)] private float _resultInputDelaySeconds = 3f;
+        [SerializeField, Min(3f)] private float _resultDisplaySeconds = 15f;
         private bool _returningToLobby;
+        private readonly HashSet<ulong> _returnedPlayers = new();
+        private readonly NetworkVariable<double> _resultStartedAt = new();
 
         private readonly NetworkVariable<float> _remainingTime =
             new NetworkVariable<float>();
@@ -21,6 +39,24 @@ namespace PiGame.Gameplay
             new NetworkVariable<MatchPhase>(MatchPhase.WaitingForPlayers);
         private readonly NetworkVariable<int> _winningPlayerSlot =
             new NetworkVariable<int>(-1);
+
+        private readonly NetworkVariable<LobbyMatchMode> _mode = new(LobbyMatchMode.Solo);
+        private readonly NetworkVariable<LobbyTeam> _winningTeam = new(LobbyTeam.None);
+        private readonly NetworkVariable<int> _blueKills = new();
+        private readonly NetworkVariable<int> _orangeKills = new();
+        public bool IsTeamMode => _mode.Value == LobbyMatchMode.Team;
+        public LobbyTeam WinningTeam => _winningTeam.Value;
+        public int GetTeamScore(LobbyTeam team) => team == LobbyTeam.Blue ? _blueKills.Value
+            : team == LobbyTeam.Orange ? _orangeKills.Value : 0;
+        public bool IsWinner(MatchPlayerScoreData player) => IsTeamMode
+            ? LobbyTeams.IsValid(WinningTeam) && player.Team == WinningTeam : player.PlayerSlot == WinningPlayerSlot;
+        public bool IsDraw => IsTeamMode ? !LobbyTeams.IsValid(WinningTeam) : WinningPlayerSlot < 0;
+        public bool AreTeammates(ulong first, ulong second)
+        {
+            if (!IsTeamMode || first == second) return false;
+            int a = FindScoreIndex(first), b = FindScoreIndex(second);
+            return a >= 0 && b >= 0 && LobbyTeams.IsValid(_scores[a].Team) && _scores[a].Team == _scores[b].Team;
+        }
 
         private NetworkList<MatchPlayerScoreData> _scores;
         private readonly Dictionary<ulong, NetworkPlayerState> _players =
@@ -31,25 +67,45 @@ namespace PiGame.Gameplay
         public event Action ScoresChanged;
         public event Action PhaseChanged;
 
+        public bool CountdownDuringPresentation => _countdownDuringPresentation;
+        public float SecondsPerPlayer => _countdownDuringPresentation
+            ? (PresentationDuration - 2f) / Mathf.Max(1, _introPlayerCount.Value) : _secondsPerPlayer;
+        public float CameraReturnSeconds => _cameraReturnSeconds;
+        public float PresentationDuration => _countdownDuringPresentation
+            ? Mathf.Max(3f, _presentationSeconds)
+            : _introPlayerCount.Value * _secondsPerPlayer + _cameraReturnSeconds;
+        public float IntroElapsed => _introStartsAt.Value <= 0d || !IsSpawned ? -1f
+            : (float)(NetworkManager.ServerTime.Time - _introStartsAt.Value);
         public float RemainingTime => _remainingTime.Value;
         public MatchPhase Phase => _phase.Value;
         public int WinningPlayerSlot => _winningPlayerSlot.Value;
-        public int KillLimit => _killLimit;
+        public int KillLimit => _killLimit.Value;
         public int ScoreCount => _scores != null ? _scores.Count : 0;
+        public bool CanReturnToLobby => IsSpawned && Phase == MatchPhase.ShowingResult
+            && NetworkManager.ServerTime.Time >= _resultStartedAt.Value + _resultInputDelaySeconds;
+        public float ResultElapsed => IsSpawned && Phase == MatchPhase.ShowingResult
+            ? Mathf.Max(0f, (float)(NetworkManager.ServerTime.Time - _resultStartedAt.Value)) : 0f;
+        public float ResultSecondsRemaining => IsSpawned
+            ? Mathf.Max(0f, (float)(_resultStartedAt.Value
+                + Mathf.Max(_resultDisplaySeconds, _resultInputDelaySeconds) - NetworkManager.ServerTime.Time))
+            : 0f;
 
-        private SceneOSTManager _sceneOSTManager;
 
         private void Awake()
         {
             _scores = new NetworkList<MatchPlayerScoreData>();
-            _sceneOSTManager = FindFirstObjectByType<SceneOSTManager>();
         }
 
         public override void OnNetworkSpawn()
         {
             _scores.OnListChanged += HandleScoresChanged;
+            _blueKills.OnValueChanged += HandleKillLimitChanged;
+            _orangeKills.OnValueChanged += HandleKillLimitChanged;
+            _mode.OnValueChanged += HandleModeChanged;
+            _winningTeam.OnValueChanged += HandleWinningTeamChanged;
             _phase.OnValueChanged += HandlePhaseChanged;
             _winningPlayerSlot.OnValueChanged += HandleWinningPlayerChanged;
+            _killLimit.OnValueChanged += HandleKillLimitChanged;
 
             if (IsServer)
             {
@@ -57,14 +113,19 @@ namespace PiGame.Gameplay
             }
 
             ScoresChanged?.Invoke();
-            PhaseChanged?.Invoke();
+            HandlePhaseChanged(_phase.Value, _phase.Value);
         }
 
         public override void OnNetworkDespawn()
         {
             _scores.OnListChanged -= HandleScoresChanged;
+            _blueKills.OnValueChanged -= HandleKillLimitChanged;
+            _orangeKills.OnValueChanged -= HandleKillLimitChanged;
+            _mode.OnValueChanged -= HandleModeChanged;
+            _winningTeam.OnValueChanged -= HandleWinningTeamChanged;
             _phase.OnValueChanged -= HandlePhaseChanged;
             _winningPlayerSlot.OnValueChanged -= HandleWinningPlayerChanged;
+            _killLimit.OnValueChanged -= HandleKillLimitChanged;
 
             if (NetworkManager != null)
             {
@@ -84,10 +145,45 @@ namespace PiGame.Gameplay
                 return;
             }
 
-            int durationMinutes = Mathf.Max(1, settings.DurationMinutes);
-            _remainingTime.Value = durationMinutes * 60f;
+            _mode.Value = settings.Mode;
+            _winningTeam.Value = LobbyTeam.None;
+            _blueKills.Value = 0;
+            _orangeKills.Value = 0;
+            _killLimit.Value = Mathf.Clamp(settings.KillLimit, 2, 100);
+            // Valor negativo identifica partida sem limite de tempo também nos clients.
+            _remainingTime.Value = settings.DurationMinutes == 0
+                ? -1f : Mathf.Clamp(settings.DurationMinutes, 2, 10) * 60f;
             _winningPlayerSlot.Value = -1;
-            _phase.Value = MatchPhase.Playing;
+            _introReady.Clear();
+            _introStartsAt.Value = 0d;
+            _phase.Value = MatchPhase.WaitingForPlayers;
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        public void ReadyForIntroRpc(RpcParams rpcParams = default)
+        {
+            ulong sender = rpcParams.Receive.SenderClientId;
+            if (_phase.Value != MatchPhase.WaitingForPlayers || !_players.ContainsKey(sender)) return;
+            _introReady.Add(sender);
+            TryBeginPresentation();
+        }
+
+        private void TryBeginPresentation()
+        {
+            if (_phase.Value != MatchPhase.WaitingForPlayers || _players.Count == 0) return;
+            foreach (ulong clientId in _players.Keys)
+                if (!_introReady.Contains(clientId)) return;
+
+            _introPlayerCount.Value = _players.Count;
+            _introStartsAt.Value = NetworkManager.ServerTime.Time + 0.35d;
+            _phase.Value = MatchPhase.PresentingPlayers;
+        }
+
+        private void SetPlayersActive(bool active, bool indicatorsVisible)
+        {
+            foreach (NetworkPlayerState player in _players.Values)
+                if (player != null && player.IsSpawned)
+                    player.SetMatchActiveServer(active, indicatorsVisible);
         }
 
         public void RegisterPlayer(NetworkPlayerState player, Vector3 spawnPosition, LobbyPlayerData playerData)
@@ -100,6 +196,7 @@ namespace PiGame.Gameplay
             _players[player.OwnerClientId] = player;
             _spawnPositions[player.OwnerClientId] = spawnPosition;
             player.Died += HandlePlayerDied;
+            player.SetMatchActiveServer(false, false);
 
             if (FindScoreIndex(player.OwnerClientId) < 0)
             {
@@ -109,10 +206,23 @@ namespace PiGame.Gameplay
 
         private void Update()
         {
-            if (!IsServer || _phase.Value != MatchPhase.Playing)
+            if (!IsServer) return;
+            if (_phase.Value == MatchPhase.ShowingResult)
             {
+                if (!_returningToLobby && ResultSecondsRemaining <= 0f) ReturnToLobbyServer();
                 return;
             }
+            if (_phase.Value == MatchPhase.PresentingPlayers && IntroElapsed >= PresentationDuration)
+            {
+                SetPlayersActive(_countdownDuringPresentation, true);
+                _phase.Value = _countdownDuringPresentation ? MatchPhase.Playing : MatchPhase.Countdown;
+            }
+            if (_phase.Value == MatchPhase.Countdown && IntroElapsed >= PresentationDuration + 3f)
+            {
+                SetPlayersActive(true, true);
+                _phase.Value = MatchPhase.Playing;
+            }
+            if (_phase.Value != MatchPhase.Playing || _remainingTime.Value < 0f) return;
 
             _remainingTime.Value = Mathf.Max(0f, _remainingTime.Value - Time.deltaTime);
             if (_remainingTime.Value <= 0f)
@@ -129,13 +239,24 @@ namespace PiGame.Gameplay
             }
 
             int attackerIndex = FindScoreIndex(attackerClientId);
-            if (attackerIndex >= 0 && attackerClientId != victim.OwnerClientId)
+            if (attackerIndex >= 0 && attackerClientId != victim.OwnerClientId
+                && !AreTeammates(attackerClientId, victim.OwnerClientId))
             {
                 MatchPlayerScoreData score = _scores[attackerIndex];
                 score.Kills++;
                 _scores[attackerIndex] = score;
 
-                if (score.Kills >= _killLimit)
+                if (IsTeamMode)
+                {
+                    if (score.Team == LobbyTeam.Blue) _blueKills.Value++;
+                    else if (score.Team == LobbyTeam.Orange) _orangeKills.Value++;
+                    if (LobbyTeams.IsValid(score.Team) && GetTeamScore(score.Team) >= _killLimit.Value)
+                    {
+                        FinishTeamMatch(score.Team);
+                        return;
+                    }
+                }
+                else if (score.Kills >= _killLimit.Value)
                 {
                     FinishMatch(score.PlayerSlot);
                     return;
@@ -162,6 +283,12 @@ namespace PiGame.Gameplay
 
         private void EndByHighestScore()
         {
+            if (IsTeamMode)
+            {
+                FinishTeamMatch(_blueKills.Value == _orangeKills.Value ? LobbyTeam.None
+                    : _blueKills.Value > _orangeKills.Value ? LobbyTeam.Blue : LobbyTeam.Orange);
+                return;
+            }
             int highestKills = -1;
             int winningSlot = -1;
             bool tied = false;
@@ -184,6 +311,13 @@ namespace PiGame.Gameplay
             FinishMatch(tied ? -1 : winningSlot);
         }
 
+        private void FinishTeamMatch(LobbyTeam team)
+        {
+            if (_phase.Value != MatchPhase.Playing) return;
+            _winningTeam.Value = team;
+            FinishMatch(-1);
+        }
+
         private void FinishMatch(int winningPlayerSlot)
         {
             if (_phase.Value != MatchPhase.Playing)
@@ -191,10 +325,11 @@ namespace PiGame.Gameplay
                 return;
             }
 
-            _sceneOSTManager?.PlayVictoryOST();
-
             _winningPlayerSlot.Value = winningPlayerSlot;
+            _resultStartedAt.Value = NetworkManager.ServerTime.Time;
             _phase.Value = MatchPhase.ShowingResult;
+            _returnedPlayers.Clear();
+            LobbySceneFlow.Instance?.PrepareNextMatchServer();
 
             foreach (NetworkPlayerState player in _players.Values)
             {
@@ -207,14 +342,51 @@ namespace PiGame.Gameplay
 
         public bool ReturnToLobbyServer()
         {
-            if (!IsServer || _phase.Value != MatchPhase.ShowingResult || _returningToLobby) return false;
+            if (!IsServer || !CanReturnToLobby || _returningToLobby) return false;
             _returningToLobby = true;
+            if (LobbySceneFlow.Instance != null)
+            {
+                ShowLobbyRpc();
+                LobbySceneFlow.Instance.UnloadMapServer();
+                return true;
+            }
             if (NetworkManager.SceneManager.LoadScene("scene_lobby", LoadSceneMode.Single)
                 == SceneEventProgressStatus.Started) return true;
 
             _returningToLobby = false;
             Debug.LogError("Não foi possível retornar a sala ao lobby.", this);
             return false;
+        }
+
+        public bool RequestReturnToLobby()
+        {
+            if (!CanReturnToLobby) return false;
+            if (LobbySceneFlow.Instance == null) return IsServer && ReturnToLobbyServer();
+            ReturnPlayerToLobbyRpc();
+            LobbySceneFlow.Instance.ShowLobbyLocally();
+            return true;
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        private void ReturnPlayerToLobbyRpc(RpcParams rpcParams = default)
+        {
+            if (!CanReturnToLobby) return;
+            _returnedPlayers.Add(rpcParams.Receive.SenderClientId);
+            TryReturnEveryoneToLobby();
+        }
+
+        private void TryReturnEveryoneToLobby()
+        {
+            if (_phase.Value != MatchPhase.ShowingResult || _returningToLobby) return;
+            foreach (ulong clientId in NetworkManager.ConnectedClientsIds)
+                if (!_returnedPlayers.Contains(clientId)) return;
+            ReturnToLobbyServer();
+        }
+
+        [Rpc(SendTo.ClientsAndHost)]
+        private void ShowLobbyRpc()
+        {
+            LobbySceneFlow.Instance.ShowLobbyLocally();
         }
 
         private void HandleClientDisconnected(ulong clientId)
@@ -232,19 +404,36 @@ namespace PiGame.Gameplay
 
             _players.Remove(clientId);
             _spawnPositions.Remove(clientId);
+            _introReady.Remove(clientId);
+            _returnedPlayers.Remove(clientId);
 
             int scoreIndex = FindScoreIndex(clientId);
             // Depois do encerramento, a tela mantém o placar final mesmo se alguém sair.
-            if (scoreIndex >= 0 && _phase.Value != MatchPhase.ShowingResult)
+            if (scoreIndex >= 0 && _phase.Value != MatchPhase.ShowingResult && !IsTeamMode)
             {
                 _scores.RemoveAt(scoreIndex);
             }
 
+            TryBeginPresentation();
             TryFinishWhenOnePlayerRemains();
+            TryReturnEveryoneToLobby();
         }
 
         private void TryFinishWhenOnePlayerRemains()
         {
+            if (_phase.Value == MatchPhase.Playing && IsTeamMode)
+            {
+                bool blue = false, orange = false;
+                for (int i = 0; i < _scores.Count; i++)
+                {
+                    MatchPlayerScoreData score = _scores[i];
+                    if (!_players.ContainsKey(score.ClientId)) continue;
+                    blue |= score.Team == LobbyTeam.Blue;
+                    orange |= score.Team == LobbyTeam.Orange;
+                }
+                if (!blue || !orange) FinishTeamMatch(blue ? LobbyTeam.Blue : orange ? LobbyTeam.Orange : LobbyTeam.None);
+                return;
+            }
             if (_phase.Value != MatchPhase.Playing || _scores.Count != 1)
             {
                 return;
@@ -271,7 +460,26 @@ namespace PiGame.Gameplay
             ScoresChanged?.Invoke();
         }
 
+        private void HandleKillLimitChanged(int previousValue, int currentValue)
+        {
+            ScoresChanged?.Invoke();
+        }
+
         private void HandlePhaseChanged(MatchPhase previousValue, MatchPhase currentValue)
+        {
+            // Executa no host e nos clientes; quem já voltou ao lobby mantém a música do menu.
+            if (currentValue == MatchPhase.ShowingResult && gameObject.scene == SceneManager.GetActiveScene()
+                && (!LoadingScreenUI.Instance || !LoadingScreenUI.Instance.IsVisible))
+                NetworkSoundManager.Instance?.LocalOST(OSTList.Battle_Vitoria);
+            PhaseChanged?.Invoke();
+        }
+
+        private void HandleModeChanged(LobbyMatchMode previousValue, LobbyMatchMode currentValue)
+        {
+            ScoresChanged?.Invoke();
+        }
+
+        private void HandleWinningTeamChanged(LobbyTeam previousValue, LobbyTeam currentValue)
         {
             PhaseChanged?.Invoke();
         }

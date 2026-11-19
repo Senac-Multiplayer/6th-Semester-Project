@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using PiGame.Lobby;
+using PiGame.Input;
 using PiGame.Sound;
 using TMPro;
 using UnityEngine;
@@ -28,6 +29,9 @@ namespace PiGame.UI
         [SerializeField] private Button _confirmExitButton;
         [SerializeField] private Button _cancelExitButton;
         [SerializeField] private ControlsSettingsUI _controlsView;
+        [Tooltip("Opções já presentes no prefab do pause da partida.")]
+        [SerializeField] private PauseMenuUI _optionsView;
+        [SerializeField] private GameObject _panelRoot;
         [Tooltip("Opcional: usado nas opções do menu e do lobby, não no pause da partida.")]
         [SerializeField] private Button _playerNameButton;
 
@@ -36,6 +40,8 @@ namespace PiGame.UI
         [SerializeField] private GameObject _audioContent;
         [SerializeField] private GameObject _controlsContent;
         [SerializeField] private GameObject _playerContent;
+        [SerializeField] private Button _displayCategoryButton;
+        [SerializeField] private GameObject _displayContent;
         [SerializeField] private Slider _masterVolume;
         [SerializeField] private AudioMixer _audioMixer;
         [SerializeField] private TMP_Text _masterVolumeValue;
@@ -43,6 +49,8 @@ namespace PiGame.UI
         [SerializeField] private TMP_Text _musicVolumeValue;
         [SerializeField] private Slider _sfxVolume;
         [SerializeField] private TMP_Text _sfxVolumeValue;
+        [SerializeField] private Slider _gamepadDeadzone;
+        [SerializeField] private TMP_Text _gamepadDeadzoneValue;
         [SerializeField] private InputField _inlinePlayerName;
         [SerializeField] private Button _saveNameButton;
 
@@ -52,6 +60,7 @@ namespace PiGame.UI
         private PauseMenuDefinition _definition;
         private Coroutine _selectionRoutine;
         private bool _buttonsBound;
+        private PanelInputScope _controlsInputScope;
 
         public event Action ResumeRequested;
         public event Action ExitRequested;
@@ -62,7 +71,8 @@ namespace PiGame.UI
 
         public bool IsVisible => enabled && _root.activeSelf;
         public bool IsConfirmationVisible => enabled && _confirmationRoot.activeSelf;
-        public bool IsControlsVisible => !HasInlineOptions && _controlsView != null && _controlsView.IsVisible;
+        public bool IsControlsVisible => _controlsView != null && _controlsView.IsVisible;
+        public bool IsOptionsVisible => _optionsView != null && _optionsView.IsVisible;
         public bool BlocksControlsBackShortcut => IsControlsVisible && _controlsView.BlocksBackShortcut;
         public bool IsInlineControlsBusy => HasInlineOptions && _controlsView != null
             && _controlsView.IsVisible && _controlsView.BlocksBackShortcut;
@@ -82,7 +92,9 @@ namespace PiGame.UI
                 if (_controlsView == null || _masterVolume == null || _masterVolumeValue == null
                     || _musicVolume == null || _musicVolumeValue == null
                     || _sfxVolume == null || _sfxVolumeValue == null
-                    || _inlinePlayerName == null || _saveNameButton == null)
+                    || _gamepadDeadzone == null || _gamepadDeadzoneValue == null
+                    || _inlinePlayerName == null || _saveNameButton == null
+                    || _displayCategoryButton == null || _displayContent == null)
                 {
                     Debug.LogError("Configure as referências das opções no prefab do lobby.", this);
                     enabled = false;
@@ -90,6 +102,7 @@ namespace PiGame.UI
                 }
 
                 _audioCategoryButton.onClick.AddListener(ShowInlineAudio);
+                _displayCategoryButton.onClick.AddListener(ShowInlineDisplay);
                 GameAudioSettings.UseMixer(_audioMixer);
                 _saveNameButton.onClick.AddListener(SaveInlineName);
                 _inlinePlayerName.onSubmit.AddListener(HandleInlineNameSubmitted);
@@ -97,19 +110,24 @@ namespace PiGame.UI
                 _masterVolume.SetValueWithoutNotify(GameAudioSettings.Master);
                 _musicVolume.SetValueWithoutNotify(GameAudioSettings.Music);
                 _sfxVolume.SetValueWithoutNotify(GameAudioSettings.Sfx);
+                _gamepadDeadzone.SetValueWithoutNotify(GamepadSettings.Deadzone);
                 RefreshVolumeLabels();
                 _masterVolume.onValueChanged.AddListener(HandleMasterVolumeChanged);
                 _musicVolume.onValueChanged.AddListener(HandleMusicVolumeChanged);
                 _sfxVolume.onValueChanged.AddListener(HandleSfxVolumeChanged);
+                _gamepadDeadzone.onValueChanged.AddListener(HandleDeadzoneChanged);
             }
         }
 
         private void OnDestroy()
         {
+            if (_optionsView != null) _optionsView.ResumeRequested -= HideOptions;
             UnbindButtons();
             if (HasInlineOptions && _masterVolume != null && _saveNameButton != null)
             {
                 _audioCategoryButton.onClick.RemoveListener(ShowInlineAudio);
+                if (_displayCategoryButton != null)
+                    _displayCategoryButton.onClick.RemoveListener(ShowInlineDisplay);
                 _saveNameButton.onClick.RemoveListener(SaveInlineName);
                 _inlinePlayerName.onSubmit.RemoveListener(HandleInlineNameSubmitted);
                 _masterVolume.onValueChanged.RemoveListener(HandleMasterVolumeChanged);
@@ -117,12 +135,24 @@ namespace PiGame.UI
                     _musicVolume.onValueChanged.RemoveListener(HandleMusicVolumeChanged);
                 if (_sfxVolume != null)
                     _sfxVolume.onValueChanged.RemoveListener(HandleSfxVolumeChanged);
+                _gamepadDeadzone.onValueChanged.RemoveListener(HandleDeadzoneChanged);
             }
         }
 
         private void OnDisable()
         {
             StopSelectionRoutine();
+        }
+
+        private void Update()
+        {
+            if (!HasInlineOptions || !IsVisible || _controlsView.BlocksBackShortcut
+                || Gamepad.current == null || !Gamepad.current.leftShoulder.wasPressedThisFrame) return;
+
+            // Atalho já indicado no rodapé: sai do conteúdo e volta às categorias.
+            ShowInlineAudio();
+            UiAudioManager.PlayButton();
+            QueueSelection(_audioCategoryButton);
         }
 
         public bool Initialize(PauseMenuDefinition definition)
@@ -158,8 +188,7 @@ namespace PiGame.UI
             _confirmationText.text = confirmationMessage;
             SetButtonLabel(_resumeButton, resumeLabel);
             SetButtonLabel(_controlsButton, "CONTROLES");
-            if (_exitButton != null)
-                SetButtonLabel(_exitButton, exitLabel);
+            ConfigureExitButton(exitLabel);
             ConfigureActions(true);
             ConfigureControlsView(actions);
             return true;
@@ -167,6 +196,7 @@ namespace PiGame.UI
 
         public void SetVisible(bool isVisible)
         {
+            if (!isVisible && _optionsView != null) _optionsView.SetVisible(false);
             _root.SetActive(isVisible);
             if (!isVisible)
             {
@@ -179,6 +209,7 @@ namespace PiGame.UI
             }
 
             if (HasInlineOptions) GameAudioSettings.UseMixer(_audioMixer);
+            if (_panelRoot != null) _panelRoot.SetActive(true);
             HideConfirmation();
             if (HasInlineOptions) ShowInlineAudio();
             QueueSelection(HasInlineOptions ? _audioCategoryButton : _resumeButton);
@@ -186,8 +217,16 @@ namespace PiGame.UI
 
         public void ShowControls()
         {
+            if (_optionsView != null)
+            {
+                _panelRoot.SetActive(false);
+                _optionsView.SetVisible(true);
+                return;
+            }
             if (HasInlineOptions)
             {
+                if (_controlsInputScope != null)
+                    _controlsInputScope.enabled = false;
                 ShowInlineContent(_controlsContent);
                 _controlsView.Show();
                 return;
@@ -203,6 +242,20 @@ namespace PiGame.UI
             return _controlsView != null
                 && _controlsView.IsVisible
                 && _controlsView.HandleBack();
+        }
+
+        public void HandleOptionsBack()
+        {
+            if (_optionsView.IsInlineControlsBusy) return;
+            if (_optionsView._controlsView.IsVisible) _optionsView.HandleControlsBack();
+            else { UiAudioManager.PlayButton(); HideOptions(); }
+        }
+
+        private void HideOptions()
+        {
+            _optionsView.SetVisible(false);
+            _panelRoot.SetActive(true);
+            QueueSelection(_controlsButton);
         }
 
         public void ShowConfirmation()
@@ -228,7 +281,7 @@ namespace PiGame.UI
             SetButtonInteractable(_resumeButton, !isBusy);
             SetButtonInteractable(_controlsButton, !isBusy);
             if (_exitButton != null)
-                SetButtonInteractable(_exitButton, !isBusy);
+                SetButtonInteractable(_exitButton, !isBusy && _exitButton.gameObject.activeSelf);
             if (_playerNameButton != null)
                 _playerNameButton.interactable = !isBusy;
             SetButtonInteractable(_confirmExitButton, !isBusy);
@@ -282,8 +335,10 @@ namespace PiGame.UI
         private void HandlePlayerNameClicked() => PlayerNameRequested?.Invoke();
         private void HandleInlineNameSubmitted(string _) => SaveInlineName();
         private void ShowInlineAudio() => ShowInlineContent(_audioContent);
+        private void ShowInlineDisplay() => ShowInlineContent(_displayContent);
         private void ShowInlinePlayer()
         {
+            if (_controlsView != null && _controlsView.IsVisible && _controlsView.BlocksBackShortcut) return;
             _inlinePlayerName.SetTextWithoutNotify(LocalPlayerName.Load());
             ShowInlineContent(_playerContent);
             QueueSelection(_inlinePlayerName);
@@ -291,15 +346,19 @@ namespace PiGame.UI
 
         private void ShowInlineContent(GameObject content)
         {
+            if (_controlsView != null && _controlsView.IsVisible
+                && _controlsView.BlocksBackShortcut && content != _controlsContent) return;
             if (_controlsView != null && _controlsView.IsVisible && content != _controlsContent)
                 _controlsView.Hide(false);
             _audioContent.SetActive(content == _audioContent);
             _controlsContent.SetActive(content == _controlsContent);
             _playerContent.SetActive(content == _playerContent);
+            _displayContent.SetActive(content == _displayContent);
         }
 
         private void SaveInlineName()
         {
+            UiAudioManager.PlayButton();
             _inlinePlayerName.SetTextWithoutNotify(LocalPlayerName.Save(_inlinePlayerName.text));
             QueueSelection(_saveNameButton);
         }
@@ -307,18 +366,21 @@ namespace PiGame.UI
         private void HandleMasterVolumeChanged(float value)
         {
             GameAudioSettings.SetMaster(value);
+            UiAudioManager.PlayVolumeFeedback();
             RefreshVolumeLabels();
         }
 
         private void HandleMusicVolumeChanged(float value)
         {
             GameAudioSettings.SetMusic(value);
+            UiAudioManager.PlayVolumeFeedback();
             RefreshVolumeLabels();
         }
 
         private void HandleSfxVolumeChanged(float value)
         {
             GameAudioSettings.SetSfx(value);
+            UiAudioManager.PlayVolumeFeedback();
             RefreshVolumeLabels();
         }
 
@@ -327,8 +389,19 @@ namespace PiGame.UI
             _masterVolumeValue.text = $"{Mathf.RoundToInt(_masterVolume.value * 100)}%";
             _musicVolumeValue.text = $"{Mathf.RoundToInt(_musicVolume.value * 100)}%";
             _sfxVolumeValue.text = $"{Mathf.RoundToInt(_sfxVolume.value * 100)}%";
+            _gamepadDeadzoneValue.text = $"{Mathf.RoundToInt(_gamepadDeadzone.value * 100)}%";
         }
-        private void HandleExitClicked() => ExitRequested?.Invoke();
+
+        private void HandleDeadzoneChanged(float value)
+        {
+            GamepadSettings.SetDeadzone(value);
+            RefreshVolumeLabels();
+        }
+        private void HandleExitClicked()
+        {
+            if (_exitButton != null && _exitButton.isActiveAndEnabled && _exitButton.interactable)
+                ExitRequested?.Invoke();
+        }
         private void HandleExitConfirmedClicked() => ExitConfirmed?.Invoke();
         private void HandleExitCanceledClicked() => ExitCanceled?.Invoke();
 
@@ -338,9 +411,25 @@ namespace PiGame.UI
             _confirmationText.text = _definition.ExitConfirmationMessage;
             SetButtonLabel(_resumeButton, _definition.ResumeLabel);
             SetButtonLabel(_controlsButton, _definition.ControlsLabel);
-            if (_exitButton != null)
-                SetButtonLabel(_exitButton, _definition.ExitLabel);
+            ConfigureExitButton(_definition.ExitLabel);
             ConfigureActions(_definition.ShowControlsButton);
+        }
+
+        private void ConfigureExitButton(string label)
+        {
+            if (_exitButton == null) return;
+            bool visible = !string.IsNullOrWhiteSpace(label);
+            SetButtonLabel(_exitButton, label);
+            _exitButton.interactable = visible;
+            _exitButton.gameObject.SetActive(visible);
+
+            if (!HasInlineOptions) return;
+            var navigation = _resumeButton.navigation;
+            navigation.selectOnDown = visible ? _exitButton : _audioCategoryButton;
+            _resumeButton.navigation = navigation;
+            navigation = _audioCategoryButton.navigation;
+            navigation.selectOnUp = visible ? _exitButton : _resumeButton;
+            _audioCategoryButton.navigation = navigation;
         }
 
         private void ConfigureActions(bool showControls)
@@ -364,6 +453,14 @@ namespace PiGame.UI
 
         private void ConfigureControlsView(InputActionAsset actions)
         {
+            if (_optionsView != null)
+            {
+                _optionsView.Initialize(actions, "OPÇÕES", "VOLTAR", string.Empty, string.Empty);
+                _optionsView.SetVisible(false);
+                _optionsView.ResumeRequested -= HideOptions;
+                _optionsView.ResumeRequested += HideOptions;
+                return;
+            }
             if (!_controlsButton.gameObject.activeSelf)
             {
                 return;
@@ -381,6 +478,8 @@ namespace PiGame.UI
                 _controlsButton.interactable = false;
                 return;
             }
+
+            _controlsInputScope = _controlsView.GetComponent<PanelInputScope>();
 
             _controlsView.Closed -= HandleControlsClosed;
             _controlsView.Closed += HandleControlsClosed;
@@ -411,6 +510,7 @@ namespace PiGame.UI
                 && _confirmationRoot != null
                 && _resumeButton != null
                 && _controlsButton != null
+                && (_optionsView == null || _panelRoot != null)
                 && _confirmExitButton != null
                 && _cancelExitButton != null;
             if (!valid)
@@ -456,7 +556,7 @@ namespace PiGame.UI
 
         private static void SetButtonLabel(Button button, string label)
         {
-            TMP_Text text = button.GetComponentInChildren<TMP_Text>();
+            TMP_Text text = button.GetComponentInChildren<TMP_Text>(true);
             if (text == null)
             {
                 Debug.LogError($"O botão {button.name} precisa de um TMP_Text filho.", button);

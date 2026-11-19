@@ -73,6 +73,7 @@ namespace PiGame.UI
 
         private void Browse(int step)
         {
+            PiGame.Sound.UiAudioManager.PlayCharacterBrowse();
             _index = (_index + step + _characters.Length) % _characters.Length;
             Refresh();
         }

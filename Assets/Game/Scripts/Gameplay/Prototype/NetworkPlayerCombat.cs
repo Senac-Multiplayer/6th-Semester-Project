@@ -110,9 +110,9 @@ namespace PiGame.Gameplay
             }
 
             Vector2 aim = ReadAimDirection();
-            if (aim.sqrMagnitude >= 0.04f)
+            if (aim.sqrMagnitude > 0.0001f)
             {
-                _aimDirection = SnapAimToEightDirections(aim);
+                _aimDirection = aim.normalized;
                 RefreshAimIndicator();
             }
 
@@ -226,7 +226,7 @@ namespace PiGame.Gameplay
         {
             if (_localAbilityHeld)
             {
-                EndAbilityRpc(_aimDirection, _playerMove.ReadMovementDirection());
+                CancelAbilityRpc(_aimDirection, _playerMove.ReadMovementDirection());
             }
 
             _localAbilityHeld = false;
@@ -235,6 +235,9 @@ namespace PiGame.Gameplay
 
         private void SetSkillAnimation(bool isActive)
         {
+            // Cowboy e Rebelde apresentam apenas a ação aceita e replicada pelo servidor.
+            if (_characterCombat is CowboyCombat || _characterCombat is RebeldeCombat) return;
+
             if (_animator != null && _animator.runtimeAnimatorController != null)
             {
                 _animator.SetBool("isSkill", isActive);
@@ -243,6 +246,7 @@ namespace PiGame.Gameplay
 
         private void TriggerSkillReleaseAnimation()
         {
+            if (_characterCombat is RebeldeCombat) return;
             if (_animator == null || _animator.runtimeAnimatorController == null)
             {
                 return;
@@ -313,6 +317,14 @@ namespace PiGame.Gameplay
             }
         }
 
+        [Rpc(SendTo.Server)]
+        private void CancelAbilityRpc(Vector2 aimDirection, Vector2 moveDirection, RpcParams rpcParams = default)
+        {
+            if (rpcParams.Receive.SenderClientId != OwnerClientId) return;
+            if (_characterCombat is RebeldeCombat rebelde) rebelde.CancelAbilityServer();
+            else _characterCombat.EndAbilityServer(aimDirection, moveDirection);
+        }
+
         private Vector2 ReadAimDirection()
         {
             Vector2 directionalAim = _aimDirectionAction.action.ReadValue<Vector2>();
@@ -330,7 +342,7 @@ namespace PiGame.Gameplay
             _previousPointerPosition = pointerPosition;
 
             if (_aimDirectionAction.action.WasPerformedThisFrame()
-                && directionalAim.sqrMagnitude >= 0.04f)
+                && directionalAim.sqrMagnitude > 0.0001f)
             {
                 _localAimInputDevice = LobbyInputDeviceKind.Gamepad;
             }
@@ -362,14 +374,6 @@ namespace PiGame.Gameplay
 
             return _aimDirection;
         }
-
-        private static Vector2 SnapAimToEightDirections(Vector2 direction)
-        {
-            float step = Mathf.PI / 4f;
-            float angle = Mathf.Round(Mathf.Atan2(direction.y, direction.x) / step) * step;
-            return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
-        }
-
         private bool ReadAimPressed()
         {
             return _aimFireAction.action.IsPressed();
@@ -411,7 +415,8 @@ namespace PiGame.Gameplay
             _aimIndicator.color = Color.white;
             _aimIndicator.transform.localPosition =
                 (Vector3)(_aimDirection * _aimIndicatorDistance);
-            _presentation.SetAimFacing(_aimDirection, isAiming);
+            if (_characterCombat is not RebeldeCombat rebelde || (!rebelde.IsPreparingAbility && !rebelde.IsSwingingAbility))
+                _presentation.SetAimFacing(_aimDirection, isAiming);
         }
         [Rpc(SendTo.Owner)]
         public void ApplyUpwardImpulseRpc( float impulse, RpcParams rpcParams = default)

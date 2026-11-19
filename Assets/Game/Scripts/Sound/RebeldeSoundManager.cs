@@ -4,27 +4,27 @@ namespace PiGame.Sound
     {
         public void PlayRebeldeBounce()
         {
-            NetworkSoundManager.Instance.PlaySFX(SFXList.RebeldeBounce);
+            NetworkSoundManager.Instance?.PlaySFX(SFXList.RebeldeBounce);
         }
 
         public void PlayRebeldeCatch()
         {
-            NetworkSoundManager.Instance.PlaySFX(SFXList.RebeldeCatch);
+            NetworkSoundManager.Instance?.PlaySFX(SFXList.RebeldeCatch);
         }
 
         public void PlayRebeldeEmpty()
         {
-            NetworkSoundManager.Instance.PlaySFX(SFXList.RebeldeEmpty);
+            NetworkSoundManager.Instance?.PlaySFX(SFXList.RebeldeEmpty);
         }
 
         public void PlayRebeldeSkill()
         {
-            NetworkSoundManager.Instance.PlaySFX(SFXList.RebeldeSkill);
+            NetworkSoundManager.Instance?.PlaySFX(SFXList.RebeldeSkill);
         }
 
         public void PlayRebeldeShot()
         {
-            NetworkSoundManager.Instance.PlaySFX(SFXList.RebeldeShot);
+            NetworkSoundManager.Instance?.PlaySFX(SFXList.RebeldeShot);
         }
     }
     

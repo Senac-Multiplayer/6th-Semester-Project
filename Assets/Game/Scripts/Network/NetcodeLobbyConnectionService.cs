@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using PiGame.Lobby;
@@ -28,7 +29,10 @@ namespace PiGame.Networking
 
         [SerializeField] private NetworkManager _networkManager;
         [SerializeField, Range(2, 4)] private int _maxPlayers = 4;
+        [SerializeField, Min(5f)] private float _hostRecoveryTimeoutSeconds = 45f;
 
+        private bool _savingRoomLock;
+        private bool _desiredRoomLocked;
         private bool _isDuplicate;
         private SessionRole _sessionRole;
         private ISession _session;
@@ -38,9 +42,50 @@ namespace PiGame.Networking
         private bool _terminationReported;
         private bool _callbacksRegistered;
         private bool _isRecoveringSession;
+        private bool _hostMigrationPending;
+        private bool _isDisposed;
+        private LobbyMatchSettingsData? _recoveredSettings;
+        private LobbyMatchSettingsData? _lastSyncedSettings;
         private static bool _authenticationIdentityLogged;
         private static string _selectedServicesProfile;
         private static Mutex _servicesProfileMutex;
+        private static Task _servicesReadyTask;
+        private static bool _applicationQuitting;
+
+        private bool IsStopping => _isDisposed || !this || _applicationQuitting || !Application.isPlaying
+#if UNITY_EDITOR
+            || !UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode
+#endif
+            ;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetApplicationLifetime()
+        {
+            _applicationQuitting = false;
+            Application.quitting -= HandleApplicationQuitting;
+            Application.quitting += HandleApplicationQuitting;
+        }
+
+        private static void HandleApplicationQuitting()
+        {
+            _applicationQuitting = true;
+            if (Instance) Instance.StopApplicationEvents();
+        }
+
+#if UNITY_EDITOR
+        [UnityEditor.InitializeOnLoadMethod]
+        private static void RegisterEditorLifetime()
+        {
+            // Registrar antes dos NetworkManagers das cenas: eles encerram a rede neste mesmo evento.
+            UnityEditor.EditorApplication.playModeStateChanged -= HandleEditorPlayModeChanged;
+            UnityEditor.EditorApplication.playModeStateChanged += HandleEditorPlayModeChanged;
+        }
+
+        private static void HandleEditorPlayModeChanged(UnityEditor.PlayModeStateChange state)
+        {
+            if (state == UnityEditor.PlayModeStateChange.ExitingPlayMode) HandleApplicationQuitting();
+        }
+#endif
 
         public event Action Connected;
         public event Action Disconnected;
@@ -50,6 +95,8 @@ namespace PiGame.Networking
         public bool IsConnected => _networkManager != null && _networkManager.IsConnectedClient;
         public bool IsHost => _session?.IsHost ?? (_networkManager != null && _networkManager.IsHost);
         public string JoinCode => _session?.Code ?? string.Empty;
+        public bool IsRecoveringConnection => _hostMigrationPending;
+        public bool WasKicked { get; private set; }
 
         private void Awake()
         {
@@ -81,7 +128,7 @@ namespace PiGame.Networking
 
         private void OnDestroy()
         {
-            DetachSession();
+            StopApplicationEvents();
 
             if (Instance == this)
             {
@@ -89,123 +136,141 @@ namespace PiGame.Networking
             }
         }
 
-        public async Task StartHostAsync()
+        private void OnApplicationQuit() => HandleApplicationQuitting();
+
+        private void StopApplicationEvents()
         {
-            if (!TryBeginSession(SessionRole.Host, out int operationVersion))
-            {
-                return;
-            }
-
-            try
-            {
-                await EnsureServicesReadyAsync();
-                if (!IsOperationCurrent(operationVersion))
-                {
-                    return;
-                }
-
-                SessionOptions options = new SessionOptions
-                {
-                    MaxPlayers = _maxPlayers,
-                    IsPrivate = true,
-                    Name = "PI6 Lobby"
-                }.WithRelayNetwork();
-
-                ISession createdSession = await MultiplayerService.Instance.CreateSessionAsync(options);
-                await CompleteOrDiscardSessionAsync(createdSession, operationVersion);
-            }
-            catch (SessionException exception)
-            {
-                HandleSessionException(exception, operationVersion);
-            }
-            catch (AuthenticationException exception)
-            {
-                HandleServiceException(
-                    exception,
-                    LobbyConnectionFailure.AuthenticationFailed,
-                    operationVersion);
-            }
-            catch (RequestFailedException exception)
-            {
-                HandleServiceException(
-                    exception,
-                    LobbyConnectionFailure.ServicesUnavailable,
-                    operationVersion);
-            }
-            catch (Exception exception)
-            {
-                HandleServiceException(
-                    exception,
-                    LobbyConnectionFailure.ServicesUnavailable,
-                    operationVersion);
-            }
+            if (_isDisposed) return;
+            _isDisposed = true;
+            _operationVersion++;
+            _terminationReported = true;
+            _isStarting = false;
+            _wasConnected = false;
+            _hostMigrationPending = false;
+            StopAllCoroutines();
+            UnregisterCallbacks();
+            DetachSession();
         }
 
-        public async Task StartClientAsync(string joinCode)
+        public Task StartHostAsync(string roomName = null, bool isPrivate = true)
         {
-            if (!TryNormalizeJoinCode(joinCode, out string normalizedJoinCode))
+            string name = string.IsNullOrWhiteSpace(roomName) ? $"Sala de {LocalPlayerName.Load()}" : roomName.Trim();
+            if (name.Length > 24) name = name.Substring(0, 24);
+            return ConnectAsync(SessionRole.Host, async () => await MultiplayerService.Instance.CreateSessionAsync(
+                new SessionOptions { MaxPlayers = _maxPlayers, IsPrivate = isPrivate, Name = name }
+                    .WithRelayNetwork().WithHostMigration(CreateMigrationDataHandler())));
+        }
+
+        public Task StartClientAsync(string joinCode)
+        {
+            if (!TryNormalizeJoinCode(joinCode, out string code))
             {
                 ConnectionFailed?.Invoke(LobbyConnectionFailure.InvalidJoinCode);
-                return;
+                return Task.CompletedTask;
             }
+            return ConnectAsync(SessionRole.Client, () => MultiplayerService.Instance.JoinSessionByCodeAsync(
+                code, new JoinSessionOptions().WithHostMigration(CreateMigrationDataHandler())), code);
+        }
 
-            if (!TryBeginSession(SessionRole.Client, out int operationVersion))
+        public Task JoinRoomAsync(string sessionId) => ConnectAsync(SessionRole.Client,
+            () => MultiplayerService.Instance.JoinSessionByIdAsync(sessionId,
+                new JoinSessionOptions().WithHostMigration(CreateMigrationDataHandler())));
+
+        private static List<FilterOption> RoomFilters() => new()
+        {
+            new FilterOption(FilterField.AvailableSlots, "0", FilterOperation.Greater),
+            new FilterOption(FilterField.IsLocked, "false", FilterOperation.Equal),
+            new FilterOption(FilterField.HasPassword, "false", FilterOperation.Equal)
+        };
+
+        public const int RoomsPerPage = 10;
+
+        public async Task<QuerySessionsResults> QueryRoomsAsync(string continuationToken = null)
+        {
+            await EnsureServicesReadyAsync();
+            return await MultiplayerService.Instance.QuerySessionsAsync(new QuerySessionsOptions
             {
-                return;
-            }
+                Count = RoomsPerPage,
+                ContinuationToken = continuationToken,
+                FilterOptions = RoomFilters(),
+                SortOptions = new List<SortOption> { new(SortOrder.Ascending, SortField.CreationTime) }
+            });
+        }
 
+        public Task QuickJoinAsync() => ConnectAsync(SessionRole.Client, async () =>
+        {
+            int operationVersion = _operationVersion;
+            // A consulta distingue lista vazia de falhas de autenticação ou transporte.
+            var rooms = await QueryRoomsAsync();
+            if (!IsOperationCurrent(operationVersion)) throw new OperationCanceledException();
+            if (rooms.Sessions.Count == 0)
+                throw new SessionException("No public rooms available.", SessionError.SessionNotFound, null);
+            return await MultiplayerService.Instance.MatchmakeSessionAsync(
+                new QuickJoinOptions { CreateSession = false, Timeout = TimeSpan.Zero, Filters = RoomFilters() },
+                new SessionOptions().WithRelayNetwork().WithHostMigration(CreateMigrationDataHandler()));
+        }, quickJoin: true);
+
+        private async Task ConnectAsync(SessionRole role, Func<Task<ISession>> connect,
+            string recoveryCode = null, bool quickJoin = false)
+        {
+            if (!TryBeginSession(role, out int operationVersion)) return;
             try
             {
                 await EnsureServicesReadyAsync();
-                if (!IsOperationCurrent(operationVersion))
-                {
-                    return;
-                }
-
-                ISession joinedSession = await MultiplayerService.Instance.JoinSessionByCodeAsync(
-                    normalizedJoinCode);
-                await CompleteOrDiscardSessionAsync(joinedSession, operationVersion);
+                if (!IsOperationCurrent(operationVersion)) return;
+                ISession session = await connect();
+                await CompleteOrDiscardSessionAsync(session, operationVersion);
             }
             catch (SessionException exception)
             {
-                if (exception.Error == SessionError.SessionConflict
-                    && IsOperationCurrent(operationVersion))
+                if (!IsOperationCurrent(operationVersion)) return;
+                if (quickJoin && exception.Error == SessionError.SessionNotFound)
                 {
-                    ISession recoveredSession = await TryRecoverJoinedSessionAsync(
-                        normalizedJoinCode,
-                        operationVersion);
-                    if (recoveredSession != null)
+                    ReportFailure(LobbyConnectionFailure.NoAvailableRooms);
+                    return;
+                }
+                if (recoveryCode != null && exception.Error == SessionError.SessionConflict)
+                {
+                    ISession recovered = await TryRecoverJoinedSessionAsync(recoveryCode, operationVersion);
+                    if (recovered != null)
                     {
-                        await CompleteOrDiscardSessionAsync(
-                            recoveredSession,
-                            operationVersion);
+                        await CompleteOrDiscardSessionAsync(recovered, operationVersion);
                         return;
                     }
                 }
-
                 HandleSessionException(exception, operationVersion);
             }
             catch (AuthenticationException exception)
             {
-                HandleServiceException(
-                    exception,
-                    LobbyConnectionFailure.AuthenticationFailed,
-                    operationVersion);
-            }
-            catch (RequestFailedException exception)
-            {
-                HandleServiceException(
-                    exception,
-                    LobbyConnectionFailure.ServicesUnavailable,
-                    operationVersion);
+                HandleServiceException(exception, LobbyConnectionFailure.AuthenticationFailed, operationVersion);
             }
             catch (Exception exception)
             {
-                HandleServiceException(
-                    exception,
-                    LobbyConnectionFailure.ServicesUnavailable,
-                    operationVersion);
+                HandleServiceException(exception, LobbyConnectionFailure.ServicesUnavailable, operationVersion);
             }
+        }
+
+        public async void SetRoomJoinable(bool joinable)
+        {
+            if (IsStopping || _session == null || !_session.IsHost) return;
+            _desiredRoomLocked = !joinable;
+            if (_savingRoomLock) return;
+            _savingRoomLock = true;
+            ISession session = _session;
+            try
+            {
+                while (!IsStopping && session == _session && session.IsHost && session.IsLocked != _desiredRoomLocked)
+                {
+                    IHostSession host = session.AsHost();
+                    host.IsLocked = _desiredRoomLocked;
+                    await host.SavePropertiesAsync();
+                }
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning($"Não foi possível atualizar a disponibilidade da sala: {exception.Message}", this);
+            }
+            finally { _savingRoomLock = false; }
         }
 
         public async Task ShutdownAsync()
@@ -215,25 +280,18 @@ namespace PiGame.Networking
             _isStarting = false;
             _wasConnected = false;
             _sessionRole = SessionRole.None;
+            _hostMigrationPending = false;
 
             ISession sessionToLeave = _session;
-            bool wasHost = sessionToLeave?.IsHost
-                ?? (_networkManager != null && _networkManager.IsHost);
             DetachSession();
-
-            if (_networkManager != null && _networkManager.IsListening)
-            {
-                if (wasHost)
-                {
-                    NetworkLobbyState lobbyState = FindFirstObjectByType<NetworkLobbyState>();
-                    lobbyState?.ResetSession();
-                }
-            }
 
             if (sessionToLeave != null)
             {
                 await LeaveSessionQuietlyAsync(sessionToLeave);
             }
+
+            MatchSession.Instance?.Clear();
+            MatchSession.Instance?.ResetMapHistory();
 
             if (_networkManager != null && _networkManager.IsListening)
             {
@@ -244,6 +302,7 @@ namespace PiGame.Networking
         private bool TryBeginSession(SessionRole role, out int operationVersion)
         {
             operationVersion = _operationVersion;
+            if (IsStopping) return false;
             if (_networkManager == null)
             {
                 ConnectionFailed?.Invoke(LobbyConnectionFailure.NetworkManagerUnavailable);
@@ -258,15 +317,28 @@ namespace PiGame.Networking
                 return false;
             }
 
+            WasKicked = false;
             operationVersion = ++_operationVersion;
             _sessionRole = role;
             _isStarting = true;
             _wasConnected = false;
             _terminationReported = false;
+            _hostMigrationPending = false;
+            _recoveredSettings = null;
+            _lastSyncedSettings = null;
             return true;
         }
 
-        private static async Task EnsureServicesReadyAsync()
+        private static Task EnsureServicesReadyAsync()
+        {
+            if (_servicesReadyTask == null || _servicesReadyTask.IsFaulted || _servicesReadyTask.IsCanceled
+                || (_servicesReadyTask.IsCompleted && (UnityServices.State != ServicesInitializationState.Initialized
+                    || !AuthenticationService.Instance.IsSignedIn)))
+                _servicesReadyTask = InitializeServicesAsync();
+            return _servicesReadyTask;
+        }
+
+        private static async Task InitializeServicesAsync()
         {
             string requestedProfile = FindServicesProfileArgument();
 
@@ -575,6 +647,8 @@ namespace PiGame.Networking
 
             _session = session;
             AttachSession();
+            NetworkLobbyState lobby = FindFirstObjectByType<NetworkLobbyState>();
+            if (lobby != null) SetRoomJoinable(lobby.Stage == LobbyStage.CharacterSelection);
             _isStarting = false;
             _wasConnected = true;
             Connected?.Invoke();
@@ -582,7 +656,7 @@ namespace PiGame.Networking
 
         private bool IsOperationCurrent(int operationVersion)
         {
-            return operationVersion == _operationVersion && !_terminationReported;
+            return !IsStopping && operationVersion == _operationVersion && !_terminationReported;
         }
 
         private void AttachSession()
@@ -595,8 +669,11 @@ namespace PiGame.Networking
             _session.StateChanged += HandleSessionStateChanged;
             _session.RemovedFromSession += HandleRemovedFromSession;
             _session.Deleted += HandleSessionDeleted;
+            _session.SessionHostChanged += HandleSessionHostChanged;
+            _session.SessionMigrated += HandleSessionMigrated;
             _session.Network.StateChanged += HandleNetworkStateChanged;
             _session.Network.StartFailed += HandleNetworkStartFailed;
+            _session.Network.MigrationFailed += HandleMigrationFailed;
         }
 
         private void DetachSession()
@@ -609,14 +686,110 @@ namespace PiGame.Networking
             _session.StateChanged -= HandleSessionStateChanged;
             _session.RemovedFromSession -= HandleRemovedFromSession;
             _session.Deleted -= HandleSessionDeleted;
+            _session.SessionHostChanged -= HandleSessionHostChanged;
+            _session.SessionMigrated -= HandleSessionMigrated;
             _session.Network.StateChanged -= HandleNetworkStateChanged;
             _session.Network.StartFailed -= HandleNetworkStartFailed;
+            _session.Network.MigrationFailed -= HandleMigrationFailed;
             _session = null;
+        }
+
+        private SessionLobbyMigrationData CreateMigrationDataHandler()
+        {
+            return new SessionLobbyMigrationData(
+                () => FindFirstObjectByType<NetworkLobbyState>().MatchSettings,
+                settings => _recoveredSettings = _lastSyncedSettings ?? settings);
+        }
+
+        public void RememberMatchSettings(LobbyMatchSettingsData settings)
+        {
+            // O upload periódico do SDK pode estar alguns segundos atrás do último ajuste.
+            if (!_hostMigrationPending) _lastSyncedSettings = settings;
+        }
+
+        public bool TryConsumeRecoveredSettings(out LobbyMatchSettingsData settings)
+        {
+            LobbyMatchSettingsData? saved = _recoveredSettings
+                ?? (_hostMigrationPending ? _lastSyncedSettings : null);
+            settings = saved.GetValueOrDefault();
+            bool recovered = saved.HasValue;
+            _recoveredSettings = null;
+            return recovered;
+        }
+
+        private bool TryRecoverHost()
+        {
+            if (IsStopping || _terminationReported || !_wasConnected || _session == null || !_session.IsMember)
+                return false;
+            if (!_hostMigrationPending)
+            {
+                _hostMigrationPending = true;
+                LobbySceneFlow.Instance?.ShowLobbyLocally();
+                _ = WaitForHostRecoveryAsync(_operationVersion);
+            }
+            return true;
+        }
+
+        private async Task WaitForHostRecoveryAsync(int operationVersion)
+        {
+            double deadline = Time.realtimeSinceStartupAsDouble + _hostRecoveryTimeoutSeconds;
+            while (_hostMigrationPending && IsOperationCurrent(operationVersion)
+                && Time.realtimeSinceStartupAsDouble < deadline)
+                await Task.Delay(250);
+
+            if (_hostMigrationPending && IsOperationCurrent(operationVersion))
+            {
+                Debug.LogWarning("Não foi possível recuperar a sala após a saída do host.", this);
+                ReportDisconnection();
+            }
+        }
+
+        private void HandleSessionHostChanged(string hostId)
+        {
+            TryRecoverHost();
+        }
+
+        private async void HandleSessionMigrated()
+        {
+            if (IsStopping || _terminationReported || _session == null || !_networkManager) return;
+            int operationVersion = _operationVersion;
+            _sessionRole = _session.IsHost ? SessionRole.Host : SessionRole.Client;
+            _wasConnected = true;
+            // O SDK avisa o novo host antes de os clients concluírem a sincronização de cenas.
+            // Não descarregar o mapa durante essa sincronização.
+            if (_networkManager.IsServer)
+            {
+                double deadline = Time.realtimeSinceStartupAsDouble + _hostRecoveryTimeoutSeconds;
+                while (IsOperationCurrent(operationVersion) && _session != null
+                    && _networkManager.ConnectedClientsIds.Count < _session.PlayerCount
+                    && Time.realtimeSinceStartupAsDouble < deadline)
+                    await Task.Delay(100);
+            }
+            if (!IsOperationCurrent(operationVersion)) return;
+            LobbySceneFlow flow = LobbySceneFlow.Instance;
+            if (flow != null)
+            {
+                flow.ShowLobbyLocally();
+                if (_networkManager.IsServer)
+                {
+                    flow.PrepareNextMatchServer();
+                    flow.UnloadMapServer();
+                }
+            }
+            _hostMigrationPending = false;
+            SetRoomJoinable(true);
+            Connected?.Invoke();
+        }
+
+        private void HandleMigrationFailed(SessionError error)
+        {
+            Debug.LogWarning($"Falha na recuperação da sala: {error}.", this);
+            ReportDisconnection();
         }
 
         private void RegisterCallbacks()
         {
-            if (_networkManager == null || _callbacksRegistered)
+            if (IsStopping || _networkManager == null || _callbacksRegistered)
             {
                 return;
             }
@@ -644,7 +817,7 @@ namespace PiGame.Networking
 
         private void HandleClientDisconnected(ulong clientId)
         {
-            if (_terminationReported
+            if (IsStopping || !_networkManager || _terminationReported
                 || _isRecoveringSession
                 || clientId != _networkManager.LocalClientId)
             {
@@ -653,6 +826,8 @@ namespace PiGame.Networking
 
             if (_wasConnected)
             {
+                WasKicked = _networkManager.DisconnectReason == NetworkLobbyState.KickedDisconnectReason;
+                if (!WasKicked && TryRecoverHost()) return;
                 ReportDisconnection();
                 return;
             }
@@ -668,13 +843,14 @@ namespace PiGame.Networking
 
         private void HandleTransportFailure()
         {
-            if (_isRecoveringSession)
+            if (IsStopping || _terminationReported || _isRecoveringSession)
             {
                 return;
             }
 
             if (_wasConnected)
             {
+                if (TryRecoverHost()) return;
                 ReportDisconnection();
                 return;
             }
@@ -684,13 +860,14 @@ namespace PiGame.Networking
 
         private void HandleSessionStopped(bool isHost)
         {
-            if (_terminationReported || _isRecoveringSession)
+            if (IsStopping || _terminationReported || _isRecoveringSession)
             {
                 return;
             }
 
             if (_wasConnected)
             {
+                if (TryRecoverHost()) return;
                 ReportDisconnection();
                 return;
             }
@@ -724,8 +901,14 @@ namespace PiGame.Networking
 
         private void HandleNetworkStateChanged(NetworkState state)
         {
+            if (state == NetworkState.Migrating)
+            {
+                TryRecoverHost();
+                return;
+            }
             if (state == NetworkState.Stopped && _wasConnected)
             {
+                if (TryRecoverHost()) return;
                 ReportDisconnection();
             }
         }
@@ -740,12 +923,13 @@ namespace PiGame.Networking
 
         private void ReportDisconnection()
         {
-            if (_terminationReported)
+            if (IsStopping || _terminationReported)
             {
                 return;
             }
 
             _terminationReported = true;
+            _hostMigrationPending = false;
             _isStarting = false;
             _wasConnected = false;
             _sessionRole = SessionRole.None;
@@ -762,8 +946,8 @@ namespace PiGame.Networking
 
         private void ReturnToLobbySceneAfterUnexpectedDisconnect()
         {
-            if (!isActiveAndEnabled
-                || SceneManager.GetActiveScene().name == LobbySceneName)
+            if (IsStopping || !isActiveAndEnabled
+                || (SceneManager.GetActiveScene().name == LobbySceneName && SceneManager.sceneCount == 1))
             {
                 return;
             }
@@ -772,15 +956,16 @@ namespace PiGame.Networking
             StartCoroutine(LoadLobbySceneNextFrame());
         }
 
-        private static System.Collections.IEnumerator LoadLobbySceneNextFrame()
+        private System.Collections.IEnumerator LoadLobbySceneNextFrame()
         {
             yield return null;
+            if (IsStopping) yield break;
             SceneManager.LoadScene(LobbySceneName, LoadSceneMode.Single);
         }
 
         private void ReportFailure(LobbyConnectionFailure failure)
         {
-            if (_terminationReported)
+            if (IsStopping || _terminationReported)
             {
                 return;
             }

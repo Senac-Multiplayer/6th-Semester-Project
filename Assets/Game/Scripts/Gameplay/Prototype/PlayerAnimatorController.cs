@@ -102,6 +102,12 @@ namespace PiGame.Gameplay
                 _animator.SetBool(IsCrouching, isCrouching);
         }
 
+        public void SetSkillActive(bool isActive)
+        {
+            if (enabled && _useAnimations)
+                _animator.SetBool(IsSkill, isActive);
+        }
+
         private void UpdateFacing()
         {
             float direction = _isAiming ? _aimFacingInput : _movementFacingInput;

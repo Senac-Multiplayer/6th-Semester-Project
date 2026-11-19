@@ -3,6 +3,7 @@ using Unity.Netcode;
 
 namespace PiGame.Lobby
 {
+    [Serializable]
     public struct LobbyMatchSettingsData :
         INetworkSerializable,
         IEquatable<LobbyMatchSettingsData>
@@ -11,17 +12,20 @@ namespace PiGame.Lobby
         public LobbyMatchMode Mode;
         public int MinimumPlayers;
         public bool RequireUniqueCharacters;
+        public int KillLimit;
 
         public LobbyMatchSettingsData(
             int durationMinutes,
             LobbyMatchMode mode,
             int minimumPlayers,
-            bool requireUniqueCharacters)
+            bool requireUniqueCharacters,
+            int killLimit = 3)
         {
             DurationMinutes = durationMinutes;
             Mode = mode;
             MinimumPlayers = minimumPlayers;
             RequireUniqueCharacters = requireUniqueCharacters;
+            KillLimit = killLimit;
         }
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer)
@@ -31,6 +35,7 @@ namespace PiGame.Lobby
             serializer.SerializeValue(ref Mode);
             serializer.SerializeValue(ref MinimumPlayers);
             serializer.SerializeValue(ref RequireUniqueCharacters);
+            serializer.SerializeValue(ref KillLimit);
         }
 
         public bool Equals(LobbyMatchSettingsData other)
@@ -38,7 +43,8 @@ namespace PiGame.Lobby
             return DurationMinutes == other.DurationMinutes
                 && Mode == other.Mode
                 && MinimumPlayers == other.MinimumPlayers
-                && RequireUniqueCharacters == other.RequireUniqueCharacters;
+                && RequireUniqueCharacters == other.RequireUniqueCharacters
+                && KillLimit == other.KillLimit;
         }
 
         public override bool Equals(object obj)
@@ -54,6 +60,7 @@ namespace PiGame.Lobby
                 hashCode = (hashCode * 397) ^ (int)Mode;
                 hashCode = (hashCode * 397) ^ MinimumPlayers;
                 hashCode = (hashCode * 397) ^ RequireUniqueCharacters.GetHashCode();
+                hashCode = (hashCode * 397) ^ KillLimit;
                 return hashCode;
             }
         }

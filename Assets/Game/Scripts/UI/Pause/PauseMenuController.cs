@@ -69,6 +69,7 @@ namespace PiGame.UI
 
         private void Update()
         {
+            if (LoadingScreenUI.Instance && LoadingScreenUI.Instance.IsVisible) return;
             if (_isExiting)
             {
                 return;
@@ -93,7 +94,11 @@ namespace PiGame.UI
 
             if (Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame)
             {
-                if (_view.IsControlsVisible)
+                if (_view.IsOptionsVisible)
+                {
+                    _view.HandleOptionsBack();
+                }
+                else if (_view.IsControlsVisible)
                 {
                     if (!_view.BlocksControlsBackShortcut)
                     {
@@ -106,7 +111,7 @@ namespace PiGame.UI
                 }
                 else
                 {
-                    ClosePause();
+                    ClosePauseFromInput();
                 }
             }
         }
@@ -125,6 +130,12 @@ namespace PiGame.UI
                 return;
             }
 
+            if (_view.IsOptionsVisible)
+            {
+                _view.HandleOptionsBack();
+                return;
+            }
+
             if (_view.IsControlsVisible)
             {
                 if (!_view.BlocksControlsBackShortcut)
@@ -134,7 +145,7 @@ namespace PiGame.UI
                 return;
             }
 
-            ClosePause();
+            ClosePauseFromInput();
         }
 
         private void OpenPause()
@@ -144,9 +155,16 @@ namespace PiGame.UI
                 return;
             }
 
+            PiGame.Sound.UiAudioManager.PlayButton();
             _isOpen = true;
             _context.EnterPause();
             _view.SetVisible(true);
+        }
+
+        private void ClosePauseFromInput()
+        {
+            PiGame.Sound.UiAudioManager.PlayButton();
+            ClosePause();
         }
 
         public void ClosePause()
@@ -173,6 +191,7 @@ namespace PiGame.UI
         {
             if (_isOpen && !_isExiting)
             {
+                PiGame.Sound.UiAudioManager.PlayButton();
                 _view.HideConfirmation();
             }
         }
