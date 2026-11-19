@@ -247,12 +247,13 @@ namespace PiGame.Gameplay
                 NetworkProjectile projectile = hit.GetComponentInParent<NetworkProjectile>();
                 if (projectile)
                 {
-                    // Não reflete projéteis disparados pelo próprio Rebelde.
-                    if (projectile.ShooterClientId == OwnerClientId) continue;
+                    bool ownBall = projectile == _activeProjectile;
                     if (!projectile.IsSpawned || !projectile.IsServer
-                        || !_playerState.CanReceiveHitFrom(projectile.ShooterClientId)
+                        || (!ownBall && (projectile.ShooterClientId == OwnerClientId
+                            || !_playerState.CanReceiveHitFrom(projectile.ShooterClientId)))
                         || !_abilityProcessedTargets.Add(projectile.NetworkObject)) continue;
-                    projectile.ReflectServer(_projectileReflectMinimumSpeed);
+                    if (ownBall) _activeProjectile.BatServer(_abilityForward.Value, _projectileReflectMinimumSpeed);
+                    else projectile.ReflectServer(_projectileReflectMinimumSpeed);
                     continue;
                 }
 
