@@ -179,6 +179,7 @@ namespace PiGame.UI
 
             LobbyInputDeviceKind inputDevice = ResolveInputDevice();
             SetLastInputDevice(inputDevice);
+            UiAudioManager.PlayButton();
             ConfirmRequested?.Invoke(inputDevice);
             eventData.Use();
         }
@@ -196,6 +197,7 @@ namespace PiGame.UI
             }
 
             SetLastInputDevice(ResolveInputDevice());
+            UiAudioManager.PlayButton();
             BackRequested?.Invoke();
             eventData.Use();
         }
@@ -302,6 +304,7 @@ namespace PiGame.UI
             LobbyMapId mapId = GetOptionMapId(optionIndex);
             if (mapId == _selectedMapId)
             {
+                UiAudioManager.PlayButton();
                 ConfirmRequested?.Invoke(LobbyInputDeviceKind.Keyboard);
                 return;
             }
@@ -343,6 +346,7 @@ namespace PiGame.UI
 
             _selectedMapId = mapId;
             RefreshSelectionVisuals();
+            UiAudioManager.PlayMapSelection();
             VoteRequested?.Invoke(mapId, inputDevice);
         }
 

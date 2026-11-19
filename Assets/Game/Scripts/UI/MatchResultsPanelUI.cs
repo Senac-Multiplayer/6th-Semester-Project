@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using PiGame.Gameplay;
+using PiGame.Lobby;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -24,6 +25,7 @@ namespace PiGame.UI
         [SerializeField, Min(0.01f)] private float _informationFadeSeconds = 0.3f;
         [SerializeField] private AnimationCurve _riseCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
         [SerializeField] private TMP_Text _heading;
+        [SerializeField] private TMP_Text _teamSummary;
         [SerializeField] private TMP_Text _hostHint;
         [SerializeField] private ResultPlayerView[] _players;
         [SerializeField] private Button _returnButton;
@@ -78,6 +80,13 @@ namespace PiGame.UI
         {
             bool visible = _match.Phase == MatchPhase.ShowingResult;
             bool opening = visible && !_root.activeSelf;
+            if (_teamSummary)
+            {
+                _teamSummary.gameObject.SetActive(visible && _match.IsTeamMode);
+                if (visible && _match.IsTeamMode)
+                    _teamSummary.text = $"<color=#{LobbyTeams.Html(LobbyTeam.Blue)}>AZUL: {_match.GetTeamScore(LobbyTeam.Blue)}</color>"
+                        + $"    |    <color=#{LobbyTeams.Html(LobbyTeam.Orange)}>LARANJA: {_match.GetTeamScore(LobbyTeam.Orange)}</color>";
+            }
             _root.SetActive(visible);
             if (!visible)
             {
@@ -103,6 +112,20 @@ namespace PiGame.UI
                 highestScore = Mathf.Max(highestScore, score.Kills);
             }
             int winner = _match.WinningPlayerSlot;
+            if (_match.IsTeamMode)
+            {
+                _heading.text = _match.IsDraw ? "EMPATE ENTRE AS EQUIPES!" : $"EQUIPE {LobbyTeams.Name(_match.WinningTeam)} VENCEU!";
+                _heading.color = _match.IsDraw ? Color.white : LobbyTeams.Color(_match.WinningTeam);
+                foreach (ResultPlayerView view in _players) view.gameObject.SetActive(false);
+                foreach (MatchPlayerScoreData score in _scores)
+                {
+                    bool won = _match.IsWinner(score);
+                    _players[score.PlayerSlot].Bind(score, _match.IsDraw || won ? 1 : 2, won, highestScore, _match.IsDraw);
+                }
+                RenderPresentation(_match.ResultElapsed);
+                return;
+            }
+            _heading.color = new Color32(231, 186, 113, 255);
             _scores.Sort((a, b) =>
             {
                 if ((a.PlayerSlot == winner) != (b.PlayerSlot == winner))
@@ -144,6 +167,7 @@ namespace PiGame.UI
             foreach (ResultPlayerView player in _players)
                 if (player.gameObject.activeSelf) player.Present(_riseCurve.Evaluate(rise), light, information);
             _headingGroup.alpha = information;
+            if (_teamSummary) _teamSummary.alpha = information;
             _actions.alpha = information;
             bool wasComplete = _presentationComplete;
             _presentationComplete = elapsed >= PresentationDuration;
@@ -180,6 +204,7 @@ namespace PiGame.UI
         private void AskExit()
         {
             if (_busy || !_presentationComplete) return;
+            PiGame.Sound.UiAudioManager.PlayButton();
             _content.interactable = false;
             _content.blocksRaycasts = false;
             _confirmation.Show(_match.IsServer

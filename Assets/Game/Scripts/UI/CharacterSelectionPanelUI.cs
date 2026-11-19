@@ -28,6 +28,8 @@ namespace PiGame.UI
 
         [Header("Player slots")]
         [SerializeField] private RectTransform _slotsLayout;
+        [SerializeField] private RectTransform _headerBand;
+        [SerializeField] private RectTransform _footerBand;
         [SerializeField] private RectTransform[] _slotRoots;
         [SerializeField] private Image[] _slotBackgrounds;
         [SerializeField] private Image[] _clanBackgrounds = Array.Empty<Image>();
@@ -77,6 +79,7 @@ namespace PiGame.UI
         public event Action<int, LobbyInputDeviceKind> BrowseRequested;
         public event Action<LobbyInputDeviceKind> SubmitRequested;
         public event Action BackRequested;
+        public bool InteractionEnabled => _interactionEnabled && gameObject.activeInHierarchy;
 
         private LobbyInputDeviceKind _lastInputDevice = LobbyInputDeviceKind.Keyboard;
         private Gamepad _lastGamepad;
@@ -139,16 +142,21 @@ namespace PiGame.UI
                 enabled = false;
                 return;
             }
-            _deviceIconPositions = new Vector2[_deviceIcons.Length];
-            for (int i = 0; i < _deviceIcons.Length; i++)
-            {
-                _deviceIconPositions[i] = _deviceIcons[i].rectTransform.anchoredPosition;
-            }
+            CacheDeviceIconPositions();
 
             DisableAutomaticNavigation(_previousCharacterButton);
             DisableAutomaticNavigation(_nextCharacterButton);
 
             RefreshLegend();
+        }
+
+        private void CacheDeviceIconPositions()
+        {
+            // O controlador pode renderizar um painel ainda inativo, antes do Awake.
+            if (_deviceIconPositions != null) return;
+            _deviceIconPositions = new Vector2[_deviceIcons.Length];
+            for (int i = 0; i < _deviceIcons.Length; i++)
+                _deviceIconPositions[i] = _deviceIcons[i].rectTransform.anchoredPosition;
         }
 
         private void OnEnable()
@@ -186,11 +194,15 @@ namespace PiGame.UI
 
         private void LateUpdate()
         {
-            // Reserva as barras de 130px e reduz o conjunto somente quando faltar espaço.
             Vector2 available = ((RectTransform)transform).rect.size;
-            float scale = Mathf.Clamp(Mathf.Min((available.y - 260f) / 820f,
+            float headerHeight = _headerBand ? _headerBand.rect.height : 130f;
+            float footerHeight = _footerBand ? _footerBand.rect.height : 130f;
+            // O espaço da apresentação acompanha as barras, sem esticar as artes dos cards.
+            float scale = Mathf.Clamp(Mathf.Min((available.y - headerHeight - footerHeight) / 820f,
                 (available.x - 80f) / _slotsLayout.rect.width), 0.1f, 1f);
             _slotsLayout.localScale = Vector3.one * scale;
+            _slotsLayout.anchoredPosition = new Vector2(_slotsLayout.anchoredPosition.x,
+                (footerHeight - headerHeight) * 0.5f - 20f * scale);
             _browseControlsRoot.localScale = _slotsLayout.localScale;
 
             // Os botões acompanham o slot local ao redimensionar a janela.
@@ -259,6 +271,7 @@ namespace PiGame.UI
             bool requireUniqueCharacters)
         {
             if (!enabled) return;
+            CacheDeviceIconPositions();
             _connectionView.SetPlayers(players);
             _localPlayerSlot = -1;
             _localPlayerIsReady = true;
@@ -442,6 +455,7 @@ namespace PiGame.UI
                 _clanDetails[slot].rectTransform.anchoredPosition = character.LobbyDetailsOffset;
                 _clanDetails[slot].rectTransform.localScale = Vector3.one * character.LobbyDetailsScale;
                 _readyBannerMotifs[slot].sprite = character.LobbyBanner;
+                _readyBannerMotifs[slot].rectTransform.anchoredPosition = character.LobbyReadyBannerOffset;
                 _selectionBanners[slot].sprite = character.LobbyBanner;
 
                 if (isLocalPlayer)

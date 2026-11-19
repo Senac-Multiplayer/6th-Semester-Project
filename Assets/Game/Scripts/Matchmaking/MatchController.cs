@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using PiGame.Lobby;
 using PiGame.Sound;
+using PiGame.UI;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -39,6 +40,24 @@ namespace PiGame.Gameplay
         private readonly NetworkVariable<int> _winningPlayerSlot =
             new NetworkVariable<int>(-1);
 
+        private readonly NetworkVariable<LobbyMatchMode> _mode = new(LobbyMatchMode.Solo);
+        private readonly NetworkVariable<LobbyTeam> _winningTeam = new(LobbyTeam.None);
+        private readonly NetworkVariable<int> _blueKills = new();
+        private readonly NetworkVariable<int> _orangeKills = new();
+        public bool IsTeamMode => _mode.Value == LobbyMatchMode.Team;
+        public LobbyTeam WinningTeam => _winningTeam.Value;
+        public int GetTeamScore(LobbyTeam team) => team == LobbyTeam.Blue ? _blueKills.Value
+            : team == LobbyTeam.Orange ? _orangeKills.Value : 0;
+        public bool IsWinner(MatchPlayerScoreData player) => IsTeamMode
+            ? LobbyTeams.IsValid(WinningTeam) && player.Team == WinningTeam : player.PlayerSlot == WinningPlayerSlot;
+        public bool IsDraw => IsTeamMode ? !LobbyTeams.IsValid(WinningTeam) : WinningPlayerSlot < 0;
+        public bool AreTeammates(ulong first, ulong second)
+        {
+            if (!IsTeamMode || first == second) return false;
+            int a = FindScoreIndex(first), b = FindScoreIndex(second);
+            return a >= 0 && b >= 0 && LobbyTeams.IsValid(_scores[a].Team) && _scores[a].Team == _scores[b].Team;
+        }
+
         private NetworkList<MatchPlayerScoreData> _scores;
         private readonly Dictionary<ulong, NetworkPlayerState> _players =
             new Dictionary<ulong, NetworkPlayerState>();
@@ -71,17 +90,19 @@ namespace PiGame.Gameplay
                 + Mathf.Max(_resultDisplaySeconds, _resultInputDelaySeconds) - NetworkManager.ServerTime.Time))
             : 0f;
 
-        private SceneOSTManager _sceneOSTManager;
 
         private void Awake()
         {
             _scores = new NetworkList<MatchPlayerScoreData>();
-            _sceneOSTManager = FindFirstObjectByType<SceneOSTManager>();
         }
 
         public override void OnNetworkSpawn()
         {
             _scores.OnListChanged += HandleScoresChanged;
+            _blueKills.OnValueChanged += HandleKillLimitChanged;
+            _orangeKills.OnValueChanged += HandleKillLimitChanged;
+            _mode.OnValueChanged += HandleModeChanged;
+            _winningTeam.OnValueChanged += HandleWinningTeamChanged;
             _phase.OnValueChanged += HandlePhaseChanged;
             _winningPlayerSlot.OnValueChanged += HandleWinningPlayerChanged;
             _killLimit.OnValueChanged += HandleKillLimitChanged;
@@ -92,12 +113,16 @@ namespace PiGame.Gameplay
             }
 
             ScoresChanged?.Invoke();
-            PhaseChanged?.Invoke();
+            HandlePhaseChanged(_phase.Value, _phase.Value);
         }
 
         public override void OnNetworkDespawn()
         {
             _scores.OnListChanged -= HandleScoresChanged;
+            _blueKills.OnValueChanged -= HandleKillLimitChanged;
+            _orangeKills.OnValueChanged -= HandleKillLimitChanged;
+            _mode.OnValueChanged -= HandleModeChanged;
+            _winningTeam.OnValueChanged -= HandleWinningTeamChanged;
             _phase.OnValueChanged -= HandlePhaseChanged;
             _winningPlayerSlot.OnValueChanged -= HandleWinningPlayerChanged;
             _killLimit.OnValueChanged -= HandleKillLimitChanged;
@@ -120,6 +145,10 @@ namespace PiGame.Gameplay
                 return;
             }
 
+            _mode.Value = settings.Mode;
+            _winningTeam.Value = LobbyTeam.None;
+            _blueKills.Value = 0;
+            _orangeKills.Value = 0;
             _killLimit.Value = Mathf.Clamp(settings.KillLimit, 2, 100);
             // Valor negativo identifica partida sem limite de tempo também nos clients.
             _remainingTime.Value = settings.DurationMinutes == 0
@@ -210,13 +239,24 @@ namespace PiGame.Gameplay
             }
 
             int attackerIndex = FindScoreIndex(attackerClientId);
-            if (attackerIndex >= 0 && attackerClientId != victim.OwnerClientId)
+            if (attackerIndex >= 0 && attackerClientId != victim.OwnerClientId
+                && !AreTeammates(attackerClientId, victim.OwnerClientId))
             {
                 MatchPlayerScoreData score = _scores[attackerIndex];
                 score.Kills++;
                 _scores[attackerIndex] = score;
 
-                if (score.Kills >= _killLimit.Value)
+                if (IsTeamMode)
+                {
+                    if (score.Team == LobbyTeam.Blue) _blueKills.Value++;
+                    else if (score.Team == LobbyTeam.Orange) _orangeKills.Value++;
+                    if (LobbyTeams.IsValid(score.Team) && GetTeamScore(score.Team) >= _killLimit.Value)
+                    {
+                        FinishTeamMatch(score.Team);
+                        return;
+                    }
+                }
+                else if (score.Kills >= _killLimit.Value)
                 {
                     FinishMatch(score.PlayerSlot);
                     return;
@@ -243,6 +283,12 @@ namespace PiGame.Gameplay
 
         private void EndByHighestScore()
         {
+            if (IsTeamMode)
+            {
+                FinishTeamMatch(_blueKills.Value == _orangeKills.Value ? LobbyTeam.None
+                    : _blueKills.Value > _orangeKills.Value ? LobbyTeam.Blue : LobbyTeam.Orange);
+                return;
+            }
             int highestKills = -1;
             int winningSlot = -1;
             bool tied = false;
@@ -265,14 +311,19 @@ namespace PiGame.Gameplay
             FinishMatch(tied ? -1 : winningSlot);
         }
 
+        private void FinishTeamMatch(LobbyTeam team)
+        {
+            if (_phase.Value != MatchPhase.Playing) return;
+            _winningTeam.Value = team;
+            FinishMatch(-1);
+        }
+
         private void FinishMatch(int winningPlayerSlot)
         {
             if (_phase.Value != MatchPhase.Playing)
             {
                 return;
             }
-
-            _sceneOSTManager?.PlayVictoryOST();
 
             _winningPlayerSlot.Value = winningPlayerSlot;
             _resultStartedAt.Value = NetworkManager.ServerTime.Time;
@@ -358,7 +409,7 @@ namespace PiGame.Gameplay
 
             int scoreIndex = FindScoreIndex(clientId);
             // Depois do encerramento, a tela mantém o placar final mesmo se alguém sair.
-            if (scoreIndex >= 0 && _phase.Value != MatchPhase.ShowingResult)
+            if (scoreIndex >= 0 && _phase.Value != MatchPhase.ShowingResult && !IsTeamMode)
             {
                 _scores.RemoveAt(scoreIndex);
             }
@@ -370,6 +421,19 @@ namespace PiGame.Gameplay
 
         private void TryFinishWhenOnePlayerRemains()
         {
+            if (_phase.Value == MatchPhase.Playing && IsTeamMode)
+            {
+                bool blue = false, orange = false;
+                for (int i = 0; i < _scores.Count; i++)
+                {
+                    MatchPlayerScoreData score = _scores[i];
+                    if (!_players.ContainsKey(score.ClientId)) continue;
+                    blue |= score.Team == LobbyTeam.Blue;
+                    orange |= score.Team == LobbyTeam.Orange;
+                }
+                if (!blue || !orange) FinishTeamMatch(blue ? LobbyTeam.Blue : orange ? LobbyTeam.Orange : LobbyTeam.None);
+                return;
+            }
             if (_phase.Value != MatchPhase.Playing || _scores.Count != 1)
             {
                 return;
@@ -402,6 +466,20 @@ namespace PiGame.Gameplay
         }
 
         private void HandlePhaseChanged(MatchPhase previousValue, MatchPhase currentValue)
+        {
+            // Executa no host e nos clientes; quem já voltou ao lobby mantém a música do menu.
+            if (currentValue == MatchPhase.ShowingResult && gameObject.scene == SceneManager.GetActiveScene()
+                && (!LoadingScreenUI.Instance || !LoadingScreenUI.Instance.IsVisible))
+                NetworkSoundManager.Instance?.LocalOST(OSTList.Battle_Vitoria);
+            PhaseChanged?.Invoke();
+        }
+
+        private void HandleModeChanged(LobbyMatchMode previousValue, LobbyMatchMode currentValue)
+        {
+            ScoresChanged?.Invoke();
+        }
+
+        private void HandleWinningTeamChanged(LobbyTeam previousValue, LobbyTeam currentValue)
         {
             PhaseChanged?.Invoke();
         }

@@ -33,6 +33,7 @@ namespace PiGame.UI
         [SerializeField] private Sprite[] _placementFrames;
         [SerializeField] private TMP_Text _place;
         [SerializeField] private TMP_Text _playerTag;
+        [SerializeField] private TMP_Text _teamLabel;
         [SerializeField] private TMP_Text _playerName;
         [SerializeField] private TMP_Text _characterName;
         [SerializeField] private TMP_Text _points;
@@ -60,11 +61,13 @@ namespace PiGame.UI
         private int _shownPoints = -1;
         private int _pose = -1;
         private float _riseAmount;
+        private RectTransform _spotlightRect;
+        private float _spotlightHeight;
 
         private void Awake()
         {
             if (!_podium || !_information || !_spotlight || !_frame || !_place || !_playerTag
-                || !_playerName || !_characterName || !_points || !_pointsPlate || !_seatedPlateCover
+                || !_teamLabel || !_playerName || !_characterName || !_points || !_pointsPlate || !_seatedPlateCover
                 || _placementFrames == null || _placementFrames.Length != 4
                 || Array.Exists(_placementFrames, frame => !frame)
                 || !_character || !_foregroundCharacter || _characters == null
@@ -75,6 +78,9 @@ namespace PiGame.UI
                 return;
             }
             _pointsRestPosition = _pointsPlate.anchoredPosition;
+            _spotlightRect = _spotlight.GetComponent<RectTransform>();
+            _spotlightHeight = _spotlightRect.rect.height;
+            _spotlight.GetComponent<Image>().preserveAspect = false;
         }
 
         private void OnDisable()
@@ -111,6 +117,10 @@ namespace PiGame.UI
             _playerTag.color = PlayerSlotColors.Get(player.PlayerSlot);
             _playerName.text = player.PlayerName.ToString();
             _characterName.text = visual.Name;
+            bool hasTeam = LobbyTeams.IsValid(player.Team);
+            _teamLabel.gameObject.SetActive(hasTeam);
+            _teamLabel.text = hasTeam ? LobbyTeams.Name(player.Team) : string.Empty;
+            _teamLabel.color = LobbyTeams.Color(player.Team);
             _frame.sprite = _placementFrames[Mathf.Clamp(place - 1, 0, _placementFrames.Length - 1)];
             _frame.color = Color.white;
         }
@@ -128,6 +138,9 @@ namespace PiGame.UI
                 _shownPoints = points;
                 _points.text = points.ToString();
             }
+            // O feixe alcança o mesmo teto mesmo quando o vencedor tem um pilar menor.
+            _spotlightRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,
+                _spotlightHeight + _maximumRise - _riseAmount * rise);
             _spotlight.alpha = _winner ? Mathf.Clamp01(light) : 0f;
             _information.alpha = Mathf.Clamp01(information);
 

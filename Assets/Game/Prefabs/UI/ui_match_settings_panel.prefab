@@ -68,6 +68,9 @@ MonoBehaviour:
   - {fileID: 2130000314}
   - {fileID: 2130000334}
   _summaryText: {fileID: 2130000613}
+  _summaryRoot: {fileID: 2130000600}
+  _summaryDuration: {fileID: 9250000000000003}
+  _summaryKills: {fileID: 9250000000000017}
   _menuShortcutIcon: {fileID: 2130000643}
   _promptCatalog: {fileID: 11400000, guid: 85db1ed5aa154294b3a6c0998a77644b, type: 2}
   _normalColor: {r: 1, g: 1, b: 1, a: 1}
@@ -77,9 +80,6 @@ MonoBehaviour:
   _unavailableColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
   _unavailableTextColor: {r: 0.45, g: 0.47, b: 0.48, a: 1}
   _selectedScale: 1.15
-  _summaryRoot: {fileID: 2130000600}
-  _summaryDuration: {fileID: 9250000000000003}
-  _summaryKills: {fileID: 9250000000000017}
 --- !u!114 &2130000003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -143,8 +143,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 215, y: -64}
-  m_SizeDelta: {x: 350, y: 80}
+  m_AnchoredPosition: {x: 215, y: -48}
+  m_SizeDelta: {x: 350, y: 64}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2130000012
 CanvasRenderer:
@@ -318,7 +318,9 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1.45
-  m_Text: "CONFIG. DA\nPARTIDA"
+  m_Text: 'CONFIG. DA
+
+    PARTIDA'
 --- !u!1 &2130000100
 GameObject:
   m_ObjectHideFlags: 0
@@ -568,7 +570,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1.5
-  m_Text: "CONFIGURAÇÕES\nDA PARTIDA"
+  m_Text: "CONFIGURA\xC7\xD5ES\nDA PARTIDA"
 --- !u!1 &2130000140
 GameObject:
   m_ObjectHideFlags: 0
@@ -647,7 +649,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: DURAÇÃO
+  m_Text: "DURA\xC7\xC3O"
 --- !u!1 &2130000210
 GameObject:
   m_ObjectHideFlags: 0
@@ -859,7 +861,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: -
+  m_Text: '-'
 --- !u!1 &2130000230
 GameObject:
   m_ObjectHideFlags: 0
@@ -1862,7 +1864,8 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1.6
-  m_Text: "ESQUERDA/DIREITA AJUSTA | CIMA/BAIXO NAVEGA\nALTERAÇÕES APLICADAS AO FECHAR"
+  m_Text: "ESQUERDA/DIREITA AJUSTA | CIMA/BAIXO NAVEGA\nALTERA\xC7\xD5ES APLICADAS
+    AO FECHAR"
 --- !u!1 &2130000500
 GameObject:
   m_ObjectHideFlags: 0
@@ -2114,7 +2117,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 215, y: -64}
+  m_AnchoredPosition: {x: 215, y: -77.5}
   m_SizeDelta: {x: 370, y: 108}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2130000602
@@ -2233,7 +2236,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1.5
-  m_Text: "SOLO | MÍNIMO: 2"
+  m_Text: "SOLO | M\xCDNIMO: 2"
 --- !u!1 &2130000640
 GameObject:
   m_ObjectHideFlags: 0
@@ -2309,6 +2312,85 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!1 &2130000700
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2130000701}
+  - component: {fileID: 2130000702}
+  - component: {fileID: 2130000703}
+  m_Layer: 0
+  m_Name: KillLimitLabel
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &2130000701
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2130000700}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2130000111}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 280, y: 112}
+  m_SizeDelta: {x: 286, y: 40}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &2130000702
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2130000700}
+  m_CullTransparentMesh: 1
+--- !u!114 &2130000703
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2130000700}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  m_Material: {fileID: 0}
+  m_Color: {r: 0.85, g: 0.66, b: 0.36, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FontData:
+    m_Font: {fileID: 12800000, guid: e8303ca10b827f249a0301ba66b72d3b, type: 3}
+    m_FontSize: 16
+    m_FontStyle: 0
+    m_BestFit: 0
+    m_MinSize: 10
+    m_MaxSize: 60
+    m_Alignment: 4
+    m_AlignByGeometry: 0
+    m_RichText: 1
+    m_HorizontalOverflow: 0
+    m_VerticalOverflow: 0
+    m_LineSpacing: 1
+  m_Text: KILLS PARA VENCER
 --- !u!1 &2130000710
 GameObject:
   m_ObjectHideFlags: 0
@@ -2520,7 +2602,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: -
+  m_Text: '-'
 --- !u!1 &2130000730
 GameObject:
   m_ObjectHideFlags: 0
@@ -2940,85 +3022,6 @@ MonoBehaviour:
     m_VerticalOverflow: 0
     m_LineSpacing: 1
   m_Text: +
---- !u!1 &2130000700
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2130000701}
-  - component: {fileID: 2130000702}
-  - component: {fileID: 2130000703}
-  m_Layer: 0
-  m_Name: KillLimitLabel
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &2130000701
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2130000700}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2130000111}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 280, y: 112}
-  m_SizeDelta: {x: 286, y: 40}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!222 &2130000702
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2130000700}
-  m_CullTransparentMesh: 1
---- !u!114 &2130000703
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2130000700}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  m_Material: {fileID: 0}
-  m_Color: {r: 0.85, g: 0.66, b: 0.36, a: 1}
-  m_RaycastTarget: 0
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_FontData:
-    m_Font: {fileID: 12800000, guid: e8303ca10b827f249a0301ba66b72d3b, type: 3}
-    m_FontSize: 16
-    m_FontStyle: 0
-    m_BestFit: 0
-    m_MinSize: 10
-    m_MaxSize: 60
-    m_Alignment: 4
-    m_AlignByGeometry: 0
-    m_RichText: 1
-    m_HorizontalOverflow: 0
-    m_VerticalOverflow: 0
-    m_LineSpacing: 1
-  m_Text: KILLS PARA VENCER
 --- !u!1 &2330000000
 GameObject:
   m_ObjectHideFlags: 0
@@ -3697,7 +3700,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1.5
-  m_Text: "3 MIN"
+  m_Text: 3 MIN
 --- !u!1 &9250000000000014
 GameObject:
   m_ObjectHideFlags: 0
@@ -3776,7 +3779,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1.5
-  m_Text: "3 KILLS"
+  m_Text: 3 KILLS
 --- !u!1 &9250000000000028
 GameObject:
   m_ObjectHideFlags: 0

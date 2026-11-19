@@ -52,7 +52,7 @@ namespace PiGame.UI
             gameObject.SetActive(true);
         }
         public void Hide() => gameObject.SetActive(false);
-        public void HandleBack() => BackRequested?.Invoke();
+        public void HandleBack() { PiGame.Sound.UiAudioManager.PlayButton(); BackRequested?.Invoke(); }
         public void RefreshRooms() => RefreshRequested?.Invoke();
         public void PreviousPage() => PageRequested?.Invoke(-1);
         public void NextPage() => PageRequested?.Invoke(1);

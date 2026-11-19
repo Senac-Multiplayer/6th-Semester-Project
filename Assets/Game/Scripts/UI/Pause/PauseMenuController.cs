@@ -111,7 +111,7 @@ namespace PiGame.UI
                 }
                 else
                 {
-                    ClosePause();
+                    ClosePauseFromInput();
                 }
             }
         }
@@ -145,7 +145,7 @@ namespace PiGame.UI
                 return;
             }
 
-            ClosePause();
+            ClosePauseFromInput();
         }
 
         private void OpenPause()
@@ -155,9 +155,16 @@ namespace PiGame.UI
                 return;
             }
 
+            PiGame.Sound.UiAudioManager.PlayButton();
             _isOpen = true;
             _context.EnterPause();
             _view.SetVisible(true);
+        }
+
+        private void ClosePauseFromInput()
+        {
+            PiGame.Sound.UiAudioManager.PlayButton();
+            ClosePause();
         }
 
         public void ClosePause()
@@ -184,6 +191,7 @@ namespace PiGame.UI
         {
             if (_isOpen && !_isExiting)
             {
+                PiGame.Sound.UiAudioManager.PlayButton();
                 _view.HideConfirmation();
             }
         }

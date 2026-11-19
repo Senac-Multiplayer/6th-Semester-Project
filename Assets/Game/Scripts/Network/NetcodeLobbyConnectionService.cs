@@ -59,6 +59,7 @@ namespace PiGame.Networking
         public bool IsHost => _session?.IsHost ?? (_networkManager != null && _networkManager.IsHost);
         public string JoinCode => _session?.Code ?? string.Empty;
         public bool IsRecoveringConnection => _hostMigrationPending;
+        public bool WasKicked { get; private set; }
 
         private void Awake()
         {
@@ -262,6 +263,7 @@ namespace PiGame.Networking
                 return false;
             }
 
+            WasKicked = false;
             operationVersion = ++_operationVersion;
             _sessionRole = role;
             _isStarting = true;
@@ -770,7 +772,8 @@ namespace PiGame.Networking
 
             if (_wasConnected)
             {
-                if (TryRecoverHost()) return;
+                WasKicked = _networkManager.DisconnectReason == NetworkLobbyState.KickedDisconnectReason;
+                if (!WasKicked && TryRecoverHost()) return;
                 ReportDisconnection();
                 return;
             }

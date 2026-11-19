@@ -22,6 +22,7 @@ namespace PiGame.Lobby
 
         [SerializeField] private Sprite _lobbyFrame;
         [SerializeField] private Sprite _lobbyBanner;
+        [SerializeField] private Vector2 _lobbyReadyBannerOffset = new Vector2(0f, 20f);
         [SerializeField] private Sprite _lobbyUp;
         [SerializeField] private Sprite _lobbyUpPressed;
         [SerializeField] private Sprite _lobbyDown;
@@ -31,6 +32,7 @@ namespace PiGame.Lobby
         public float LobbyPortraitOffsetY => _lobbyPortraitOffsetY;
         public Sprite LobbyFrame => _lobbyFrame;
         public Sprite LobbyBanner => _lobbyBanner;
+        public Vector2 LobbyReadyBannerOffset => _lobbyReadyBannerOffset;
         public Sprite LobbyUp => _lobbyUp;
         public Sprite LobbyUpPressed => _lobbyUpPressed;
         public Sprite LobbyDown => _lobbyDown;

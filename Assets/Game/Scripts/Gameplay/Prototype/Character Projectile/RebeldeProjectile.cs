@@ -167,7 +167,8 @@ namespace PiGame.Gameplay
                 RaycastHit2D hit = _flightHits[i];
                 NetworkPlayerState player = hit.collider.GetComponentInParent<NetworkPlayerState>();
                 if (hit.collider.GetComponentInParent<NetworkProjectile>() != null
-                    || (player != null && player.OwnerClientId == _shooterClientId)) continue;
+                    || (player != null && (player.OwnerClientId == _shooterClientId
+                        || !player.CanReceiveHitFrom(_shooterClientId)))) continue;
 
                 transform.position += (Vector3)(movement.normalized * hit.distance
                     + hit.normal * _collisionOffset);
@@ -246,7 +247,7 @@ namespace PiGame.Gameplay
         private void HandlePlayerCollision(NetworkPlayerState player, RaycastHit2D hit)
         {
             // Ignora o próprio jogador que disparou o projétil.
-            if (player.OwnerClientId == _shooterClientId)
+            if (player.OwnerClientId == _shooterClientId || !player.CanReceiveHitFrom(_shooterClientId))
             {
                 transform.position +=
                     (Vector3)(_direction * _speed * Time.fixedDeltaTime);
