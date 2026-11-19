@@ -10619,8 +10619,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   m_Navigation:
     m_Mode: 0
     m_WrapAround: 0
@@ -10662,7 +10662,19 @@ MonoBehaviour:
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
-          m_StringArgument: 
+          m_StringArgument:
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 4976522032595571276}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLocalButtonSound
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName:
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument:
           m_BoolArgument: 0
         m_CallState: 2
 --- !u!1 &2470000500
@@ -11878,7 +11890,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 7594328432372933677}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 4976522032595571276}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLocalButtonSound
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName:
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument:
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &718597982839041710
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12649,7 +12673,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2558813964416347288}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 4976522032595571276}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLocalButtonSound
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName:
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument:
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &3817890356824237547
 MonoBehaviour:
   m_ObjectHideFlags: 0

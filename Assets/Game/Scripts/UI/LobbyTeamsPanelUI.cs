@@ -94,6 +94,8 @@ namespace PiGame.UI
             if (!_state || !_selection.InteractionEnabled) return;
             if (_state.TryGetPlayer(_state.LocalClientId, out LobbyPlayerData me) && me.Team == team)
                 team = LobbyTeam.None;
+            if (LobbyTeams.IsValid(team) && Count(team) >= LobbyTeams.TeamSize) return;
+            PiGame.Sound.UiAudioManager.PlayButton();
             _state.RequestTeam(team);
             _selection.Focus();
         }

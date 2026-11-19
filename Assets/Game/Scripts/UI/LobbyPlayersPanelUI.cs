@@ -71,6 +71,7 @@ namespace PiGame.UI
         public void Show()
         {
             if (!CanOpen || IsOpen) return;
+            PiGame.Sound.UiAudioManager.PlayButton();
             _root.SetActive(true); _pendingTarget = null; _confirmation.Hide();
             Opened?.Invoke(); Refresh(); FocusFirst();
         }
@@ -83,6 +84,7 @@ namespace PiGame.UI
         public void HandleBack()
         {
             if (_backFrame == Time.frameCount) return;
+            PiGame.Sound.UiAudioManager.PlayButton();
             if (_pendingTarget.HasValue) CancelKick(); else Hide();
         }
         private void KickFirst() => AskKick(0);

@@ -841,6 +841,7 @@ namespace PiGame.UI
 
         public void OpenLobbyPause()
         {
+            PiGame.Sound.UiAudioManager.PlayButton();
             InitializeLobbyPause();
             if (_connectionServiceContract != null && _connectionServiceContract.IsConnected)
                 SetLobbyInteractionEnabled(false);
@@ -857,6 +858,7 @@ namespace PiGame.UI
                 return;
             }
 
+            PiGame.Sound.UiAudioManager.PlayButton();
             _lobbyPause.SetVisible(false);
             _ignoreMenuInputFrame = Time.frameCount;
             if (_connectionServiceContract != null && _connectionServiceContract.IsConnected)

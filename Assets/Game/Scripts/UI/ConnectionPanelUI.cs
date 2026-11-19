@@ -96,6 +96,7 @@ namespace PiGame.UI
 
         public void HandleBack()
         {
+            PiGame.Sound.UiAudioManager.PlayButton();
             if (_isConnecting)
             {
                 CancelConnectionRequested?.Invoke();

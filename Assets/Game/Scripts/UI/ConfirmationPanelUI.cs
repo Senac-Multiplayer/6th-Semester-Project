@@ -63,11 +63,13 @@ namespace PiGame.UI
 
         private void HandleConfirmed()
         {
+            PiGame.Sound.UiAudioManager.PlayButton();
             Confirmed?.Invoke();
         }
 
         private void HandleCanceled()
         {
+            PiGame.Sound.UiAudioManager.PlayButton();
             Canceled?.Invoke();
         }
 

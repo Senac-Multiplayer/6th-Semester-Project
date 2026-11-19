@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3323485433698328028}
   - component: {fileID: 8347212013482919122}
+  - component: {fileID: 2022101002076528916}
   m_Layer: 5
   m_Name: ui_lobby_players_panel
   m_TagString: Untagged
@@ -190,7 +191,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 3091867782919867841}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 2022101002076528916}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLocalButtonSound
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName:
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument:
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &1126485092068806360
 GameObject:
   m_ObjectHideFlags: 0
@@ -312,7 +325,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 11728545069298629}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 2022101002076528916}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLocalButtonSound
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName:
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument:
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1979566146750350365
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1418,7 +1443,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2701003442294343199}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 2022101002076528916}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLocalButtonSound
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName:
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument:
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &2559617805443892100
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2065,7 +2102,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 4155209648941687241}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 2022101002076528916}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLocalButtonSound
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName:
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument:
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &6654650182489005310
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2336,7 +2385,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 7943209923941543168}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 2022101002076528916}
+        m_TargetAssemblyTypeName: PiGame.Sound.UiAudioManager, Assembly-CSharp
+        m_MethodName: PlayLocalButtonSound
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName:
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument:
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &6449381325650388152
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2916,3 +2977,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4c8e2f17b3d4659a0e6c1f5d8b29473, type: 3}
   m_Name:
   m_EditorClassIdentifier:
+--- !u!114 &2022101002076528916
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 398756749318234827}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f258f69a598222e4f96a82ccd08b4e1f, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PiGame.Sound.UiAudioManager

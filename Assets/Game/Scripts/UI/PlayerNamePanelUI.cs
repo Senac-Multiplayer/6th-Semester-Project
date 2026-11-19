@@ -83,6 +83,7 @@ namespace PiGame.UI
         public void HandleBack()
         {
             if (!IsVisible || !LocalPlayerName.HasSavedName) return;
+            PiGame.Sound.UiAudioManager.PlayButton();
             Hide();
             Closed?.Invoke();
         }
@@ -98,6 +99,7 @@ namespace PiGame.UI
         private void Save()
         {
             if (!IsVisible) return;
+            PiGame.Sound.UiAudioManager.PlayButton();
             LocalPlayerName.Save(_nameInput.text);
             Hide();
             Closed?.Invoke();

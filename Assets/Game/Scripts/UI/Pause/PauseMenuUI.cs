@@ -151,6 +151,7 @@ namespace PiGame.UI
 
             // Atalho já indicado no rodapé: sai do conteúdo e volta às categorias.
             ShowInlineAudio();
+            UiAudioManager.PlayButton();
             QueueSelection(_audioCategoryButton);
         }
 
@@ -248,7 +249,7 @@ namespace PiGame.UI
         {
             if (_optionsView.IsInlineControlsBusy) return;
             if (_optionsView._controlsView.IsVisible) _optionsView.HandleControlsBack();
-            else HideOptions();
+            else { UiAudioManager.PlayButton(); HideOptions(); }
         }
 
         private void HideOptions()
@@ -358,6 +359,7 @@ namespace PiGame.UI
 
         private void SaveInlineName()
         {
+            UiAudioManager.PlayButton();
             _inlinePlayerName.SetTextWithoutNotify(LocalPlayerName.Save(_inlinePlayerName.text));
             QueueSelection(_saveNameButton);
         }
@@ -365,18 +367,21 @@ namespace PiGame.UI
         private void HandleMasterVolumeChanged(float value)
         {
             GameAudioSettings.SetMaster(value);
+            UiAudioManager.PlayVolumeFeedback();
             RefreshVolumeLabels();
         }
 
         private void HandleMusicVolumeChanged(float value)
         {
             GameAudioSettings.SetMusic(value);
+            UiAudioManager.PlayVolumeFeedback();
             RefreshVolumeLabels();
         }
 
         private void HandleSfxVolumeChanged(float value)
         {
             GameAudioSettings.SetSfx(value);
+            UiAudioManager.PlayVolumeFeedback();
             RefreshVolumeLabels();
         }
 

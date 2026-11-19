@@ -124,7 +124,7 @@ namespace PiGame.UI
 
         public void HandleBack()
         {
-            if (IsSubpanelVisible) ShowHome();
+            if (IsSubpanelVisible) { PiGame.Sound.UiAudioManager.PlayButton(); ShowHome(); }
         }
 
         private void Play()

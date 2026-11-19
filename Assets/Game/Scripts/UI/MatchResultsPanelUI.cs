@@ -204,6 +204,7 @@ namespace PiGame.UI
         private void AskExit()
         {
             if (_busy || !_presentationComplete) return;
+            PiGame.Sound.UiAudioManager.PlayButton();
             _content.interactable = false;
             _content.blocksRaycasts = false;
             _confirmation.Show(_match.IsServer
