@@ -3336,6 +3336,7 @@ MonoBehaviour:
   - {fileID: 2290000023}
   - {fileID: 2290000033}
   _cardBackground: 1
+  _cardBackgroundBrightness: 0.75
   _useCharacterBorderColors: 1
   _bronzeBorder: {fileID: 21300000, guid: 31f18e02ea9c4d98810679b57b71dd30, type: 3}
   _cardBorders:

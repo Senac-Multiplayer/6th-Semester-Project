@@ -48,6 +48,8 @@ namespace PiGame.UI
 
         [Header("Card appearance")]
         [SerializeField] private CardBackground _cardBackground = CardBackground.GradientWithDetails;
+        [SerializeField, Range(0f, 1f), Tooltip("Brilho das camadas atrás do retrato, sem alterar o personagem ou a moldura.")]
+        private float _cardBackgroundBrightness = 0.75f;
         [SerializeField] private bool _useCharacterBorderColors;
         [SerializeField] private Sprite _bronzeBorder;
         [SerializeField] private Image[] _cardBorders;
@@ -443,6 +445,10 @@ namespace PiGame.UI
             _readyChecks[slot].gameObject.SetActive(player.IsReady);
 
             _slotBackgrounds[slot].color = Color.clear;
+            Color backgroundTint = new Color(_cardBackgroundBrightness, _cardBackgroundBrightness, _cardBackgroundBrightness, 1f);
+            _clanBackgrounds[slot].color = backgroundTint;
+            _clanDetails[slot].color = backgroundTint;
+            _selectionBanners[slot].color = backgroundTint;
             _clanBackgrounds[slot].gameObject.SetActive(character != null);
             _clanDetails[slot].gameObject.SetActive(character != null && _cardBackground != CardBackground.Banner);
             _selectionBanners[slot].gameObject.SetActive(character != null && _cardBackground != CardBackground.GradientWithDetails);

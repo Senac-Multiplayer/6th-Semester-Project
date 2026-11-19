@@ -109,7 +109,7 @@ MonoBehaviour:
     FeetOffsetY: -12
     VictoryOffsetY: 0
     OffsetX: -7
-    DefeatInFront: 1
+    DefeatInFront: 0
     DefeatOffsetY: -70
   _winnerColor: {r: 0.90588236, g: 0.7294118, b: 0.44313726, a: 1}
   _baseHeight: 70

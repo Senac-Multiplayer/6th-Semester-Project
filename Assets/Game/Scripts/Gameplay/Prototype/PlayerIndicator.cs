@@ -12,13 +12,14 @@ namespace PiGame.Gameplay
         [SerializeField] private SpriteRenderer _abilityFill;
         [SerializeField] private TextMeshPro _localHintLabel;
         [SerializeField, Min(0f)] private float _localHintSeconds = 3f;
+        [SerializeField, Range(0f, 1f)] private float _abilityOpacity = 0.7f;
 
         private NetworkPlayerState _playerState;
         private bool _wasVisible;
         private bool _showLocalHint;
         private float _localHintEndsAt;
-        private Vector3 _abilityFillScale;
-        private Vector3 _abilityFillPosition;
+        private static readonly int ProgressId = Shader.PropertyToID("_Progress");
+        private MaterialPropertyBlock _abilityProperties;
 
         private void Awake()
         {
@@ -29,8 +30,7 @@ namespace PiGame.Gameplay
                 enabled = false;
                 return;
             }
-            _abilityFillScale = _abilityFill.transform.localScale;
-            _abilityFillPosition = _abilityFill.transform.localPosition;
+            _abilityProperties = new MaterialPropertyBlock();
         }
 
         private void OnEnable()
@@ -60,18 +60,18 @@ namespace PiGame.Gameplay
             float remaining = _playerState.AbilityCooldownRemaining;
             int availability = _playerState.AbilityAvailability;
             bool visible = _wasVisible && (remaining >= 0f || availability >= 0);
-            _abilityBackground.enabled = visible;
+            _abilityBackground.enabled = false;
             _abilityFill.enabled = visible;
             if (!visible) return;
 
-            float progress = remaining >= 0f ? _playerState.AbilityCooldownProgress : 1f;
-            _abilityFill.transform.localScale = new Vector3(_abilityFillScale.x * progress, _abilityFillScale.y, _abilityFillScale.z);
-            _abilityFill.transform.localPosition = _abilityFillPosition
-                + Vector3.left * (_abilityFillScale.x * (1f - progress) * 0.5f);
-            _abilityFill.color = availability == 2 ? new Color(0.3f, 0.85f, 1f)
-                : remaining > 0f ? new Color(0.95f, 0.74f, 0.37f)
-                : availability == 0 ? new Color(0.32f, 0.32f, 0.32f)
-                : new Color(0.4f, 0.95f, 0.55f);
+            // Uma carga disponível mantém o ícone pronto enquanto a carga extra recarrega.
+            float progress = availability > 0 ? 1f
+                : remaining > 0f ? _playerState.AbilityCooldownProgress
+                : availability == 0 ? 0f : 1f;
+            _abilityFill.color = new Color(1f, 1f, 1f, _abilityOpacity);
+            _abilityFill.GetPropertyBlock(_abilityProperties);
+            _abilityProperties.SetFloat(ProgressId, progress);
+            _abilityFill.SetPropertyBlock(_abilityProperties);
         }
 
         private void Refresh()

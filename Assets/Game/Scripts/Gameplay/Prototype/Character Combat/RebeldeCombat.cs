@@ -46,7 +46,7 @@ namespace PiGame.Gameplay
 
         private AmmoIndicatorsView _ammoIndicatorsView;
 
-        private NetworkVariable<int> _ammo = new NetworkVariable<int>(1, NetworkVariableReadPermission.Owner);
+        private NetworkVariable<int> _ammo = new NetworkVariable<int>(1, NetworkVariableReadPermission.Everyone);
 
         private NetworkPlayerState _playerState;
         private NetworkVariable<bool> _hasShot = new NetworkVariable<bool>(true);
@@ -128,6 +128,7 @@ namespace PiGame.Gameplay
                 {
                     _abilityActive = false;
                     _abilityCooldownUntil = Time.time + _abilityCooldownSeconds;
+                    _playerState.SetAbilityCooldownServer(_abilityCooldownSeconds);
                 }
 
 
@@ -152,6 +153,8 @@ namespace PiGame.Gameplay
             {
                 _abilityCooldownUntil = 0f;
             }
+            _playerState.SetAbilityAvailabilityServer(
+                !_abilityHitWindowActive && Time.time >= _abilityCooldownUntil, _abilityActive);
         }
         public override void OnNetworkSpawn()
         {
@@ -161,6 +164,7 @@ namespace PiGame.Gameplay
             if (IsServer)
             {
                 _ammo.Value = 1;
+                _playerState.SetAbilityCooldownServer(0f);
             }
 
             RefreshAmmoIndicators();
@@ -184,7 +188,7 @@ namespace PiGame.Gameplay
 
             _ammoIndicatorsView.SetCount(
                 _ammo.Value,
-                IsOwner && _playerState.CanAct,
+                _playerState.CanAct && _playerState.IndicatorsVisible,
                 _playerState.IndicatorColor
             );
         }
@@ -238,6 +242,7 @@ namespace PiGame.Gameplay
 
             _abilityActive = true;
             _abilityStartedAt = Time.time;
+            _playerState.SetAbilityAvailabilityServer(true, true);
 
             _rebeldeSound.PlayRebeldeSkill();
             Debug.Log($"[Rebelde] Skill iniciada em {Time.time}");
@@ -265,11 +270,15 @@ $"[Rebelde] End | IsServer={IsServer} | Time={Time.time}"
             if (heldTime >= _maxAbilityHoldSeconds)
             {
                 _abilityCooldownUntil = Time.time + _abilityCooldownSeconds;
+                _playerState.SetAbilityCooldownServer(_abilityCooldownSeconds);
+                _playerState.SetAbilityAvailabilityServer(false, false);
 
                 return;
             }
 
             _abilityCooldownUntil = Time.time + _abilityCooldownSeconds;
+            _playerState.SetAbilityCooldownServer(_abilityCooldownSeconds);
+            _playerState.SetAbilityAvailabilityServer(false, false);
             _abilityForward = GetFacingDirection(aimDirection, moveDirection);
 
             _abilityHitWindowActive = true;
