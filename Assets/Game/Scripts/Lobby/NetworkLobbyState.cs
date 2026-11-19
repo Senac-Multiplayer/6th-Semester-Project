@@ -594,6 +594,7 @@ namespace PiGame.Lobby
 
         private void HandleStageChanged(LobbyStage previousStage, LobbyStage currentStage)
         {
+            if (IsServer) NetcodeLobbyConnectionService.Instance?.SetRoomJoinable(currentStage == LobbyStage.CharacterSelection);
             StageChanged?.Invoke();
         }
 
@@ -935,6 +936,12 @@ namespace PiGame.Lobby
                 {
                     tiedOptions.Add(entry.Key);
                 }
+            }
+
+            // Em empate com Aleatório, a preferência fica com os mapas específicos mais votados.
+            if (tiedOptions.Count > 1)
+            {
+                tiedOptions.Remove(LobbyMapId.Random);
             }
 
             tiedOptions.Sort();

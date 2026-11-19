@@ -60,6 +60,7 @@ namespace PiGame.UI
         private PauseMenuDefinition _definition;
         private Coroutine _selectionRoutine;
         private bool _buttonsBound;
+        private PanelInputScope _controlsInputScope;
 
         public event Action ResumeRequested;
         public event Action ExitRequested;
@@ -224,6 +225,8 @@ namespace PiGame.UI
             }
             if (HasInlineOptions)
             {
+                if (_controlsInputScope != null)
+                    _controlsInputScope.enabled = false;
                 ShowInlineContent(_controlsContent);
                 _controlsView.Show();
                 return;
@@ -335,6 +338,7 @@ namespace PiGame.UI
         private void ShowInlineDisplay() => ShowInlineContent(_displayContent);
         private void ShowInlinePlayer()
         {
+            if (_controlsView != null && _controlsView.IsVisible && _controlsView.BlocksBackShortcut) return;
             _inlinePlayerName.SetTextWithoutNotify(LocalPlayerName.Load());
             ShowInlineContent(_playerContent);
             QueueSelection(_inlinePlayerName);
@@ -342,6 +346,8 @@ namespace PiGame.UI
 
         private void ShowInlineContent(GameObject content)
         {
+            if (_controlsView != null && _controlsView.IsVisible
+                && _controlsView.BlocksBackShortcut && content != _controlsContent) return;
             if (_controlsView != null && _controlsView.IsVisible && content != _controlsContent)
                 _controlsView.Hide(false);
             _audioContent.SetActive(content == _audioContent);
@@ -448,6 +454,8 @@ namespace PiGame.UI
                 _controlsButton.interactable = false;
                 return;
             }
+
+            _controlsInputScope = _controlsView.GetComponent<PanelInputScope>();
 
             _controlsView.Closed -= HandleControlsClosed;
             _controlsView.Closed += HandleControlsClosed;

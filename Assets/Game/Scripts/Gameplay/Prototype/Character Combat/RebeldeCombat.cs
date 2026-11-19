@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using Unity.Netcode;
 using System.Collections.Generic;
@@ -7,7 +8,7 @@ using PiGame.Sound;
 namespace PiGame.Gameplay
 {
     [RequireComponent(typeof(NetworkPlayerState))]
-        
+
     public class RebeldeCombat : NetworkBehaviour, ICharacterCombat
     {
         [Header("Combat Settings")]
@@ -15,7 +16,7 @@ namespace PiGame.Gameplay
         [SerializeField, Min(0f)] private float _shotCooldownSeconds = 0.35f;
         [SerializeField, Min(0f)] private float _projectileSpawnDistance = 0.85f;
 
-        [SerializeField] private float[] _projectileVelocityStack = {5f, 10f, 15f};
+        [SerializeField] private float[] _projectileVelocityStack = { 5f, 10f, 15f };
 
         [Header("Ability Settings")]
         [SerializeField, Min(0f)] private float _coneDistance = 4f;
@@ -25,11 +26,14 @@ namespace PiGame.Gameplay
         [SerializeField, Min(0.1f)] private float _maxAbilityHoldSeconds = 1.5f;
         [SerializeField, Min(0f)] private float _abilityCooldownSeconds = 4f;
         [SerializeField, Min(0f)] private float _playerUpwardImpulse = 3f;
+
         [SerializeField, Min(0f)] private float _abilityGraceSeconds = 0.12f;
 
         private bool _abilityHitWindowActive;
         private float _abilityHitWindowUntil;
+
         private readonly HashSet<NetworkObject> _abilityProcessedTargets = new();
+        private RebeldeProjectile _activeProjectile;
         private bool _abilityActive;
         private Vector2 _abilityForward = Vector2.right;
         private float _abilityStartedAt;
@@ -42,13 +46,13 @@ namespace PiGame.Gameplay
 
         private AmmoIndicatorsView _ammoIndicatorsView;
 
-        private NetworkVariable<int> _ammo = new NetworkVariable<int>(1,NetworkVariableReadPermission.Everyone);
-            
+        private NetworkVariable<int> _ammo = new NetworkVariable<int>(1, NetworkVariableReadPermission.Owner);
+
         private NetworkPlayerState _playerState;
         private NetworkVariable<bool> _hasShot = new NetworkVariable<bool>(true);
         public bool HasShot => _hasShot.Value;
         private float _nextShotTime;
-        private RebeldeProjectile _activeRebeldeProjectile;
+
 
         public void Awake()
         {
@@ -71,16 +75,16 @@ namespace PiGame.Gameplay
                 return;
             }
 
-            if(_ammo.Value <= 0)
+            if (_ammo.Value <= 0)
             {
-                if(_rebeldeSound != null)
+                if (_rebeldeSound != null)
                 {
                     _rebeldeSound.PlayRebeldeEmpty();
                     return;
                 }
             }
 
-            if(_projectile == null || !_hasShot.Value || _projectile.Prefab == null || Time.time < _nextShotTime)
+            if (_projectile == null || !_hasShot.Value || _projectile.Prefab == null || Time.time < _nextShotTime)
             {
                 return;
             }
@@ -90,7 +94,7 @@ namespace PiGame.Gameplay
             Vector2 shotDirection = direction.sqrMagnitude > 0.01f
                 ? direction.normalized
                 : Vector2.right;
-                    
+
             NetworkProjectile projectile = Instantiate(
                 _projectile.Prefab, transform.position, Quaternion.identity);
             projectile.PlaceAtMuzzle(shotDirection, _projectileSpawnDistance);
@@ -98,38 +102,19 @@ namespace PiGame.Gameplay
             projectile.NetworkObject.Spawn(true);
 
             RebeldeProjectile rebeldeProjectile = projectile.GetComponent<RebeldeProjectile>();
-            if(rebeldeProjectile != null)
+            if (rebeldeProjectile != null)
             {
-                if(_rebeldeSound != null)
+                if (_rebeldeSound != null)
                 {
                     _rebeldeSound.PlayRebeldeShot();
                 }
-                rebeldeProjectile.InitializeServer(OwnerClientId, shotDirection, _projectile,_projectileVelocity, _rebeldeSound);
+                rebeldeProjectile.InitializeServer(OwnerClientId, shotDirection, _projectile, _projectileVelocity, _rebeldeSound);
                 _hasShot.Value = false;
-                _activeRebeldeProjectile = rebeldeProjectile;
+                _activeProjectile = rebeldeProjectile;
             }
             _ammo.Value = 0;
             GetNextShot();
         }
-        public void RefillAmmoServer()
-        {
-            if (!IsServer) return;
-            _ammo.Value = 1;
-            _hasShot.Value = true;
-        }
-
-        public void ClearProjectilesServer()
-        {
-            if (!IsServer || NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
-                return;
-
-            if (_activeRebeldeProjectile != null && _activeRebeldeProjectile.IsSpawned)
-            {
-                _activeRebeldeProjectile.NetworkObject.Despawn(true);
-            }
-            _activeRebeldeProjectile = null;
-        }
-
         private void Update()
         {
             if (!IsServer)
@@ -143,7 +128,6 @@ namespace PiGame.Gameplay
                 {
                     _abilityActive = false;
                     _abilityCooldownUntil = Time.time + _abilityCooldownSeconds;
-                    _playerState.SetAbilityCooldownServer(_abilityCooldownSeconds);
                 }
 
 
@@ -177,8 +161,6 @@ namespace PiGame.Gameplay
             if (IsServer)
             {
                 _ammo.Value = 1;
-                _hasShot.Value = true;
-                _playerState.SetAbilityCooldownServer(0f);
             }
 
             RefreshAmmoIndicators();
@@ -188,10 +170,6 @@ namespace PiGame.Gameplay
         {
             _ammo.OnValueChanged -= HandleAmmoChanged;
             _playerState.StateChanged -= RefreshAmmoIndicators;
-            if (IsServer)
-            {
-                _activeRebeldeProjectile = null;
-            }
         }
 
         private void HandleAmmoChanged(int previousValue, int currentValue)
@@ -206,7 +184,7 @@ namespace PiGame.Gameplay
 
             _ammoIndicatorsView.SetCount(
                 _ammo.Value,
-                _playerState.CanAct,
+                IsOwner && _playerState.CanAct,
                 _playerState.IndicatorColor
             );
         }
@@ -214,20 +192,21 @@ namespace PiGame.Gameplay
         {
             if (!IsServer)
                 return;
-            
-            if(_rebeldeSound != null)
+
+            _activeProjectile = null;
+
+            if (_rebeldeSound != null)
             {
                 _rebeldeSound.PlayRebeldeCatch();
             }
 
             _hasShot.Value = true;
-
             _ammo.Value = 1;
         }
         private void GetNextShot()
         {
             _projectileVelocityPointer++;
-            if(_projectileVelocityPointer >= _projectileVelocityStack.Length)
+            if (_projectileVelocityPointer >= _projectileVelocityStack.Length)
             {
                 _projectileVelocityPointer = 0;
             }
@@ -248,7 +227,7 @@ namespace PiGame.Gameplay
 
         public void BeginAbilityServer(Vector2 aimDirection, Vector2 moveDirection)
         {
-            if (!IsServer || !_playerState.CanAct || _abilityActive ||  _abilityHitWindowActive)
+            if (!IsServer || !_playerState.CanAct || _abilityActive || _abilityHitWindowActive)
                 return;
 
             if (Time.time < _abilityCooldownUntil)
@@ -262,7 +241,7 @@ namespace PiGame.Gameplay
 
             _rebeldeSound.PlayRebeldeSkill();
             Debug.Log($"[Rebelde] Skill iniciada em {Time.time}");
-            
+
             _abilityForward = GetFacingDirection(aimDirection, moveDirection);
         }
         public void EndAbilityServer(Vector2 aimDirection, Vector2 moveDirection)
@@ -275,7 +254,9 @@ namespace PiGame.Gameplay
                 return;
             }
 
-            Debug.Log($"[Rebelde] End | IsServer={IsServer} | Time={Time.time}");
+            Debug.Log(
+$"[Rebelde] End | IsServer={IsServer} | Time={Time.time}"
+);
 
             float heldTime = Time.time - _abilityStartedAt;
 
@@ -284,13 +265,11 @@ namespace PiGame.Gameplay
             if (heldTime >= _maxAbilityHoldSeconds)
             {
                 _abilityCooldownUntil = Time.time + _abilityCooldownSeconds;
-                _playerState.SetAbilityCooldownServer(_abilityCooldownSeconds);
 
                 return;
             }
 
             _abilityCooldownUntil = Time.time + _abilityCooldownSeconds;
-            _playerState.SetAbilityCooldownServer(_abilityCooldownSeconds);
             _abilityForward = GetFacingDirection(aimDirection, moveDirection);
 
             _abilityHitWindowActive = true;
@@ -305,12 +284,12 @@ namespace PiGame.Gameplay
 
             float distance = toTarget.magnitude;
 
-            if(distance > _coneDistance)
+            if (distance > _coneDistance)
             {
                 return false;
             }
 
-            if(distance <= 0.001f)
+            if (distance <= 0.001f)
             {
                 return true;
             }
@@ -324,9 +303,9 @@ namespace PiGame.Gameplay
         }
         private void ExecuteAbilityCone()
         {
-                Collider2D[] hits = Physics2D.OverlapCircleAll(
-                transform.position,
-                _coneDistance);
+            Collider2D[] hits = Physics2D.OverlapCircleAll(
+            transform.position,
+            _coneDistance);
 
             foreach (Collider2D hit in hits)
             {
@@ -391,21 +370,56 @@ namespace PiGame.Gameplay
 
         private Vector2 GetFacingDirection(Vector2 aimDirection, Vector2 moveDirection)
         {
-            if(Mathf.Abs(aimDirection.x) > 0.01f)
+            if (Mathf.Abs(aimDirection.x) > 0.01f)
             {
                 return aimDirection.x < 0f ? Vector2.left : Vector2.right;
             }
-            else if(Mathf.Abs(moveDirection.x) > 0.01f)
+            else if (Mathf.Abs(moveDirection.x) > 0.01f)
             {
-                return moveDirection.x < 0f ?Vector2.left : Vector2.right;
+                return moveDirection.x < 0f ? Vector2.left : Vector2.right;
             }
 
-            if(_facingSprite != null)
+            if (_facingSprite != null)
             {
                 return _facingSprite.flipX ? Vector2.left : Vector2.right;
             }
 
             return _abilityForward;
         }
+
+        public void RefillAmmoServer()
+        {
+            if (!IsServer)
+                return;
+
+            // Não permite recuperar a munição enquanto o projétil anterior
+            // ainda estiver ativo.
+            if (_activeProjectile != null && _activeProjectile.IsSpawned)
+                return;
+
+            _activeProjectile = null;
+
+            _hasShot.Value = true;
+            _ammo.Value = 1;
+        }
+
+        public void ClearProjectilesServer()
+        {
+            if (!IsServer)
+            {
+                return;
+            }
+
+            if (_activeProjectile != null)
+            {
+                if (_activeProjectile.IsSpawned)
+                {
+                    _activeProjectile.NetworkObject.Despawn(true);
+                }
+
+                _activeProjectile = null;
+            }
+        }
     }
+
 }

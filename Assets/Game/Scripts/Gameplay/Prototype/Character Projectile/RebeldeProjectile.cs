@@ -1,6 +1,7 @@
 using UnityEngine;
 using Unity.Netcode;
 using PiGame.Sound;
+using System.Collections.Generic;
 
 namespace PiGame.Gameplay 
 {
@@ -9,89 +10,77 @@ namespace PiGame.Gameplay
     [RequireComponent(typeof(Collider2D))]
     public class RebeldeProjectile : NetworkProjectile
     {
-        [Header("Physical Settings")]
-        [SerializeField] private float _wallBounceSpeedMultiplier = 0.75f;
-        [SerializeField] private float _playerBounceSpeedMultiplier = 0.35f;
-        [SerializeField] private float _maximumSpeed = 30f;
-        [SerializeField] private float _minimumSpeed = 0.5f;
+        [Header("Projectile Settings")]
+        [SerializeField] private float _minimumSpeed = 3f;
+        [SerializeField] private float _wallBounceSpeedLoss = 0.25f;
+        [SerializeField] private float _playerBounceSpeedLoss = 0.5f;
+        [SerializeField] private float _fallSpeedThreshold = 3f;
+        [SerializeField] private float _maxFallingTime = 15f;
 
-        [Header("Physics")]
-        [SerializeField] private float _gravityScale = 1f;
+        private float _fallingStartedAt;
 
-        [Header("References")]
+        [Header("Collision")]
+        [SerializeField] private LayerMask _collisionLayers;
+        [SerializeField] private float _collisionOffset = 0.01f;
+        
+
+        [Header("Referencer")]
         [SerializeField] private Collider2D _solidCollider;
-
         private Rigidbody2D _rigidbody;
+        private BoxCollider2D _collisionBox;
         private RebeldeSoundManager _ownerSound;
+        private readonly RaycastHit2D[] _flightHits = new RaycastHit2D[16];
 
         private bool _isStopped;
-        private bool _isFalling;
+        private bool _falling;
+        private bool _isReturningToShooter;
+
+        private readonly HashSet<ulong> _damagedPlayers = new HashSet<ulong>();
 
         public float MinimumSpeed => _minimumSpeed;
 
         private void Awake()
         {
+
             _rigidbody = GetComponent<Rigidbody2D>();
+            _collisionBox = (BoxCollider2D)_solidCollider;
 
             _useLifetime = false;
+            _solidCollider.enabled = false;
+
+            _rigidbody.bodyType = RigidbodyType2D.Kinematic;
+            _rigidbody.gravityScale = 0f;
         }
-         public void InitializeServer(
-            ulong shooterClientId,
-            Vector2 direction,
-            ProjectileDefinition definition,
-            float speed,
-            RebeldeSoundManager ownerSound)
+
+        public void InitializeServer(ulong shooterClientId, Vector2 direction, ProjectileDefinition definition, float speed, RebeldeSoundManager ownerSound)
         {
-            if (!IsServer || !IsSpawned)
+            if (!IsServer)
                 return;
 
             _shooterClientId = shooterClientId;
+
             _damage = definition.Damage;
 
             _direction = direction.sqrMagnitude > 0f
                 ? direction.normalized
                 : Vector2.right;
 
-            _speed = Mathf.Clamp(speed, 0f, _maximumSpeed);
+            _speed = speed;
 
-            _ownerSound = ownerSound;
             _isStopped = false;
-            _isFalling = false;
+            _falling = false; 
+            _ownerSound = ownerSound;   
+            _damagedPlayers.Clear();  
+            _isReturningToShooter = false;
+            _fallingStartedAt = 0f;
 
-            _rigidbody.bodyType = RigidbodyType2D.Dynamic;
-            _rigidbody.gravityScale = _gravityScale;
-            _rigidbody.linearVelocity = _direction * _speed;
-            _rigidbody.angularVelocity = 0f;
-
-            if (_solidCollider != null)
-                _solidCollider.enabled = true;
         }
 
-        // Impede a classe NetworkProjectile de mover o Transform
-        // por conta própria. O Rigidbody2D controla o movimento.
         protected override void Update()
         {
+            //Deixando Update vazio para sobrescrever a movimentação no Update da classe pai
         }
 
-        private void FixedUpdate()
-        {
-            if (!IsServer || !IsSpawned || _isStopped)
-                return;
-
-            Vector2 velocity = _rigidbody.linearVelocity;
-            float speed = velocity.magnitude;
-
-            if (speed > _maximumSpeed)
-            {
-                velocity = velocity.normalized * _maximumSpeed;
-                _rigidbody.linearVelocity = velocity;
-                speed = _maximumSpeed;
-            }
-
-            // Mantém os campos herdados coerentes com a física atual.
-            _speed = speed;
-            _direction = velocity.normalized;
-        }
         protected override void OnTriggerEnter2D(Collider2D other)
         {
             if (!IsServer || !IsSpawned)
@@ -104,7 +93,7 @@ namespace PiGame.Gameplay
             if (playerState == null)
                 return;
 
-            // Apenas o dono recupera o projétil.
+
             if (playerState.OwnerClientId != _shooterClientId)
                 return;
 
@@ -118,82 +107,197 @@ namespace PiGame.Gameplay
             NetworkObject.Despawn();
         }
 
-        private void OnCollisionEnter2D(Collision2D collision)
+        private void FixedUpdate()
         {
-            if (!IsServer || !IsSpawned || _isStopped)
+            if (!IsServer || !IsSpawned || _isReturningToShooter)
                 return;
 
-            if (collision.collider.GetComponentInParent<NetworkProjectile>() != null)
-                return;
-
-            NetworkPlayerState player =
-                collision.collider.GetComponentInParent<NetworkPlayerState>();
-
-            if (player != null)
+            // Verifica o tempo mesmo quando o projétil já parou no chão.
+            if (_falling)
             {
-                HandlePlayerCollision(player);
-                return;
-            }
+                float fallingTime = Time.time - _fallingStartedAt;
 
-            HandleSurfaceCollision();
-        }
-        private void HandleSurfaceCollision()
-        {
-            // Se já está caindo, o primeiro impacto com uma
-            // superfície encerra o movimento.
-            if (_isFalling)
-            {
-                StopProjectile();
-                return;
-            }
+                if (fallingTime >= _maxFallingTime)
+                {
 
-            ApplySpeedMultiplier(_wallBounceSpeedMultiplier);
+                    ReturnToShooterServer();
+                    return;
+                }
+            }
 
             if (_isStopped)
                 return;
 
-            PlayBounceSound();
-
-            // Só avalia a velocidade depois do impacto.
-            if (_rigidbody.linearVelocity.magnitude <= _minimumSpeed)
-                StartFalling();
+            UpdateFlying();
         }
-        private void HandlePlayerCollision(NetworkPlayerState player)
-        {
-            if (_isFalling)
-                    return;
 
-                if (player.OwnerClientId == _shooterClientId)
+        private void UpdateFlying()
+        {
+            if(_speed <= _fallSpeedThreshold)
+            {
+                StartFalling();
+                return;
+            }
+
+            float deltaTime = Time.fixedDeltaTime;
+
+            Vector2 movement =
+                _direction * _speed * deltaTime;
+
+            float distance = movement.magnitude;
+
+            if (distance <= 0f)
+                return;
+
+            // O centro pode estar fora do tile enquanto a borda da bola já entrou nele.
+            Vector2 scale = _collisionBox.transform.lossyScale;
+            Vector2 size = Vector2.Scale(_collisionBox.size,
+                new Vector2(Mathf.Abs(scale.x), Mathf.Abs(scale.y)));
+            // Reservar a margem de contato da física antes de ativar o collider na queda.
+            size += Vector2.one * (Physics2D.defaultContactOffset * 2f);
+            var filter = new ContactFilter2D();
+            filter.SetLayerMask(_collisionLayers);
+            filter.useTriggers = true;
+            int hitCount = Physics2D.BoxCast(_collisionBox.transform.TransformPoint(_collisionBox.offset),
+                size, _collisionBox.transform.eulerAngles.z, movement.normalized,
+                filter, _flightHits, distance);
+
+            for (int i = 0; i < hitCount; i++)
+            {
+                RaycastHit2D hit = _flightHits[i];
+                NetworkPlayerState player = hit.collider.GetComponentInParent<NetworkPlayerState>();
+                if (hit.collider.GetComponentInParent<NetworkProjectile>() != null
+                    || (player != null && player.OwnerClientId == _shooterClientId)) continue;
+
+                transform.position += (Vector3)(movement.normalized * hit.distance
+                    + hit.normal * _collisionOffset);
+                HandleCollision(hit);
+                return;
+            }
+
+            transform.position += (Vector3)movement;
+        }
+
+        private void StartFalling()
+        {
+            if (_falling)
+                return;
+
+            _falling = true;
+            _fallingStartedAt = Time.time;
+
+            _speed = 0f;
+            _solidCollider.enabled = true;
+
+            _rigidbody.bodyType = RigidbodyType2D.Dynamic;
+            _rigidbody.gravityScale = 1f;
+            _rigidbody.linearVelocity = Vector2.down * 2f;
+
+        }
+
+        private void OnCollisionEnter2D(Collision2D collision)
+        {
+            if (!IsServer || !_falling || _isStopped)
+                return;
+
+            foreach (ContactPoint2D contact in collision.contacts)
+            {
+                if (contact.normal.y > 0.5f)
+                {
+                    StopOnGround();
                     return;
+                }
+            }
+        }
+
+        private void StopOnGround()
+        {
+            _isStopped = true;
+
+            _rigidbody.linearVelocity = Vector2.zero;
+            _rigidbody.angularVelocity = 0f;
+
+            _rigidbody.bodyType = RigidbodyType2D.Kinematic;
+            _rigidbody.gravityScale = 0f;
+
+        }
+
+        private void HandleCollision(RaycastHit2D hit)
+        {
+            NetworkPlayerState player =
+                hit.collider.GetComponentInParent<NetworkPlayerState>();
+
+            if (player != null)
+            {
+                HandlePlayerCollision(player, hit);
+                return;
+            }
+
+            HandleEnvironmentCollision(hit);
+        }
+
+        private void HandleEnvironmentCollision(RaycastHit2D hit)
+        {
+            Bounce(
+                hit.normal,
+                _wallBounceSpeedLoss);
+        }
+
+        private void HandlePlayerCollision(NetworkPlayerState player, RaycastHit2D hit)
+        {
+            // Ignora o próprio jogador que disparou o projétil.
+            if (player.OwnerClientId == _shooterClientId)
+            {
+                transform.position +=
+                    (Vector3)(_direction * _speed * Time.fixedDeltaTime);
+
+                return;
+            }
+
+            // Verifica se este jogador já recebeu dano deste projétil.
+            bool alreadyDamaged = _damagedPlayers.Contains(player.OwnerClientId);
+
+            if (!alreadyDamaged)
+            {
+                // Registra antes de aplicar o dano para impedir chamadas duplicadas.
+                _damagedPlayers.Add(player.OwnerClientId);
 
                 if (!player.IsInvulnerable)
                 {
-                    player.ApplyDamageServer(_damage, _shooterClientId);
+                    player.ApplyDamageServer(
+                        _damage,
+                        _shooterClientId);
                 }
+            }
 
-                ApplySpeedMultiplier(_playerBounceSpeedMultiplier);
-
-                if (_isStopped)
-                    return;
-
-                PlayBounceSound();
-
-                if (_rigidbody.linearVelocity.magnitude <= _minimumSpeed)
-                    StartFalling();
+            // Continua permitindo o ricochete, mesmo sem aplicar dano novamente.
+            Bounce(
+                hit.normal,
+                _playerBounceSpeedLoss);
         }
-        private void ApplySpeedMultiplier(float multiplier)
+
+        private void Bounce(Vector2 normal, float speedLoss)
         {
-            Vector2 velocity = _rigidbody.linearVelocity;
-            velocity *= Mathf.Clamp01(multiplier);
+            float currentSpeed =
+                _speed * speedLoss;
 
-            if (velocity.magnitude > _maximumSpeed)
-                velocity = velocity.normalized * _maximumSpeed;
+            if (currentSpeed <= _minimumSpeed)
+            {
+                StartFalling();
+                return;
+            }
 
-            _rigidbody.linearVelocity = velocity;
-            _speed = velocity.magnitude;
+            if(_ownerSound != null)
+            {
+                _ownerSound.PlayRebeldeBounce();
+            }
 
-            if (velocity.sqrMagnitude > 0f)
-                _direction = velocity.normalized;
+            _direction =
+                Vector2.Reflect(
+                    _direction,
+                    normal).normalized;
+
+            _speed = currentSpeed;
         }
 
         public override void ReflectServer(float minimumSpeed)
@@ -201,70 +305,46 @@ namespace PiGame.Gameplay
             if (!IsServer || !IsSpawned)
                 return;
 
-            // Guarda a velocidade antes de atualizar os campos herdados.
-            Vector2 velocity = _rigidbody.linearVelocity;
-
             base.ReflectServer(minimumSpeed);
 
+            _falling = false;
+            _fallingStartedAt = 0f;
             _isStopped = false;
-            _isFalling = false;
 
-            _rigidbody.gravityScale = _gravityScale;
-
-            // A habilidade inverte a velocidade atual.
-            // Se estiver parado ou lento demais, aplica a velocidade mínima.
-            Vector2 reflectedVelocity = -velocity;
-
-            if (reflectedVelocity.magnitude < minimumSpeed)
-            {
-                Vector2 direction = _direction.sqrMagnitude > 0f
-                    ? _direction.normalized
-                    : Vector2.right;
-
-                reflectedVelocity = direction * minimumSpeed;
-            }
-
-            if (reflectedVelocity.magnitude > _maximumSpeed)
-                reflectedVelocity = reflectedVelocity.normalized * _maximumSpeed;
-
-            _rigidbody.linearVelocity = reflectedVelocity;
-            _speed = reflectedVelocity.magnitude;
-            _direction = reflectedVelocity.normalized;
-
-            if (_solidCollider != null)
-                _solidCollider.enabled = true;
-        }
-
-        private void StartFalling()
-        {
-            if (_isFalling || _isStopped)
-                return;
-
-            _isFalling = true;
-
-            // Mantém a velocidade atual e deixa a gravidade
-            // conduzir a bola até a próxima superfície.
-            _rigidbody.gravityScale = _gravityScale;
-        }
-
-        private void StopProjectile()
-        {
-            _isFalling = false;
-            _isStopped = true;
-
+            _rigidbody.bodyType = RigidbodyType2D.Kinematic;
+            _rigidbody.gravityScale = 0f;
             _rigidbody.linearVelocity = Vector2.zero;
             _rigidbody.angularVelocity = 0f;
-            _rigidbody.gravityScale = 0f;
 
-            _speed = 0f;
+            _solidCollider.enabled = false;
         }
 
+        private void ReturnToShooterServer()
+        {
+            if (!IsServer || !IsSpawned || _isReturningToShooter)
+                return;
 
-    private void PlayBounceSound()
-    {
-        if (_ownerSound != null)
-            _ownerSound.PlayRebeldeBounce();
-    }
+            _isReturningToShooter = true;
+
+
+            if (NetworkManager.Singleton != null &&
+                NetworkManager.Singleton.ConnectedClients.TryGetValue(
+                    _shooterClientId, out var client))
+            {
+                if (client.PlayerObject != null)
+                {
+                    RebeldeCombat combat =
+                        client.PlayerObject.GetComponent<RebeldeCombat>();
+
+                    if (combat != null)
+                    {
+                        combat.AddShotServer();
+
+                    }
+                }
+            }
+            NetworkObject.Despawn();
+        }
     }
     
 }

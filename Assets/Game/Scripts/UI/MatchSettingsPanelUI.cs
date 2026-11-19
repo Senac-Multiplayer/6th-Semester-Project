@@ -36,6 +36,9 @@ namespace PiGame.UI
 
         [Header("Summary")]
         [SerializeField] private Text _summaryText;
+        [SerializeField] private GameObject _summaryRoot;
+        [SerializeField] private Text _summaryDuration;
+        [SerializeField] private Text _summaryKills;
 
         [Header("Settings shortcut")]
         [SerializeField] private Image _menuShortcutIcon;
@@ -191,6 +194,8 @@ namespace PiGame.UI
             _menuButton.gameObject.SetActive(isVisible);
         }
 
+        public void SetSummaryVisible(bool isVisible) => _summaryRoot.SetActive(isVisible);
+
         private void SelectSoloMode()
         {
             SelectMode(LobbyMatchMode.Solo);
@@ -266,12 +271,10 @@ namespace PiGame.UI
             }
 
             string modeName = _confirmedSettings.Mode == LobbyMatchMode.Team ? "EQUIPE" : "SOLO";
-            string repeatedCharacters = _requireUniqueCharacters ? "NÃO" : "SIM";
             string duration = _confirmedSettings.DurationMinutes == 0 ? "∞" : $"{_confirmedSettings.DurationMinutes} MIN";
-            _summaryText.text =
-                $"PARTIDA: {duration}  |  {modeName}\n"
-                + $"VITÓRIA: {_confirmedSettings.KillLimit} KILLS\n"
-                + $"MÍNIMO: {_minimumPlayers}  |  REPETIDOS: {repeatedCharacters}";
+            _summaryDuration.text = duration;
+            _summaryKills.text = $"{_confirmedSettings.KillLimit} KILLS";
+            _summaryText.text = $"{modeName} | MÍNIMO: {_minimumPlayers}";
         }
 
         private void LoadDraftFromConfirmedSettings()

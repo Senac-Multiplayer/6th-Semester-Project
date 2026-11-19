@@ -102,7 +102,6 @@ GameObject:
   - component: {fileID: 8809000000000111}
   - component: {fileID: 8809000000000112}
   - component: {fileID: 8809000000000113}
-  - component: {fileID: 8809000000000114}
   m_Layer: 0
   m_Name: PlayerNameLabel
   m_TagString: Untagged
@@ -200,7 +199,7 @@ MonoBehaviour:
       m_Calls: []
   m_text: Jogador
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: c29816ef4efed0b4e9c6f612184274fd, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f0ad3b57ab90dca41b37402d61585a11, type: 2}
   m_sharedMaterial: {fileID: 2100000, guid: 0ec7fc3bf04645e7b0b25ff58cf3b409, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
@@ -271,16 +270,8 @@ MonoBehaviour:
   _SortingLayerID: 0
   _SortingOrder: 102
   m_hasFontAssetChanged: 0
-  m_renderer: {fileID: 0}
+  m_renderer: {fileID: 8809000000000112}
   m_maskType: 0
---- !u!33 &8809000000000114
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8809000000000110}
-  m_Mesh: {fileID: 0}
 --- !u!1 &8809000000000130
 GameObject:
   m_ObjectHideFlags: 0
@@ -292,7 +283,6 @@ GameObject:
   - component: {fileID: 8809000000000131}
   - component: {fileID: 8809000000000132}
   - component: {fileID: 8809000000000133}
-  - component: {fileID: 8809000000000134}
   m_Layer: 0
   m_Name: LocalPlayerHint
   m_TagString: Untagged
@@ -390,7 +380,7 @@ MonoBehaviour:
       m_Calls: []
   m_text: "VOC\xCA"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: c29816ef4efed0b4e9c6f612184274fd, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f0ad3b57ab90dca41b37402d61585a11, type: 2}
   m_sharedMaterial: {fileID: 2100000, guid: 0ec7fc3bf04645e7b0b25ff58cf3b409, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
@@ -461,16 +451,8 @@ MonoBehaviour:
   _SortingLayerID: 0
   _SortingOrder: 102
   m_hasFontAssetChanged: 0
-  m_renderer: {fileID: 0}
+  m_renderer: {fileID: 8809000000000132}
   m_maskType: 0
---- !u!33 &8809000000000134
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8809000000000130}
-  m_Mesh: {fileID: 0}
 --- !u!1 &8809000000000140
 GameObject:
   m_ObjectHideFlags: 0
@@ -2018,7 +2000,7 @@ MonoBehaviour:
   _input: {fileID: 890000000000000001}
   _presentation: {fileID: 890000000000000002}
   _moveSpeed: 7
-  _jumpForce: 12
+  _jumpForce: 10
   _groundCheckDistance: 0.1
   _groundLayer:
     serializedVersion: 2
@@ -2141,16 +2123,16 @@ MonoBehaviour:
   _shotCooldownSeconds: 0.35
   _projectileSpawnDistance: 1.5
   _projectileVelocityStack:
-  - 11
-  - 16
-  - 21
+  - 13
+  - 17
+  - 22
   _coneDistance: 2
   _coneAngle: 60
   _projectileReflectMinimumSpeed: 6
   _maxAbilityHoldSeconds: 5
   _abilityCooldownSeconds: 4
   _playerUpwardImpulse: 10
-  _abilityGraceSeconds: 0.2
+  _abilityGraceSeconds: 0.3
 --- !u!114 &880000000000000003
 MonoBehaviour:
   m_ObjectHideFlags: 0
