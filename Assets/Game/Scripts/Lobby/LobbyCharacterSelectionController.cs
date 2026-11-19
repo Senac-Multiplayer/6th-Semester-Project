@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using PiGame.UI;
+using PiGame.Sound;
 using UnityEngine;
 
 namespace PiGame.Lobby
@@ -63,7 +64,9 @@ namespace PiGame.Lobby
 
             _lobbyStateContract.RequestInputDevice(inputDevice);
             _view.ClearCharacterBlockedFeedback();
-            _lobbyStateContract.RequestCharacterSelection(FindNextCharacter(player, direction));
+            var next = FindNextCharacter(player, direction);
+            _lobbyStateContract.RequestCharacterSelection(next);
+            if (next != player.CharacterId) UiAudioManager.PlayCharacterBrowse();
         }
 
         private void HandleSubmitRequested(LobbyInputDeviceKind inputDevice)
@@ -79,6 +82,7 @@ namespace PiGame.Lobby
             if (player.IsReady)
             {
                 _lobbyStateContract.RequestReadyState(false);
+                UiAudioManager.PlayButton();
                 return;
             }
 
@@ -97,6 +101,7 @@ namespace PiGame.Lobby
             }
 
             _lobbyStateContract.RequestReadyState(true);
+            UiAudioManager.PlayReadyBanner();
         }
 
         private void HandleBackRequested()
@@ -112,6 +117,7 @@ namespace PiGame.Lobby
             }
 
             _lobbyStateContract.RequestReadyState(false);
+            UiAudioManager.PlayButton();
         }
 
         private LobbyCharacterId FindNextCharacter(LobbyPlayerData player, int direction)

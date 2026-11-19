@@ -97,6 +97,7 @@ namespace PiGame.UI
             if (!IsVisible)
                 return false;
 
+            PiGame.Sound.UiAudioManager.PlayButton();
             if (_conflictPanel.gameObject.activeSelf)
             {
                 CancelConflict();

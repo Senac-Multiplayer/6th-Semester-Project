@@ -172,6 +172,7 @@ namespace PiGame.Gameplay
                 _countdownLabel.color = step == 0 ? new Color(0.4f, 0.95f, 0.55f) : new Color(0.95f, 0.74f, 0.37f);
                 // Pode conectar métodos de áudio pelo Inspector, sem alterar o fluxo de rede.
                 _countdownStepChanged.Invoke(step);
+                if (step == 0) PiGame.Sound.UiAudioManager.PlayMatchStart();
             }
             float pop = Mathf.SmoothStep(1.35f, 1f, Mathf.Clamp01((countdown % stepSeconds) / 0.3f));
             _countdownLabel.rectTransform.localScale = Vector3.one * pop;

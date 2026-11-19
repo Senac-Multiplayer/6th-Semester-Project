@@ -32,6 +32,15 @@ namespace PiGame.Gameplay
         // -1: sem indicador; 0: indisponível; 1: disponível; 2: em uso (habilidade sem timer).
         private readonly NetworkVariable<int> _abilityAvailability = new NetworkVariable<int>(-1);
 
+        private readonly NetworkVariable<LobbyTeam> _team = new(LobbyTeam.None);
+        private MatchController _matchController;
+        public LobbyTeam Team => _team.Value;
+        public bool CanReceiveHitFrom(ulong attackerClientId)
+        {
+            if (!_matchController) _matchController = FindFirstObjectByType<MatchController>();
+            return !_matchController || !_matchController.AreTeammates(attackerClientId, OwnerClientId);
+        }
+
         private SpriteRenderer[] _spriteRenderers;
         private SpriteRenderer _bodySpriteRenderer;
         private Collider2D[] _colliders;
@@ -77,6 +86,7 @@ namespace PiGame.Gameplay
         public override void OnNetworkSpawn()
         {
             _playerSlot.OnValueChanged += HandleIntChanged;
+            _team.OnValueChanged += HandleTeamChanged;
             _characterId.OnValueChanged += HandleCharacterChanged;
             _inputDevice.OnValueChanged += HandleInputChanged;
             _indicatorColor.OnValueChanged += HandleColorChanged;
@@ -95,6 +105,7 @@ namespace PiGame.Gameplay
         public override void OnNetworkDespawn()
         {
             _playerSlot.OnValueChanged -= HandleIntChanged;
+            _team.OnValueChanged -= HandleTeamChanged;
             _characterId.OnValueChanged -= HandleCharacterChanged;
             _inputDevice.OnValueChanged -= HandleInputChanged;
             _indicatorColor.OnValueChanged -= HandleColorChanged;
@@ -107,6 +118,8 @@ namespace PiGame.Gameplay
             CleanupDeathProp();
         }
 
+        private void HandleTeamChanged(LobbyTeam previous, LobbyTeam current) => StateChanged?.Invoke();
+
         public void InitializeServer(LobbyPlayerData playerData, Color indicatorColor)
         {
             if (!IsServer)
@@ -115,10 +128,11 @@ namespace PiGame.Gameplay
             }
 
             _playerSlot.Value = playerData.PlayerSlot;
+            _team.Value = playerData.Team;
             _playerName.Value = playerData.PlayerName;
             _characterId.Value = playerData.CharacterId;
             _inputDevice.Value = playerData.InputDevice;
-            _indicatorColor.Value = indicatorColor;
+            _indicatorColor.Value = LobbyTeams.IsValid(playerData.Team) ? LobbyTeams.Color(playerData.Team) : indicatorColor;
             _currentHealth.Value = _maximumHealth;
             _isAlive.Value = true;
             _matchActive.Value = false;
@@ -198,7 +212,7 @@ namespace PiGame.Gameplay
 
         public void ApplyDamageServer(int amount, ulong attackerClientId)
         {
-            if (!IsServer || !CanAct || _isInvulnerable || amount <= 0)
+            if (!IsServer || !CanAct || _isInvulnerable || amount <= 0 || !CanReceiveHitFrom(attackerClientId))
             {
                 return;
             }

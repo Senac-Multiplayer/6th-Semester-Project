@@ -8,6 +8,7 @@ namespace PiGame.Lobby
     {
         public ulong ClientId;
         public int PlayerSlot;
+        public LobbyTeam Team;
         public LobbyCharacterId CharacterId;
         public LobbyInputDeviceKind InputDevice;
         public bool IsReady;
@@ -19,10 +20,12 @@ namespace PiGame.Lobby
             LobbyCharacterId characterId = LobbyCharacterId.None,
             LobbyInputDeviceKind inputDevice = LobbyInputDeviceKind.Unknown,
             bool isReady = false,
-            string playerName = "Jogador")
+            string playerName = "Jogador",
+            LobbyTeam team = LobbyTeam.None)
         {
             ClientId = clientId;
             PlayerSlot = playerSlot;
+            Team = team;
             CharacterId = characterId;
             InputDevice = inputDevice;
             IsReady = isReady;
@@ -34,6 +37,7 @@ namespace PiGame.Lobby
         {
             serializer.SerializeValue(ref ClientId);
             serializer.SerializeValue(ref PlayerSlot);
+            serializer.SerializeValue(ref Team);
             serializer.SerializeValue(ref CharacterId);
             serializer.SerializeValue(ref InputDevice);
             serializer.SerializeValue(ref IsReady);
@@ -44,6 +48,7 @@ namespace PiGame.Lobby
         {
             return ClientId == other.ClientId
                 && PlayerSlot == other.PlayerSlot
+                && Team == other.Team
                 && CharacterId == other.CharacterId
                 && InputDevice == other.InputDevice
                 && IsReady == other.IsReady
@@ -61,6 +66,7 @@ namespace PiGame.Lobby
             {
                 int hashCode = ClientId.GetHashCode();
                 hashCode = (hashCode * 397) ^ PlayerSlot;
+                hashCode = (hashCode * 397) ^ (int)Team;
                 hashCode = (hashCode * 397) ^ (int)CharacterId;
                 hashCode = (hashCode * 397) ^ (int)InputDevice;
                 hashCode = (hashCode * 397) ^ IsReady.GetHashCode();

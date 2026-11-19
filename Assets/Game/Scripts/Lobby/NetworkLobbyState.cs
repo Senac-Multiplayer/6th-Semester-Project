@@ -49,18 +49,102 @@ namespace PiGame.Lobby
         public LobbyMapDrawData MapDraw => _mapDraw.Value;
         public double ServerTime => IsSpawned ? NetworkManager.ServerTime.Time : 0d;
         public LobbyMatchSettingsData MatchSettings => _matchSettings.Value;
-        private int MinimumPlayers => Mathf.Max(1, MatchSettings.MinimumPlayers);
+        private int MinimumPlayers => MatchSettings.Mode == LobbyMatchMode.Team
+            ? LobbyTeams.PlayerCount : Mathf.Max(1, MatchSettings.MinimumPlayers);
         public int SelectableCharacterCount => _rules.AvailableCharacterCount;
         public bool RequireUniqueCharacters => MatchSettings.RequireUniqueCharacters;
         public bool LocalClientIsHost => NetworkManager != null && NetworkManager.IsHost;
-        private bool CanStartMatch => _players.Count >= MinimumPlayers && AllPlayersReady;
+        private bool CanStartMatch => _players.Count >= MinimumPlayers && AllPlayersReady && HasValidTeams;
+
+        private bool HasValidTeams => MatchSettings.Mode != LobbyMatchMode.Team
+            || (_players.Count == LobbyTeams.PlayerCount
+                && CountTeam(LobbyTeam.Blue) == LobbyTeams.TeamSize
+                && CountTeam(LobbyTeam.Orange) == LobbyTeams.TeamSize);
+
+        public const string KickedDisconnectReason = "Expulso pelo host.";
+
+        public bool CanKickPlayer(ulong clientId) => IsSpawned && IsServer && LocalClientIsHost
+            && Stage == LobbyStage.CharacterSelection && clientId != LocalClientId
+            && TryGetPlayer(clientId, out _) && NetworkManager.ConnectedClients.ContainsKey(clientId);
+
+        public bool KickPlayer(ulong clientId)
+        {
+            if (!CanKickPlayer(clientId)) return false;
+            // Evita iniciar a votação enquanto a desconexão ainda está sendo processada.
+            ReturnToCharacterSelectionServer();
+            NetworkManager.DisconnectClient(clientId, KickedDisconnectReason);
+            return true;
+        }
+
+        private int CountTeam(LobbyTeam team, ulong exceptClient = ulong.MaxValue)
+        {
+            int count = 0;
+            for (int i = 0; i < _players.Count; i++)
+                if (_players[i].ClientId != exceptClient && _players[i].Team == team) count++;
+            return count;
+        }
+
+        private LobbyTeam AvailableTeam(LobbyTeam preferred = LobbyTeam.None)
+        {
+            if (MatchSettings.Mode != LobbyMatchMode.Team) return LobbyTeam.None;
+            if (LobbyTeams.IsValid(preferred) && CountTeam(preferred) < LobbyTeams.TeamSize) return preferred;
+            return CountTeam(LobbyTeam.Blue) <= CountTeam(LobbyTeam.Orange) ? LobbyTeam.Blue : LobbyTeam.Orange;
+        }
+
+        public void RequestTeam(LobbyTeam team)
+        {
+            if (IsSpawned && _stage.Value == LobbyStage.CharacterSelection
+                && MatchSettings.Mode == LobbyMatchMode.Team
+                && (LobbyTeams.IsValid(team) || team == LobbyTeam.None)) SetTeamRpc(team);
+        }
+
+        [Rpc(SendTo.Server)]
+        private void SetTeamRpc(LobbyTeam team, RpcParams rpcParams = default)
+        {
+            TrySetTeamServer(rpcParams.Receive.SenderClientId, team);
+        }
+
+        private void TrySetTeamServer(ulong clientId, LobbyTeam team)
+        {
+            if (!IsServer || _stage.Value != LobbyStage.CharacterSelection || MatchSettings.Mode != LobbyMatchMode.Team
+                || (!LobbyTeams.IsValid(team) && team != LobbyTeam.None)) return;
+            int index = FindPlayerIndex(clientId);
+            if (index < 0) return;
+            LobbyPlayerData player = _players[index];
+            if (player.Team == team || (LobbyTeams.IsValid(team)
+                && CountTeam(team, player.ClientId) >= LobbyTeams.TeamSize)) return;
+            StopMapVotingRoutine();
+            player.Team = team;
+            player.IsReady = false;
+            _players[index] = player;
+        }
+
+        private void AssignTeamsServer()
+        {
+            bool teamMode = MatchSettings.Mode == LobbyMatchMode.Team;
+            int blue = 0, orange = 0;
+            for (int i = 0; i < _players.Count; i++)
+            {
+                LobbyPlayerData player = _players[i];
+                LobbyTeam team = player.Team;
+                if (!teamMode) team = LobbyTeam.None;
+                else if (!LobbyTeams.IsValid(team) || (team == LobbyTeam.Blue ? blue : orange) >= LobbyTeams.TeamSize)
+                    team = blue <= orange ? LobbyTeam.Blue : LobbyTeam.Orange;
+                if (team == LobbyTeam.Blue) blue++;
+                if (team == LobbyTeam.Orange) orange++;
+                player.Team = team;
+                player.IsReady = false;
+                _players[i] = player;
+            }
+            StopMapVotingRoutine();
+        }
 
 
         private bool AllMapVotesConfirmed
         {
             get
             {
-                if (_players.Count < MinimumPlayers || _mapVotes.Count != _players.Count)
+                if (_players.Count < MinimumPlayers || _mapVotes.Count != _players.Count || !HasValidTeams)
                 {
                     return false;
                 }
@@ -413,7 +497,8 @@ namespace PiGame.Lobby
             }
 
             LobbyPlayerData player = _players[playerIndex];
-            if (isReady && !IsValidCharacter(player.CharacterId))
+            if (isReady && (!IsValidCharacter(player.CharacterId)
+                || (MatchSettings.Mode == LobbyMatchMode.Team && !LobbyTeams.IsValid(player.Team))))
             {
                 return;
             }
@@ -560,9 +645,11 @@ namespace PiGame.Lobby
             _matchSettings.Value = new LobbyMatchSettingsData(
                 durationMinutes,
                 mode,
-                currentSettings.MinimumPlayers,
+                mode == LobbyMatchMode.Team ? LobbyTeams.PlayerCount
+                    : currentSettings.Mode == LobbyMatchMode.Team ? _rules.MinimumPlayers : currentSettings.MinimumPlayers,
                 currentSettings.RequireUniqueCharacters,
                 killLimit);
+            if (currentSettings.Mode != mode) AssignTeamsServer();
         }
 
         private void HandlePlayersChanged(NetworkListEvent<LobbyPlayerData> changeEvent)
@@ -614,23 +701,18 @@ namespace PiGame.Lobby
         private static bool AreValidMatchSettings(int durationMinutes, LobbyMatchMode mode, int killLimit)
         {
             return (durationMinutes == 0 || (durationMinutes >= 2 && durationMinutes <= 10))
-                && mode == LobbyMatchMode.Solo
+                && (mode == LobbyMatchMode.Solo || mode == LobbyMatchMode.Team)
                 && killLimit >= 2 && killLimit <= 100;
         }
 
         private LobbyMatchSettingsData CreateInitialMatchSettings()
         {
             LobbyMatchMode initialMode = _rules.DefaultMatchMode;
-            if (initialMode == LobbyMatchMode.Team)
-            {
-                Debug.LogWarning("Modo Equipe indisponível por enquanto. Iniciando em Solo.", this);
-                initialMode = LobbyMatchMode.Solo;
-            }
-
             return new LobbyMatchSettingsData(
                 Mathf.Clamp(_rules.DefaultDurationMinutes, 2, 10),
                 initialMode,
-                Mathf.Clamp(_rules.MinimumPlayers, 1, _rules.MaximumPlayers),
+                initialMode == LobbyMatchMode.Team ? LobbyTeams.PlayerCount
+                    : Mathf.Clamp(_rules.MinimumPlayers, 1, _rules.MaximumPlayers),
                 _rules.RequireUniqueCharacters);
         }
 
@@ -658,7 +740,9 @@ namespace PiGame.Lobby
                 _mapVotes.RemoveAt(voteIndex);
             }
 
-            if (_stage.Value != LobbyStage.CharacterSelection && _players.Count < 2)
+            if (_stage.Value != LobbyStage.CharacterSelection
+                && (_players.Count < 2 || (!HasValidTeams
+                    && (_stage.Value == LobbyStage.MapVoting || _matchStartRoutine != null))))
             {
                 ReturnToCharacterSelectionServer();
                 return;
@@ -711,7 +795,8 @@ namespace PiGame.Lobby
                 initialCharacter,
                 inputDevice,
                 false,
-                hasPreviousPlayer ? previousPlayer.PlayerName.ToString() : "Jogador"));
+                hasPreviousPlayer ? previousPlayer.PlayerName.ToString() : "Jogador",
+                AvailableTeam(hasPreviousPlayer ? previousPlayer.Team : LobbyTeam.None)));
         }
 
         private static bool TryFindPreviousPlayer(

@@ -1,4 +1,5 @@
 using PiGame.Lobby;
+using PiGame.Sound;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -47,6 +48,7 @@ namespace PiGame.UI
             _mapPreview.sprite = map != null ? map.Preview : null;
             _mapName.text = map != null ? map.DisplayName.ToUpperInvariant() : string.Empty;
             _content.SetActive(true);
+            NetworkSoundManager.Instance?.StopLocalOST();
             if (EventSystem.current) EventSystem.current.SetSelectedGameObject(null);
         }
 
@@ -59,7 +61,11 @@ namespace PiGame.UI
             if (!_closing) return;
             _group.alpha = _fadeOutSeconds <= 0f ? 0f
                 : Mathf.MoveTowards(_group.alpha, 0f, Time.unscaledDeltaTime / _fadeOutSeconds);
-            if (_group.alpha <= 0f) _content.SetActive(false);
+            if (_group.alpha <= 0f)
+            {
+                _content.SetActive(false);
+                SceneOSTManager.PlayActiveSceneMusic();
+            }
         }
 
         private void OnDestroy()

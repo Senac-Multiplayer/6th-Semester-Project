@@ -33,6 +33,7 @@ namespace PiGame.Lobby
         void RequestCharacterSelection(LobbyCharacterId characterId);
         void RequestInputDevice(LobbyInputDeviceKind inputDevice);
         void RequestReadyState(bool isReady);
+        void RequestTeam(LobbyTeam team);
         void RequestMapVote(LobbyMapId mapId);
         void RequestMapVoteConfirmation(bool isConfirmed);
         void RequestReturnToCharacterSelection();

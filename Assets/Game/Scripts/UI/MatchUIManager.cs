@@ -1,4 +1,5 @@
 using System.Text;
+using PiGame.Lobby;
 using TMPro;
 using UnityEngine;
 
@@ -57,6 +58,12 @@ namespace PiGame.Gameplay
 
         private void RefreshScores()
         {
+            if (_matchController.IsTeamMode)
+            {
+                _scoreText.text = $"<color=#{LobbyTeams.Html(LobbyTeam.Blue)}>AZUL: {_matchController.GetTeamScore(LobbyTeam.Blue)}/{_matchController.KillLimit}</color>"
+                    + $"    <color=#{LobbyTeams.Html(LobbyTeam.Orange)}>LARANJA: {_matchController.GetTeamScore(LobbyTeam.Orange)}/{_matchController.KillLimit}</color>";
+                return;
+            }
             var text = new StringBuilder();
             for (int i = 0; i < _matchController.ScoreCount; i++)
             {
