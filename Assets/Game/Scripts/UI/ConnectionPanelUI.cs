@@ -87,7 +87,7 @@ namespace PiGame.UI
         private void ShowGroup(GameObject group, GameObject firstSelection)
         {
             StopSelectionRoutine();
-            EventSystem.current.SetSelectedGameObject(null);
+            if (EventSystem.current) EventSystem.current.SetSelectedGameObject(null);
             _mainActions.SetActive(group == _mainActions);
             _createRoomContent.SetActive(group == _createRoomContent);
             _joinCodeContent.SetActive(group == _joinCodeContent);
@@ -115,7 +115,7 @@ namespace PiGame.UI
             StopSelectionRoutine();
             SetInteractionEnabled(false);
             SetStatus(message);
-            EventSystem.current.SetSelectedGameObject(null);
+            if (EventSystem.current) EventSystem.current.SetSelectedGameObject(null);
         }
 
         public void ShowError(string message)
@@ -148,13 +148,14 @@ namespace PiGame.UI
         private void SelectNextFrame(GameObject target)
         {
             StopSelectionRoutine();
+            if (!isActiveAndEnabled || !target) return;
             _selectionRoutine = StartCoroutine(Select(target));
         }
 
         private IEnumerator Select(GameObject target)
         {
             yield return null;
-            if (target.activeInHierarchy && _interactionGroup.interactable)
+            if (target && target.activeInHierarchy && _interactionGroup && _interactionGroup.interactable && EventSystem.current)
             {
                 EventSystem.current.SetSelectedGameObject(target);
                 if (target.TryGetComponent(out InputField input)) input.ActivateInputField();

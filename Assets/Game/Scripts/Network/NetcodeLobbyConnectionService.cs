@@ -43,12 +43,49 @@ namespace PiGame.Networking
         private bool _callbacksRegistered;
         private bool _isRecoveringSession;
         private bool _hostMigrationPending;
+        private bool _isDisposed;
         private LobbyMatchSettingsData? _recoveredSettings;
         private LobbyMatchSettingsData? _lastSyncedSettings;
         private static bool _authenticationIdentityLogged;
         private static string _selectedServicesProfile;
         private static Mutex _servicesProfileMutex;
         private static Task _servicesReadyTask;
+        private static bool _applicationQuitting;
+
+        private bool IsStopping => _isDisposed || !this || _applicationQuitting || !Application.isPlaying
+#if UNITY_EDITOR
+            || !UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode
+#endif
+            ;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetApplicationLifetime()
+        {
+            _applicationQuitting = false;
+            Application.quitting -= HandleApplicationQuitting;
+            Application.quitting += HandleApplicationQuitting;
+        }
+
+        private static void HandleApplicationQuitting()
+        {
+            _applicationQuitting = true;
+            if (Instance) Instance.StopApplicationEvents();
+        }
+
+#if UNITY_EDITOR
+        [UnityEditor.InitializeOnLoadMethod]
+        private static void RegisterEditorLifetime()
+        {
+            // Registrar antes dos NetworkManagers das cenas: eles encerram a rede neste mesmo evento.
+            UnityEditor.EditorApplication.playModeStateChanged -= HandleEditorPlayModeChanged;
+            UnityEditor.EditorApplication.playModeStateChanged += HandleEditorPlayModeChanged;
+        }
+
+        private static void HandleEditorPlayModeChanged(UnityEditor.PlayModeStateChange state)
+        {
+            if (state == UnityEditor.PlayModeStateChange.ExitingPlayMode) HandleApplicationQuitting();
+        }
+#endif
 
         public event Action Connected;
         public event Action Disconnected;
@@ -91,12 +128,28 @@ namespace PiGame.Networking
 
         private void OnDestroy()
         {
-            DetachSession();
+            StopApplicationEvents();
 
             if (Instance == this)
             {
                 Instance = null;
             }
+        }
+
+        private void OnApplicationQuit() => HandleApplicationQuitting();
+
+        private void StopApplicationEvents()
+        {
+            if (_isDisposed) return;
+            _isDisposed = true;
+            _operationVersion++;
+            _terminationReported = true;
+            _isStarting = false;
+            _wasConnected = false;
+            _hostMigrationPending = false;
+            StopAllCoroutines();
+            UnregisterCallbacks();
+            DetachSession();
         }
 
         public Task StartHostAsync(string roomName = null, bool isPrivate = true)
@@ -199,14 +252,14 @@ namespace PiGame.Networking
 
         public async void SetRoomJoinable(bool joinable)
         {
-            if (_session == null || !_session.IsHost) return;
+            if (IsStopping || _session == null || !_session.IsHost) return;
             _desiredRoomLocked = !joinable;
             if (_savingRoomLock) return;
             _savingRoomLock = true;
             ISession session = _session;
             try
             {
-                while (session == _session && session.IsHost && session.IsLocked != _desiredRoomLocked)
+                while (!IsStopping && session == _session && session.IsHost && session.IsLocked != _desiredRoomLocked)
                 {
                     IHostSession host = session.AsHost();
                     host.IsLocked = _desiredRoomLocked;
@@ -249,6 +302,7 @@ namespace PiGame.Networking
         private bool TryBeginSession(SessionRole role, out int operationVersion)
         {
             operationVersion = _operationVersion;
+            if (IsStopping) return false;
             if (_networkManager == null)
             {
                 ConnectionFailed?.Invoke(LobbyConnectionFailure.NetworkManagerUnavailable);
@@ -602,7 +656,7 @@ namespace PiGame.Networking
 
         private bool IsOperationCurrent(int operationVersion)
         {
-            return operationVersion == _operationVersion && !_terminationReported;
+            return !IsStopping && operationVersion == _operationVersion && !_terminationReported;
         }
 
         private void AttachSession()
@@ -665,7 +719,7 @@ namespace PiGame.Networking
 
         private bool TryRecoverHost()
         {
-            if (_terminationReported || !_wasConnected || _session == null || !_session.IsMember)
+            if (IsStopping || _terminationReported || !_wasConnected || _session == null || !_session.IsMember)
                 return false;
             if (!_hostMigrationPending)
             {
@@ -697,7 +751,7 @@ namespace PiGame.Networking
 
         private async void HandleSessionMigrated()
         {
-            if (_terminationReported) return;
+            if (IsStopping || _terminationReported || _session == null || !_networkManager) return;
             int operationVersion = _operationVersion;
             _sessionRole = _session.IsHost ? SessionRole.Host : SessionRole.Client;
             _wasConnected = true;
@@ -735,7 +789,7 @@ namespace PiGame.Networking
 
         private void RegisterCallbacks()
         {
-            if (_networkManager == null || _callbacksRegistered)
+            if (IsStopping || _networkManager == null || _callbacksRegistered)
             {
                 return;
             }
@@ -763,7 +817,7 @@ namespace PiGame.Networking
 
         private void HandleClientDisconnected(ulong clientId)
         {
-            if (_terminationReported
+            if (IsStopping || !_networkManager || _terminationReported
                 || _isRecoveringSession
                 || clientId != _networkManager.LocalClientId)
             {
@@ -789,7 +843,7 @@ namespace PiGame.Networking
 
         private void HandleTransportFailure()
         {
-            if (_isRecoveringSession)
+            if (IsStopping || _terminationReported || _isRecoveringSession)
             {
                 return;
             }
@@ -806,7 +860,7 @@ namespace PiGame.Networking
 
         private void HandleSessionStopped(bool isHost)
         {
-            if (_terminationReported || _isRecoveringSession)
+            if (IsStopping || _terminationReported || _isRecoveringSession)
             {
                 return;
             }
@@ -869,7 +923,7 @@ namespace PiGame.Networking
 
         private void ReportDisconnection()
         {
-            if (_terminationReported)
+            if (IsStopping || _terminationReported)
             {
                 return;
             }
@@ -892,7 +946,7 @@ namespace PiGame.Networking
 
         private void ReturnToLobbySceneAfterUnexpectedDisconnect()
         {
-            if (!isActiveAndEnabled
+            if (IsStopping || !isActiveAndEnabled
                 || (SceneManager.GetActiveScene().name == LobbySceneName && SceneManager.sceneCount == 1))
             {
                 return;
@@ -902,15 +956,16 @@ namespace PiGame.Networking
             StartCoroutine(LoadLobbySceneNextFrame());
         }
 
-        private static System.Collections.IEnumerator LoadLobbySceneNextFrame()
+        private System.Collections.IEnumerator LoadLobbySceneNextFrame()
         {
             yield return null;
+            if (IsStopping) yield break;
             SceneManager.LoadScene(LobbySceneName, LoadSceneMode.Single);
         }
 
         private void ReportFailure(LobbyConnectionFailure failure)
         {
-            if (_terminationReported)
+            if (IsStopping || _terminationReported)
             {
                 return;
             }
