@@ -114,6 +114,7 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
             _ammo.Value = _maximumAmmo;
             _abilityCharges.Value = _maxAbilityCharges;
             _playerState.SetAbilityCooldownServer(0f);
+            _playerState.SetAbilityAvailabilityServer(true, false);
         }
 
         foreach (SpriteRenderer indicator in _ammoIndicators)
@@ -185,6 +186,7 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
         {
             _abilityCooldownTimer = 0f;
         }
+        _playerState.SetAbilityAvailabilityServer(_abilityCharges.Value > 0, false);
     }
 
     #region Metodo Do ICharacterCombat
@@ -259,6 +261,7 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
         if (_abilityCooldownTimer == 0f)
             _playerState.SetAbilityCooldownServer(_abilityCooldownSeconds);
         _abilityCharges.Value--;
+        _playerState.SetAbilityAvailabilityServer(_abilityCharges.Value > 0, false);
 
         Vector2 launchVelocity = Vector2.up * _hammerLaunchForce;
 
@@ -357,14 +360,9 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
 
     private void RefreshAmmoIndicators()
     {
-        for (int index = 0; index < _ammoIndicators.Length; index++)
-        {
-            bool visible = _playerState != null && _playerState.CanAct
-                && index < _ammo.Value;
-            _ammoIndicators[index].enabled = visible;
-            _ammoIndicators[index].gameObject.SetActive(visible);
-            if (visible) _ammoIndicators[index].color = _playerState.IndicatorColor;
-        }
+        AmmoIndicatorsView.SetIndicators(_ammoIndicators, transform.position.x,
+            _ammo.Value, _playerState != null && _playerState.CanAct && _playerState.IndicatorsVisible,
+            _playerState != null ? _playerState.IndicatorColor : Color.white);
     }
     public void RefillAmmoServer()
     {
@@ -372,6 +370,7 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
         _ammo.Value = _maximumAmmo;
         _abilityCharges.Value = _maxAbilityCharges;
         _playerState.SetAbilityCooldownServer(0f);
+        _playerState.SetAbilityAvailabilityServer(true, false);
     }
     private void OnDrawGizmosSelected()
     {

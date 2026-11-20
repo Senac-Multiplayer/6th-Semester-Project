@@ -27,7 +27,7 @@ namespace PiGame.Gameplay
         [SerializeField, Min(0.1f)] private float _abilityStrikeSeconds = 0.52f;
 
         private static readonly int AbilityPhaseParameter = Animator.StringToHash("abilityPhase");
-        private readonly NetworkVariable<int> _ammo = new(1);
+        private readonly NetworkVariable<int> _ammo = new(1, NetworkVariableReadPermission.Everyone);
         private readonly NetworkVariable<AbilityPhase> _abilityPhase = new(AbilityPhase.Idle);
         private readonly NetworkVariable<Vector2> _abilityForward = new(Vector2.right);
         private readonly HashSet<NetworkObject> _abilityProcessedTargets = new();
@@ -298,7 +298,7 @@ namespace PiGame.Gameplay
         private void RefreshAmmoIndicators()
         {
             if (_ammoIndicatorsView) _ammoIndicatorsView.SetCount(_ammo.Value,
-                _playerState.CanAct, _playerState.IndicatorColor);
+                _playerState.CanAct && _playerState.IndicatorsVisible, _playerState.IndicatorColor);
         }
     }
 }

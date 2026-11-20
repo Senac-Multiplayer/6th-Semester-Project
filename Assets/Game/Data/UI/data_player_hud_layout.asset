@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a4d39a5f2a349d49bab50c22b1aa800, type: 3}
+  m_Name: data_player_hud_layout
+  m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.PlayerHudLayoutSettings
+  _pixelsPerUnit: 16
+  _horizontalGapPixels: 1
+  _verticalGapPixels: 2
+  _healthSizePixels: {x: 5, y: 4}
+  _healthBorderPixels: 1
+  _ammoDiameterPixels: 5
+  _markerSizePixels: 10
+  _ammoHeightPixels: 18
+  _nameHeight: 2.9

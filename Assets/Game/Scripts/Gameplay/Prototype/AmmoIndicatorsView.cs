@@ -17,14 +17,27 @@ namespace PiGame.Gameplay
 
         public void SetCount(int count, bool visible, Color color)
         {
-            for (int index = 0; index < _indicators.Length; index++)
+            SetIndicators(_indicators, transform.position.x, count, visible, color);
+        }
+
+        public static void SetIndicators(SpriteRenderer[] indicators, float centerX, int count, bool visible, Color color)
+        {
+            count = Mathf.Clamp(count, 0, indicators.Length);
+            for (int index = 0; index < indicators.Length; index++)
             {
                 bool showIndicator = visible && index < count;
-                _indicators[index].color = color;
-                _indicators[index].enabled = showIndicator;
+                indicators[index].color = color;
+                indicators[index].enabled = showIndicator;
                 // O contorno serializado é filho do indicador e acompanha sua visibilidade.
-                _indicators[index].gameObject.SetActive(showIndicator);
+                indicators[index].gameObject.SetActive(showIndicator);
             }
+
+            if (!visible || count == 0) return;
+
+            Bounds bounds = indicators[0].bounds;
+            for (int index = 1; index < count; index++) bounds.Encapsulate(indicators[index].bounds);
+            Vector3 offset = Vector3.right * (centerX - bounds.center.x);
+            foreach (SpriteRenderer indicator in indicators) indicator.transform.position += offset;
         }
     }
 }

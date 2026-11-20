@@ -90,7 +90,7 @@ namespace PiGame.Gameplay
 
         private void RefreshNailIndicators()
         {
-            _nailIndicators.SetCount(_nails.Value, _playerState.CanAct,
+            _nailIndicators.SetCount(_nails.Value, _playerState.CanAct && _playerState.IndicatorsVisible,
                 _playerState.IndicatorColor);
         }
 

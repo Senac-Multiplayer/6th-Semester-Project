@@ -52,6 +52,8 @@ namespace PiGame.Lobby
             _view.SetInteractionEnabled(isEnabled);
         }
 
+        public void Focus() => _view.Focus();
+
         private void HandleBrowseRequested(int direction, LobbyInputDeviceKind inputDevice)
         {
             if (_lobbyStateContract == null

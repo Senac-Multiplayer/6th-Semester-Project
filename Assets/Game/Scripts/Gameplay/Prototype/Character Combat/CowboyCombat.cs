@@ -360,14 +360,8 @@ namespace PiGame.Gameplay
 
         private void RefreshAmmoIndicators()
         {
-            for (int index = 0; index < _ammoIndicators.Length; index++)
-            {
-                bool visible = _playerState.CanAct
-                    && index < _ammo.Value;
-                _ammoIndicators[index].color = _playerState.IndicatorColor;
-                _ammoIndicators[index].enabled = visible;
-                _ammoIndicators[index].gameObject.SetActive(visible);
-            }
+            AmmoIndicatorsView.SetIndicators(_ammoIndicators, transform.position.x,
+                _ammo.Value, _playerState.CanAct && _playerState.IndicatorsVisible, _playerState.IndicatorColor);
         }
 
         private void ApplyRollState()
