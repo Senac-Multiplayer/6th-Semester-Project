@@ -73,10 +73,10 @@ MonoBehaviour:
   _characters:
   - Id: 0
     Name: COWBOY
-    Idle: {fileID: 9100000, guid: 7202ad279fbedddad55b5499e1ed701f, type: 2}
-    Victory: {fileID: 0}
+    Idle: {fileID: 9100000, guid: 21fd48ad4cae4378b70018c1cf28b1ca, type: 2}
+    Victory: {fileID: 9100000, guid: 0ca5e0c1f50e4cdb8cd8ba48c1656359, type: 2}
     Defeat: {fileID: 0}
-    FeetOffsetY: -60
+    FeetOffsetY: 0
     VictoryOffsetY: 0
     OffsetX: 0
     DefeatInFront: 0
@@ -351,7 +351,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 1097947750561491309, guid: 599655a52533b24469c5967af3579db7, type: 3}
+  m_Sprite: {fileID: -9026845854316988303, guid: 0b71bf9a5d38da84ab1bd5dc667d79ed, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -371,7 +371,7 @@ Animator:
   m_GameObject: {fileID: 8400000030}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 7202ad279fbedddad55b5499e1ed701f, type: 2}
+  m_Controller: {fileID: 9100000, guid: 21fd48ad4cae4378b70018c1cf28b1ca, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 2
   m_ApplyRootMotion: 0
