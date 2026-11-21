@@ -18,6 +18,9 @@ namespace PiGame.Gameplay
 
         [Header("Safety")]
         [SerializeField] private float _despawnBelowY = -20f;
+        [SerializeField, Min(1f)] private float _automaticReturnSeconds = 15f;
+        private float _automaticReturnAt;
+        private bool _isReturningToShooter;
 
         [Header("CharacterHit Settings")]
         [SerializeField] private float _fallGravity = 20f;
@@ -71,13 +74,25 @@ namespace PiGame.Gameplay
             _lastHitClientId = ulong.MaxValue;
 
             _ownerSound = ownerSound;
+            _automaticReturnAt = Time.time + Mathf.Max(1f, _automaticReturnSeconds);
+            _isReturningToShooter = false;
 
             UpdateColliders();
         }
 
         protected override void Update()
         {
-            if (!IsServer || !IsSpawned || (_IsStuck && !_beingPulled && !_falling))
+            if (!IsServer || !IsSpawned || _isReturningToShooter)
+                return;
+
+            // Verificar o prazo antes de ignorar os pregos presos em superfícies.
+            if (Time.time >= _automaticReturnAt)
+            {
+                ReturnToShooterServer();
+                return;
+            }
+
+            if (_IsStuck && !_beingPulled && !_falling)
                 return;
             
             if (TryDespawnOutOfBounds())
@@ -140,7 +155,7 @@ namespace PiGame.Gameplay
 
             if (!_beingPulled && Time.time >= _despawnAt)
             {
-                NetworkObject.Despawn();
+                ReturnToShooterServer();
             }
         }
 
@@ -210,8 +225,7 @@ namespace PiGame.Gameplay
             if (combat == null)
                 return;
 
-            combat.AddNailServer();
-            NetworkObject.Despawn();
+            ReturnToShooterServer(combat);
         }
         public void PullServer(Vector2 direction, float speed, bool abilityPull = false)
         {
@@ -300,8 +314,7 @@ namespace PiGame.Gameplay
             if (combat == null)
                 return false;
 
-            combat.AddNailServer();
-            NetworkObject.Despawn();
+            ReturnToShooterServer(combat);
             return true;
         }
 
@@ -357,29 +370,31 @@ namespace PiGame.Gameplay
 
             if (position.y <= _despawnBelowY)
             {
-                if (NetworkManager.Singleton.ConnectedClients.TryGetValue(
-                        _shooterClientId,
-                        out NetworkClient client))
-                {
-                    NetworkPlayerState playerState =
-                        client.PlayerObject.GetComponent<NetworkPlayerState>();
-
-                    if (playerState != null)
-                    {
-                        IrrigadorCombat combat =
-                            playerState.GetComponent<IrrigadorCombat>();
-
-                        if (combat != null)
-                            combat.AddNailServer();
-                    }
-                }
-
-                NetworkObject.Despawn();
+                ReturnToShooterServer();
                 return true;
             }
 
             return false;
-        } 
+        }
+
+        private void ReturnToShooterServer(IrrigadorCombat combat = null)
+        {
+            if (!IsServer || !IsSpawned || _isReturningToShooter)
+                return;
+
+            _isReturningToShooter = true;
+            if (combat == null && NetworkManager.ConnectedClients.TryGetValue(_shooterClientId, out var client)
+                && client.PlayerObject != null)
+            {
+                combat = client.PlayerObject.GetComponent<IrrigadorCombat>();
+            }
+
+            // Coleta, expiração e saída do mapa devolvem exatamente um prego.
+            if (combat != null && combat.IsSpawned)
+                combat.AddNailServer();
+
+            NetworkObject.Despawn();
+        }
     }
 }
 

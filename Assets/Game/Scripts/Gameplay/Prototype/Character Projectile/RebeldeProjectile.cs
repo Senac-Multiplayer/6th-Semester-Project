@@ -18,9 +18,11 @@ namespace PiGame.Gameplay
         [SerializeField] private float _fallSpeedThreshold = 3f;
         [SerializeField] private float _maxFallingTime = 15f;
         [SerializeField, Min(1f)] private float _maxFlightTime = 15f;
+        [SerializeField, Min(1f)] private float _automaticReturnSeconds = 15f;
 
         private float _fallingStartedAt;
         private float _flightExpiresAt;
+        private float _automaticReturnAt;
         private RebeldeCombat _shooterCombat;
 
         [Header("Collision")]
@@ -82,7 +84,8 @@ namespace PiGame.Gameplay
             _isReturningToShooter = false;
             _pickupNeedsSeparation = false;
             _fallingStartedAt = 0f;
-            // O prazo de voo não é renovado por rebatidas. Nunca prender a única munição fora do mapa.
+            _automaticReturnAt = Time.time + Mathf.Max(1f, _automaticReturnSeconds);
+            // O retorno automático limita a duração total, mesmo após rebatidas.
             _flightExpiresAt = Time.time + _maxFlightTime;
             if (NetworkManager.ConnectedClients.TryGetValue(shooterClientId, out var client) && client.PlayerObject)
                 _shooterCombat = client.PlayerObject.GetComponent<RebeldeCombat>();
@@ -136,7 +139,8 @@ namespace PiGame.Gameplay
 
             UpdatePickupSeparation();
 
-            if (!_falling && Time.time >= _flightExpiresAt)
+            // Quedas e rebatidas não renovam o prazo total de recuperação.
+            if (Time.time >= _automaticReturnAt || (!_falling && Time.time >= _flightExpiresAt))
             {
                 ReturnToShooterServer();
                 return;
