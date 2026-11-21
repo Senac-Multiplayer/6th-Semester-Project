@@ -203,6 +203,8 @@ MonoBehaviour:
   _wallBounceSpeedLoss: 0.85
   _playerBounceSpeedLoss: 0.5
   _fallSpeedThreshold: 3
+  _maxFallingTime: 15
+  _maxFlightTime: 15
   _collisionLayers:
     serializedVersion: 2
     m_Bits: 1224
@@ -376,6 +378,7 @@ GameObject:
   m_Component:
   - component: {fileID: 920000000000000021}
   - component: {fileID: 920000000000000022}
+  - component: {fileID: 549889115138419055}
   m_Layer: 9
   m_Name: Art
   m_TagString: Untagged
@@ -447,7 +450,7 @@ SpriteRenderer:
   m_SortingLayer: 12
   m_SortingOrder: 5
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 5a41bd2b68db4c809ad47035be720107, type: 3}
+  m_Sprite: {fileID: 8259458396465812690, guid: 64aab08489cd7b04092928dc0242ee50, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -457,3 +460,20 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!114 &549889115138419055
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 920000000000000020}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 82ebb0dd8f343db4c932e15067808cea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.ProjectileAnimation
+  _frames:
+  - {fileID: 8259458396465812690, guid: 64aab08489cd7b04092928dc0242ee50, type: 3}
+  - {fileID: -7071119431099578346, guid: 64aab08489cd7b04092928dc0242ee50, type: 3}
+  _framesPerSecond: 20
+  _loop: 1
