@@ -18,7 +18,7 @@ namespace PiGame.Gameplay
         [SerializeField] private float _fallSpeedThreshold = 3f;
         [SerializeField] private float _maxFallingTime = 15f;
         [SerializeField, Min(1f)] private float _maxFlightTime = 15f;
-        [SerializeField, Min(1f)] private float _automaticReturnSeconds = 15f;
+        [SerializeField, Min(1f)] private float _automaticReturnSeconds = 10f;
 
         private float _fallingStartedAt;
         private float _flightExpiresAt;

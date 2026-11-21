@@ -18,7 +18,7 @@ namespace PiGame.Gameplay
 
         [Header("Safety")]
         [SerializeField] private float _despawnBelowY = -20f;
-        [SerializeField, Min(1f)] private float _automaticReturnSeconds = 15f;
+        [SerializeField, Min(1f)] private float _automaticReturnSeconds = 10f;
         private float _automaticReturnAt;
         private bool _isReturningToShooter;
 
