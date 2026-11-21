@@ -13,6 +13,7 @@ namespace PiGame.Gameplay
     {
         [SerializeField] private int _maximumHealth = 3;
         [SerializeField, Min(0f)] private float _respawnInvulnerabilitySeconds = 1f;
+        [SerializeField, Min(0.01f)] private float _respawnBlinkInterval = 0.1f;
         [SerializeField] private GameObject _deathPropPrefab;
         private GameObject _activeDeathProp;
 
@@ -25,6 +26,7 @@ namespace PiGame.Gameplay
             new NetworkVariable<Color>(Color.white);
         private readonly NetworkVariable<int> _currentHealth = new NetworkVariable<int>();
         private readonly NetworkVariable<bool> _isAlive = new NetworkVariable<bool>(true);
+        private readonly NetworkVariable<double> _respawnInvulnerabilityEndsAt = new NetworkVariable<double>();
         private readonly NetworkVariable<bool> _matchActive = new NetworkVariable<bool>(false);
         private readonly NetworkVariable<bool> _indicatorsVisible = new NetworkVariable<bool>(true);
         private readonly NetworkVariable<FixedString64Bytes> _playerName = new NetworkVariable<FixedString64Bytes>();
@@ -49,7 +51,6 @@ namespace PiGame.Gameplay
         private GeneralPlayerSoundManager _playerSound;
         private Animator _animator;
         private bool _isInvulnerable;
-        private double _respawnInvulnerabilityEndsAt;
         private Coroutine _knockbackRoutine;
         private Coroutine _hitAnimationRoutine;
 
@@ -66,7 +67,7 @@ namespace PiGame.Gameplay
         public bool IndicatorsVisible => _indicatorsVisible.Value;
         public bool CanAct => _isAlive.Value && _matchActive.Value;
         public bool IsInvulnerable => _isInvulnerable
-            || (IsServer && IsSpawned && NetworkManager.ServerTime.Time < _respawnInvulnerabilityEndsAt);
+            || (IsServer && IsSpawned && NetworkManager.ServerTime.Time < _respawnInvulnerabilityEndsAt.Value);
         public string PlayerName => _playerName.Value.ToString();
         // Negativo indica que a habilidade atual não tem recarga por tempo.
         public float AbilityCooldownRemaining => _abilityReadyAt.Value < 0d ? -1f
@@ -105,8 +106,22 @@ namespace PiGame.Gameplay
             StateChanged?.Invoke();
         }
 
+        private void Update()
+        {
+            bool hideBody = false;
+            if (IsSpawned && IsAlive)
+            {
+                double remaining = _respawnInvulnerabilityEndsAt.Value - NetworkManager.ServerTime.Time;
+                hideBody = remaining > 0d
+                    && (long)(remaining / Mathf.Max(0.01f, _respawnBlinkInterval)) % 2 == 0;
+            }
+
+            _bodySpriteRenderer.forceRenderingOff = hideBody;
+        }
+
         public override void OnNetworkDespawn()
         {
+            _bodySpriteRenderer.forceRenderingOff = false;
             _playerSlot.OnValueChanged -= HandleIntChanged;
             _team.OnValueChanged -= HandleTeamChanged;
             _characterId.OnValueChanged -= HandleCharacterChanged;
@@ -140,7 +155,7 @@ namespace PiGame.Gameplay
             _isAlive.Value = true;
             _matchActive.Value = false;
             _isInvulnerable = false;
-            _respawnInvulnerabilityEndsAt = 0d;
+            _respawnInvulnerabilityEndsAt.Value = 0d;
         }
 
         public void SetInvulnerableServer(bool isInvulnerable)
@@ -271,7 +286,7 @@ namespace PiGame.Gameplay
             }
 
             _currentHealth.Value = _maximumHealth;
-            _respawnInvulnerabilityEndsAt = NetworkManager.ServerTime.Time
+            _respawnInvulnerabilityEndsAt.Value = NetworkManager.ServerTime.Time
                 + Mathf.Max(0f, _respawnInvulnerabilitySeconds);
             _isAlive.Value = true;
             _matchActive.Value = true;
