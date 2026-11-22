@@ -411,6 +411,7 @@ GameObject:
   m_Component:
   - component: {fileID: 920000000000000021}
   - component: {fileID: 920000000000000022}
+  - component: {fileID: 5566124370099996788}
   m_Layer: 9
   m_Name: Art
   m_TagString: Untagged
@@ -482,7 +483,7 @@ SpriteRenderer:
   m_SortingLayer: 12
   m_SortingOrder: 5
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 5a41bd2b68db4c809ad47035be720106, type: 3}
+  m_Sprite: {fileID: -5081957615361009067, guid: 0073ba465f488ac46b6a56d109716984, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -492,6 +493,23 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!114 &5566124370099996788
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 920000000000000020}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 82ebb0dd8f343db4c932e15067808cea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.ProjectileAnimation
+  _frames:
+  - {fileID: -5081957615361009067, guid: 0073ba465f488ac46b6a56d109716984, type: 3}
+  - {fileID: -2077110714, guid: 0073ba465f488ac46b6a56d109716984, type: 3}
+  _framesPerSecond: 15
+  _loop: 1
 --- !u!1 &4048267027654179139
 GameObject:
   m_ObjectHideFlags: 0
