@@ -20,9 +20,9 @@ namespace PiGame.UI
             public float FeetOffsetY;
             [Tooltip("Ajuste vertical adicional na pose de vitória.")]
             public float VictoryOffsetY;
-            public float OffsetX;
-            public bool DefeatInFront;
+            [Tooltip("Ajuste vertical adicional somente na pose de derrota.")]
             public float DefeatOffsetY;
+            public float OffsetX;
         }
 
         [SerializeField] private RectTransform _podium;
@@ -38,21 +38,18 @@ namespace PiGame.UI
         [SerializeField] private TMP_Text _characterName;
         [SerializeField] private TMP_Text _points;
         [SerializeField] private RectTransform _pointsPlate;
-        [SerializeField] private GameObject _seatedPlateCover;
-        [SerializeField] private float _seatedPointsY = -90f;
         [SerializeField] private Animator _character;
-        [SerializeField] private Animator _foregroundCharacter;
         [SerializeField] private CharacterVisual[] _characters;
         [SerializeField] private Color _winnerColor = new Color32(231, 186, 113, 255);
 
         [Header("Subida dos pilares")]
-        [SerializeField, Min(0f)] private float _baseHeight = 70f;
-        [SerializeField, Min(0f)] private float _maximumRise = 210f;
+        [SerializeField, Min(0f)] private float _baseHeight = 140f;
+        [SerializeField, Min(0f)] private float _maximumRise = 140f;
         [SerializeField, Range(0f, 8f)] private float _shakePixels = 1.5f;
 
-        [SerializeField, Min(0f)] private float _feetBehindPillar = 24f;
+        [Tooltip("Altura dos pés na superfície do pilar; o personagem fica à frente da arte.")]
+        [SerializeField] private float _characterSurfaceOffsetY = -42f;
 
-        private Vector2 _pointsRestPosition;
         private CharacterVisual _visual;
         private bool _winner;
         private bool _draw;
@@ -63,24 +60,33 @@ namespace PiGame.UI
         private float _riseAmount;
         private RectTransform _spotlightRect;
         private float _spotlightHeight;
+        private RectTransform _spotlightCeiling;
+        private RectTransform _pillarViewport;
 
         private void Awake()
         {
             if (!_podium || !_information || !_spotlight || !_frame || !_place || !_playerTag
-                || !_teamLabel || !_playerName || !_characterName || !_points || !_pointsPlate || !_seatedPlateCover
+                || !_teamLabel || !_playerName || !_characterName || !_points || !_pointsPlate
                 || _placementFrames == null || _placementFrames.Length != 4
                 || Array.Exists(_placementFrames, frame => !frame)
-                || !_character || !_foregroundCharacter || _characters == null
+                || !_character || _characters == null
                 || _characters.Length == 0 || Array.Exists(_characters, c => c == null || !c.Idle))
             {
                 Debug.LogError("Configure o pilar, cartão, molduras de colocação, luz, textos e animações no ResultPlayerView.", this);
                 enabled = false;
                 return;
             }
-            _pointsRestPosition = _pointsPlate.anchoredPosition;
             _spotlightRect = _spotlight.GetComponent<RectTransform>();
             _spotlightHeight = _spotlightRect.rect.height;
-            _spotlight.GetComponent<Image>().preserveAspect = false;
+            _pillarViewport = (RectTransform)_podium.parent;
+            Image spotlightImage = _spotlight.GetComponent<Image>();
+            spotlightImage.preserveAspect = false;
+            // Preserve o oval inferior ao estender somente a parte superior do feixe.
+            spotlightImage.type = Image.Type.Sliced;
+            float referencePixels = spotlightImage.canvas ? spotlightImage.canvas.referencePixelsPerUnit : 100f;
+            float pixelsPerUnit = spotlightImage.sprite.pixelsPerUnit / referencePixels;
+            spotlightImage.pixelsPerUnitMultiplier = spotlightImage.sprite.rect.height
+                / Mathf.Max(0.001f, _spotlightHeight * pixelsPerUnit);
         }
 
         private void OnDisable()
@@ -89,6 +95,8 @@ namespace PiGame.UI
             _pose = -1;
             _shownPoints = -1;
         }
+
+        public void SetSpotlightCeiling(RectTransform ceiling) => _spotlightCeiling = ceiling;
 
         public void Bind(MatchPlayerScoreData player, int place, bool winner, int highestScore, bool draw = false)
         {
@@ -138,27 +146,31 @@ namespace PiGame.UI
                 _shownPoints = points;
                 _points.text = points.ToString();
             }
-            // O feixe alcança o mesmo teto mesmo quando o vencedor tem um pilar menor.
-            _spotlightRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,
-                _spotlightHeight + _maximumRise - _riseAmount * rise);
+            if (_spotlightCeiling)
+            {
+                Vector3 ceiling = _spotlightCeiling.TransformPoint(_spotlightCeiling.rect.center);
+                // A área de recorte também precisa alcançar a barra nas telas mais altas.
+                float viewportTop = _pillarViewport.InverseTransformPoint(ceiling).y;
+                _pillarViewport.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,
+                    Mathf.Max(0f, viewportTop - _pillarViewport.rect.yMin));
+                _spotlightRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,
+                    Mathf.Max(0f, _spotlightRect.InverseTransformPoint(ceiling).y));
+            }
+            else
+            {
+                _spotlightRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,
+                    _spotlightHeight + _maximumRise - _riseAmount * rise);
+            }
             _spotlight.alpha = _winner ? Mathf.Clamp01(light) : 0f;
             _information.alpha = Mathf.Clamp01(information);
 
             int pose = light <= 0f || _draw ? 0 : _winner ? 1 : 2;
-            bool inFront = pose == 2 && _visual.DefeatInFront && _visual.Defeat;
-            float plateY = inFront
-                ? Mathf.Max(_seatedPointsY, -_podium.anchoredPosition.y + _pointsPlate.rect.height * 0.5f)
-                : _pointsRestPosition.y;
-            _pointsPlate.anchoredPosition = new Vector2(_pointsRestPosition.x, plateY);
             if (_pose == pose) return;
             _pose = pose;
-            _seatedPlateCover.SetActive(inFront);
             RuntimeAnimatorController controller = pose == 1 ? _visual.Victory
                 : pose == 2 ? _visual.Defeat : _visual.Idle;
             if (!controller) controller = _visual.Idle;
-            _character.gameObject.SetActive(!inFront);
-            _foregroundCharacter.gameObject.SetActive(inFront);
-            Animator actor = inFront ? _foregroundCharacter : _character;
+            Animator actor = _character;
             if (actor.runtimeAnimatorController != controller)
             {
                 actor.runtimeAnimatorController = controller;
@@ -167,10 +179,8 @@ namespace PiGame.UI
             }
             // O clip compensa os quadros; aplique a posição base apenas ao trocar a pose.
             ((RectTransform)_character.transform).anchoredPosition =
-                new Vector2(_visual.OffsetX, _visual.FeetOffsetY - _feetBehindPillar
-                    + (pose == 1 ? _visual.VictoryOffsetY : 0f));
-            ((RectTransform)_foregroundCharacter.transform).anchoredPosition =
-                new Vector2(_visual.OffsetX, _visual.DefeatOffsetY);
+                new Vector2(_visual.OffsetX, _characterSurfaceOffsetY + _visual.FeetOffsetY
+                    + (pose == 1 ? _visual.VictoryOffsetY : pose == 2 ? _visual.DefeatOffsetY : 0f));
         }
     }
 }

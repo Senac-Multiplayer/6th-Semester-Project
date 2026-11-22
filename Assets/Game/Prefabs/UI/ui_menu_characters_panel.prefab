@@ -56,6 +56,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   _root: {fileID: 5087653109002646252}
   _name: {fileID: 5561490990249051250}
+  _story: {fileID: 2290000103}
   _attack: {fileID: 3044897733142028194}
   _ability: {fileID: 7860747822640380267}
   _ammo: {fileID: 5921430106243773850}
@@ -71,6 +72,7 @@ MonoBehaviour:
   - Character: {fileID: 11400000, guid: c0400000000000000000000000000001, type: 2}
     Name: COWBOY
     AccentColor: {r: 0.90588236, g: 0.7294118, b: 0.44313726, a: 1}
+    Story: "Membro dos Des\u00e9rticos, cria animais nas terras \u00e1ridas. Quer vencer o torneio e transformar a cidade em um dep\u00f3sito de sucata."
     Attack: "Dispara o rev\xF3lver na dire\xE7\xE3o da mira."
     Ability: "Rola para evitar dano e\nrecuperar parte da muni\xE7\xE3o."
     Ammo: "6 disparos. Recarga autom\xE1tica."
@@ -79,15 +81,17 @@ MonoBehaviour:
   - Character: {fileID: 11400000, guid: c0400000000000000000000000000002, type: 2}
     Name: NEREI, IRRIGADOR
     AccentColor: {r: 0.48235294, g: 0.8156863, b: 0.9019608, a: 1}
-    Attack: "Dispara pregos de gelo no cen\xE1rio."
-    Ability: "Atrai os pregos de gelo de volta\nna dire\xE7\xE3o da mira."
-    Ammo: 4 pregos. Recupere-os para recarregar.
+    Story: "Nerei lidera os Irrigadores, que abastecem a cidade com \u00e1gua. Quer vencer o torneio, inundar a cidade e erguer seu pr\u00f3prio imp\u00e9rio."
+    Attack: "Atira pregos de gelo onde voc\u00ea mira.\nCausam dano e fincam em superf\u00edcies."
+    Ability: "Ap\u00f3s 2 disparos, puxa os pregos\npresos na dire\u00e7\u00e3o da mira."
+    Ammo: "4 pregos. Colete-os por contato ou\npela habilidade. Retornam ap\u00f3s 10s."
     AbilityIcon: {fileID: 21300000, guid: c3ff0229dd78a4343b9c826fcb387cc3, type: 3}
     PortraitOffset: {x: 140, y: 0}
     Video: {fileID: 0}
   - Character: {fileID: 11400000, guid: c0400000000000000000000000000003, type: 2}
-    Name: CLANK, FUMACEIRO
+    Name: CLANK, FUMACEIRA
     AccentColor: {r: 0.76862746, g: 0.6392157, b: 0.93333334, a: 1}
+    Story: "Clank \u00e9 uma mineradora do grupo dos Fumaceiros, respons\u00e1vel pelo carv\u00e3o e pela minera\u00e7\u00e3o. Ela quer vencer o torneio e transformar a cidade em uma grande mina."
     Attack: "Arremessa min\xE9rios na dire\xE7\xE3o da mira."
     Ability: "Empurra advers\xE1rios e permite\nse impulsionar com o martelo."
     Ammo: 4 disparos. Recarregue agachando.
@@ -96,6 +100,7 @@ MonoBehaviour:
   - Character: {fileID: 11400000, guid: c0400000000000000000000000000004, type: 2}
     Name: REBELDE
     AccentColor: {r: 0.93333334, g: 0.4745098, b: 0.4745098, a: 1}
+    Story: "L\u00edder da Rebeli\u00e3o, luta contra o dom\u00ednio dos aristocratas. Quer derrubar esse poder e unir os recursos da cidade em benef\u00edcio da popula\u00e7\u00e3o."
     Attack: "Lan\xE7a uma bola que ricocheteia."
     Ability: "Usa o taco para rebater proj\xE9teis\ne afastar advers\xE1rios."
     Ammo: 1 bola. Recupere-a para atirar.
@@ -393,8 +398,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -70, y: 223}
-  m_SizeDelta: {x: 760, y: 38}
+  m_AnchoredPosition: {x: -70, y: 114}
+  m_SizeDelta: {x: 760, y: 54}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &2353997052906421827
 CanvasRenderer:
@@ -637,8 +642,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 6, y: -56}
-  m_SizeDelta: {x: 608, y: 342}
+  m_AnchoredPosition: {x: 150, y: -215}
+  m_SizeDelta: {x: 320, y: 180}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &86930215196929023
 CanvasRenderer:
@@ -1041,7 +1046,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -70, y: 260}
+  m_AnchoredPosition: {x: -70, y: 150}
   m_SizeDelta: {x: 760, y: 30}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &2176137748765251556
@@ -1204,6 +1209,7 @@ RectTransform:
   - {fileID: 8081469894660033044}
   - {fileID: 6712015190938327014}
   - {fileID: 1289696367464779097}
+  - {fileID: 2290000101}
   - {fileID: 8337497564149267621}
   - {fileID: 6910207888041428647}
   - {fileID: 5950846011573407994}
@@ -1254,8 +1260,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -70, y: 25}
-  m_SizeDelta: {x: 760, y: 32}
+  m_AnchoredPosition: {x: -70, y: -106}
+  m_SizeDelta: {x: 760, y: 54}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &4947231016064059828
 CanvasRenderer:
@@ -1333,7 +1339,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -70, y: 62}
+  m_AnchoredPosition: {x: -70, y: -70}
   m_SizeDelta: {x: 760, y: 30}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &7061722223379187056
@@ -1412,7 +1418,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -4, y: 172}
+  m_AnchoredPosition: {x: -4, y: 37}
   m_SizeDelta: {x: 690, y: 30}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &161897833693669227
@@ -1649,7 +1655,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -70, y: 177}
+  m_AnchoredPosition: {x: -70, y: 42}
   m_SizeDelta: {x: 48, y: 48}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &5232739795874248847
@@ -1799,8 +1805,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 4, y: -54}
-  m_SizeDelta: {x: 612, y: 346}
+  m_AnchoredPosition: {x: 148, y: -213}
+  m_SizeDelta: {x: 324, y: 184}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &3443361045575678577
 CanvasRenderer:
@@ -1953,7 +1959,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -4, y: 132}
+  m_AnchoredPosition: {x: -4, y: -3}
   m_SizeDelta: {x: 690, y: 54}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &7786959313660762410
@@ -2107,8 +2113,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 6, y: -19}
-  m_SizeDelta: {x: 608, y: 28}
+  m_AnchoredPosition: {x: 150, y: -178}
+  m_SizeDelta: {x: 320, y: 28}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &2525045432534300022
 CanvasRenderer:
@@ -2227,3 +2233,82 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 0.2
+--- !u!1 &2290000100
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2290000101}
+  - component: {fileID: 2290000102}
+  - component: {fileID: 2290000103}
+  m_Layer: 5
+  m_Name: StoryDescription
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &2290000101
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2290000100}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6413024980639431333}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: -70, y: 280}
+  m_SizeDelta: {x: 760, y: 104}
+  m_Pivot: {x: 0, y: 1}
+--- !u!222 &2290000102
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2290000100}
+  m_CullTransparentMesh: 1
+--- !u!114 &2290000103
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2290000100}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
+  m_Material: {fileID: 0}
+  m_Color: {r: 0.9607843, g: 0.9411765, b: 0.8627451, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FontData:
+    m_Font: {fileID: 12800000, guid: e8303ca10b827f249a0301ba66b72d3b, type: 3}
+    m_FontSize: 18
+    m_FontStyle: 0
+    m_BestFit: 0
+    m_MinSize: 10
+    m_MaxSize: 40
+    m_Alignment: 0
+    m_AlignByGeometry: 0
+    m_RichText: 1
+    m_HorizontalOverflow: 0
+    m_VerticalOverflow: 0
+    m_LineSpacing: 1.35
+  m_Text:

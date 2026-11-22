@@ -15,6 +15,7 @@ namespace PiGame.UI
             public LobbyCharacterDefinition Character;
             public string Name;
             public Color AccentColor = Color.white;
+            [TextArea(2, 5)] public string Story;
             [TextArea(1, 3)] public string Attack;
             [TextArea(1, 3)] public string Ability;
             [TextArea(1, 3)] public string Ammo;
@@ -26,7 +27,7 @@ namespace PiGame.UI
         }
 
         [SerializeField] private GameObject _root;
-        [SerializeField] private Text _name, _attack, _ability, _ammo, _counter;
+        [SerializeField] private Text _name, _story, _attack, _ability, _ammo, _counter;
         [SerializeField] private Image _portrait, _abilityIcon;
         [SerializeField] private Button _previous, _next, _back;
         [SerializeField] private RawImage _videoScreen;
@@ -42,7 +43,7 @@ namespace PiGame.UI
 
         private void Awake()
         {
-            if (!_root || !_name || !_attack || !_ability || !_ammo || !_counter
+            if (!_root || !_name || !_story || !_attack || !_ability || !_ammo || !_counter
                 || !_portrait || !_abilityIcon || !_previous || !_next || !_back
                 || !_videoScreen || !_videoPlayer || _characters == null || _characters.Length == 0
                 || Array.Exists(_characters, entry => entry == null || !entry.Character))
@@ -117,6 +118,7 @@ namespace PiGame.UI
             CharacterPreview entry = _characters[_index];
             _name.text = entry.Name;
             _name.color = entry.AccentColor;
+            _story.text = entry.Story;
             _attack.text = entry.Attack;
             _ability.text = entry.Ability;
             _ammo.text = entry.Ammo;
