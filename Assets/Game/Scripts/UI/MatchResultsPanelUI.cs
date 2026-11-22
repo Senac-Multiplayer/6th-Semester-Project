@@ -18,6 +18,7 @@ namespace PiGame.UI
         [SerializeField] private GameObject _root;
         [SerializeField] private CanvasGroup _content;
         [SerializeField] private CanvasGroup _headingGroup;
+        [SerializeField] private RectTransform _spotlightCeiling;
         [SerializeField] private CanvasGroup _actions;
         [Header("Apresentação do resultado")]
         [SerializeField, Min(0.1f)] private float _riseSeconds = 2.4f;
@@ -42,13 +43,14 @@ namespace PiGame.UI
         private void Awake()
         {
             if (!_match || !_pause || !_disconnect || !_root || !_content || !_headingGroup || !_actions || !_heading || !_hostHint
-                || !_returnButton || !_exitButton || !_confirmation || _players == null
+                || !_spotlightCeiling || !_returnButton || !_exitButton || !_confirmation || _players == null
                 || _players.Length == 0 || Array.Exists(_players, p => !p))
             {
                 Debug.LogError("Configure as referências do MatchResultsPanelUI na cena/prefab.", this);
                 enabled = false;
                 return;
             }
+            foreach (ResultPlayerView player in _players) player.SetSpotlightCeiling(_spotlightCeiling);
             _configured = true;
         }
 
