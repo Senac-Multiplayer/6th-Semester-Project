@@ -206,6 +206,14 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 90595101cba34f60ae7b1813716c60b0, type: 3}
     fadeInSeconds: 0
     fadeOutSeconds: 0
+  countdownVariations:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  countdownVolume: 0.2
   ostList:
   - ostType: 0
     clip: {fileID: 8300000, guid: 89d5b3c7f9a780e418da875a1051741a, type: 3}
