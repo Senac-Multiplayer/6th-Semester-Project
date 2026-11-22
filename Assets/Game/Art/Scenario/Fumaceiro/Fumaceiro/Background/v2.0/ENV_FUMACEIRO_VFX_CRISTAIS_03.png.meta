@@ -1,0 +1,403 @@
+fileFormatVersion: 2
+guid: 1c9627cf734f8754ea7241539fd42aea
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 2296158494641689223
+    second: ENV_FUMACEIRO_VFX_CRISTAIS_03_0
+  - first:
+      213: -5083334693491842221
+    second: ENV_FUMACEIRO_VFX_CRISTAIS_03_1
+  - first:
+      213: 5121958748427596872
+    second: ENV_FUMACEIRO_VFX_CRISTAIS_03_2
+  - first:
+      213: -8618965484147474938
+    second: ENV_FUMACEIRO_VFX_CRISTAIS_03_3
+  - first:
+      213: 8330650101956891160
+    second: ENV_FUMACEIRO_VFX_CRISTAIS_03_4
+  - first:
+      213: -6236521805787119374
+    second: ENV_FUMACEIRO_VFX_CRISTAIS_03_5
+  - first:
+      213: 2587252046090344081
+    second: ENV_FUMACEIRO_VFX_CRISTAIS_03_6
+  - first:
+      213: 5194726559281168740
+    second: ENV_FUMACEIRO_VFX_CRISTAIS_03_7
+  - first:
+      213: 6205142384097844108
+    second: ENV_FUMACEIRO_VFX_CRISTAIS_03_8
+  - first:
+      213: 4853440678208655850
+    second: ENV_FUMACEIRO_VFX_CRISTAIS_03_9
+  - first:
+      213: 1103704269837651198
+    second: ENV_FUMACEIRO_VFX_CRISTAIS_03_10
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_VFX_CRISTAIS_03_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 78
+        width: 6
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7821d1d3cf79ddf10800000000000000
+      internalID: 2296158494641689223
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_VFX_CRISTAIS_03_1
+      rect:
+        serializedVersion: 2
+        x: 1
+        y: 49
+        width: 14
+        height: 38
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 353eff7670e5479b0800000000000000
+      internalID: -5083334693491842221
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_VFX_CRISTAIS_03_2
+      rect:
+        serializedVersion: 2
+        x: 9
+        y: 54
+        width: 7
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8443b3a285ad41740800000000000000
+      internalID: 5121958748427596872
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_VFX_CRISTAIS_03_3
+      rect:
+        serializedVersion: 2
+        x: 14
+        y: 54
+        width: 50
+        height: 42
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 60e7902be88436880800000000000000
+      internalID: -8618965484147474938
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_VFX_CRISTAIS_03_4
+      rect:
+        serializedVersion: 2
+        x: 19
+        y: 49
+        width: 6
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 812563b412a6c9370800000000000000
+      internalID: 8330650101956891160
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_VFX_CRISTAIS_03_5
+      rect:
+        serializedVersion: 2
+        x: 41
+        y: 57
+        width: 6
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2f0c41cc57c6379a0800000000000000
+      internalID: -6236521805787119374
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_VFX_CRISTAIS_03_6
+      rect:
+        serializedVersion: 2
+        x: 41
+        y: 20
+        width: 14
+        height: 41
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1961e9f2704c7e320800000000000000
+      internalID: 2587252046090344081
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_VFX_CRISTAIS_03_7
+      rect:
+        serializedVersion: 2
+        x: 41
+        y: 47
+        width: 7
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 461cd376840671840800000000000000
+      internalID: 5194726559281168740
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_VFX_CRISTAIS_03_8
+      rect:
+        serializedVersion: 2
+        x: 53
+        y: 51
+        width: 11
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c8b5fd04f181d1650800000000000000
+      internalID: 6205142384097844108
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_VFX_CRISTAIS_03_9
+      rect:
+        serializedVersion: 2
+        x: 15
+        y: 1
+        width: 23
+        height: 50
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ae1de0b0592ea5340800000000000000
+      internalID: 4853440678208655850
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_VFX_CRISTAIS_03_10
+      rect:
+        serializedVersion: 2
+        x: 35
+        y: 9
+        width: 9
+        height: 44
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: efc41cc8f25215f00800000000000000
+      internalID: 1103704269837651198
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      ENV_FUMACEIRO_VFX_CRISTAIS_03_0: 2296158494641689223
+      ENV_FUMACEIRO_VFX_CRISTAIS_03_1: -5083334693491842221
+      ENV_FUMACEIRO_VFX_CRISTAIS_03_10: 1103704269837651198
+      ENV_FUMACEIRO_VFX_CRISTAIS_03_2: 5121958748427596872
+      ENV_FUMACEIRO_VFX_CRISTAIS_03_3: -8618965484147474938
+      ENV_FUMACEIRO_VFX_CRISTAIS_03_4: 8330650101956891160
+      ENV_FUMACEIRO_VFX_CRISTAIS_03_5: -6236521805787119374
+      ENV_FUMACEIRO_VFX_CRISTAIS_03_6: 2587252046090344081
+      ENV_FUMACEIRO_VFX_CRISTAIS_03_7: 5194726559281168740
+      ENV_FUMACEIRO_VFX_CRISTAIS_03_8: 6205142384097844108
+      ENV_FUMACEIRO_VFX_CRISTAIS_03_9: 4853440678208655850
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
