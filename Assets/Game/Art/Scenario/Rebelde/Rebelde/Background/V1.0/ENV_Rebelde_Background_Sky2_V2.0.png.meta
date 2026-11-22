@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 3ec1b58303056f042a93236388619d83
+guid: 147eb738e68273a4e85afe76fe20550c
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -7687442050177476605
-    second: ENV_Rebelde_Background_Sky2_V1.0_0
+      213: 4792308920227003935
+    second: ENV_Rebelde_Background_Sky2_V2.0_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -46,12 +46,12 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 1
+  spriteMode: 2
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 10
+  spritePixelsToUnits: 16
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -74,8 +74,8 @@ TextureImporter:
     buildTarget: DefaultTexturePlatform
     maxTextureSize: 2048
     resizeAlgorithm: 0
-    textureFormat: -1
-    textureCompression: 0
+    textureFormat: 4
+    textureCompression: 1
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -100,7 +100,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: ENV_Rebelde_Background_Sky2_V1.0_0
+      name: ENV_Rebelde_Background_Sky2_V2.0_0
       rect:
         serializedVersion: 2
         x: 0
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 30855c76f28b05590800000000000000
-      internalID: -7687442050177476605
+      spriteID: f1ef01c7293b18240800000000000000
+      internalID: 4792308920227003935
       vertices: []
       indices: 
       edges: []
@@ -125,7 +125,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 5e97eb03825dee720800000000000000
+    spriteID: 
     internalID: 0
     vertices: []
     indices: 
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      ENV_Rebelde_Background_Sky2_V1.0_0: -7687442050177476605
+      ENV_Rebelde_Background_Sky2_V2.0_0: 4792308920227003935
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

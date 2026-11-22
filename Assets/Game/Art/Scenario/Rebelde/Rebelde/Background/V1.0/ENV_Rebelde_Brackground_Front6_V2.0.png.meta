@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 7985ff6e399fa5743b7a47683427b874
+guid: 4779511d32a5e0c488d4b3fd79a79100
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 7441756265643739695
-    second: ENV_Rebelde_Brackground_Paralax1_V1.0_0
+      213: -1458606004329918249
+    second: ENV_Rebelde_Brackground_Front6_V2.0_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -46,12 +46,12 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 1
+  spriteMode: 2
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 10
+  spritePixelsToUnits: 16
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -74,8 +74,8 @@ TextureImporter:
     buildTarget: DefaultTexturePlatform
     maxTextureSize: 2048
     resizeAlgorithm: 0
-    textureFormat: -1
-    textureCompression: 0
+    textureFormat: 4
+    textureCompression: 1
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: ENV_Rebelde_Brackground_Paralax1_V1.0_0
+      name: ENV_Rebelde_Brackground_Front6_V2.0_0
       rect:
         serializedVersion: 2
-        x: 0
+        x: 120
         y: 0
-        width: 320
-        height: 192
+        width: 200
+        height: 89
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: f2a8bbe35ed664760800000000000000
-      internalID: 7441756265643739695
+      spriteID: 7d0d9ac219df1cbe0800000000000000
+      internalID: -1458606004329918249
       vertices: []
       indices: 
       edges: []
@@ -125,7 +125,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 5e97eb03825dee720800000000000000
+    spriteID: 
     internalID: 0
     vertices: []
     indices: 
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      ENV_Rebelde_Brackground_Paralax1_V1.0_0: 7441756265643739695
+      ENV_Rebelde_Brackground_Front6_V2.0_0: -1458606004329918249
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
