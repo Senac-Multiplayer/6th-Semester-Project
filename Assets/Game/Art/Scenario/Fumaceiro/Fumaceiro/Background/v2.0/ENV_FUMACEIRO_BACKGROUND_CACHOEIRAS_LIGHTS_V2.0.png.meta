@@ -1,0 +1,507 @@
+fileFormatVersion: 2
+guid: fcefef6885343124a87a361657e01ab2
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 6617490864445502030
+    second: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_0
+  - first:
+      213: 7077829409872492983
+    second: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_1
+  - first:
+      213: 8492987089593748999
+    second: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_2
+  - first:
+      213: 5226982744017901563
+    second: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_3
+  - first:
+      213: 5545909193566916074
+    second: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_4
+  - first:
+      213: 8275056686858252881
+    second: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_5
+  - first:
+      213: -4585359482344498677
+    second: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_6
+  - first:
+      213: 2496936288658208066
+    second: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_7
+  - first:
+      213: -1081921310741757132
+    second: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_8
+  - first:
+      213: 2068173706249057100
+    second: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_9
+  - first:
+      213: 305874142684490459
+    second: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_10
+  - first:
+      213: -6849235767470416060
+    second: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_11
+  - first:
+      213: 5834205837754814486
+    second: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_12
+  - first:
+      213: 7339291102989741382
+    second: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_13
+  - first:
+      213: -1997586919176380371
+    second: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_14
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 10
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_0
+      rect:
+        serializedVersion: 2
+        x: 13
+        y: 88
+        width: 9
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e42baa751ec06db50800000000000000
+      internalID: 6617490864445502030
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_1
+      rect:
+        serializedVersion: 2
+        x: 16
+        y: 59
+        width: 15
+        height: 37
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7b9334c2950893260800000000000000
+      internalID: 7077829409872492983
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_2
+      rect:
+        serializedVersion: 2
+        x: 55
+        y: 80
+        width: 11
+        height: 26
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 70ec63d92c62dd570800000000000000
+      internalID: 8492987089593748999
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_3
+      rect:
+        serializedVersion: 2
+        x: 18
+        y: 48
+        width: 23
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bf79848ac19f98840800000000000000
+      internalID: 5226982744017901563
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_4
+      rect:
+        serializedVersion: 2
+        x: 46
+        y: 63
+        width: 21
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aed012f270707fc40800000000000000
+      internalID: 5545909193566916074
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_5
+      rect:
+        serializedVersion: 2
+        x: 73
+        y: 59
+        width: 7
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 152386ca638e6d270800000000000000
+      internalID: 8275056686858252881
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_6
+      rect:
+        serializedVersion: 2
+        x: 79
+        y: 71
+        width: 6
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b0a136758d78d50c0800000000000000
+      internalID: -4585359482344498677
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_7
+      rect:
+        serializedVersion: 2
+        x: 10
+        y: 54
+        width: 12
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 24531404356e6a220800000000000000
+      internalID: 2496936288658208066
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_8
+      rect:
+        serializedVersion: 2
+        x: 78
+        y: 43
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4330056dc4e3cf0f0800000000000000
+      internalID: -1081921310741757132
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_9
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 19
+        height: 43
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c4337c63701a3bc10800000000000000
+      internalID: 2068173706249057100
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_10
+      rect:
+        serializedVersion: 2
+        x: 19
+        y: 39
+        width: 14
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bdaafa489eeae3400800000000000000
+      internalID: 305874142684490459
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_11
+      rect:
+        serializedVersion: 2
+        x: 49
+        y: 0
+        width: 26
+        height: 39
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 44f9609bb50a2f0a0800000000000000
+      internalID: -6849235767470416060
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_12
+      rect:
+        serializedVersion: 2
+        x: 105
+        y: 0
+        width: 23
+        height: 48
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 610d2e96c4347f050800000000000000
+      internalID: 5834205837754814486
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_13
+      rect:
+        serializedVersion: 2
+        x: 177
+        y: 0
+        width: 15
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 64d63e87f566ad560800000000000000
+      internalID: 7339291102989741382
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_14
+      rect:
+        serializedVersion: 2
+        x: 281
+        y: 0
+        width: 9
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d20668ad7452744e0800000000000000
+      internalID: -1997586919176380371
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_0: 6617490864445502030
+      ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_1: 7077829409872492983
+      ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_10: 305874142684490459
+      ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_11: -6849235767470416060
+      ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_12: 5834205837754814486
+      ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_13: 7339291102989741382
+      ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_14: -1997586919176380371
+      ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_2: 8492987089593748999
+      ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_3: 5226982744017901563
+      ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_4: 5545909193566916074
+      ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_5: 8275056686858252881
+      ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_6: -4585359482344498677
+      ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_7: 2496936288658208066
+      ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_8: -1081921310741757132
+      ENV_FUMACEIRO_BACKGROUND_CACHOEIRAS_LIGHTS_V2.0_9: 2068173706249057100
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
