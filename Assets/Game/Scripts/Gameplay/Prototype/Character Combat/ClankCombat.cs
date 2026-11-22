@@ -58,6 +58,13 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
     [SerializeField, Tooltip("Cor do contorno do Gizmo do raio de repuls�o no Editor.")]
     private Color _knockbackWireColor = Color.red;
 
+    [Header("VFX Settings")]
+    [SerializeField]
+    private GameObject _hammerImpactVfxPrefab;
+
+    [SerializeField]
+    private float _impactVfxLifetime = 0.6f;
+
     private readonly NetworkVariable<int> _ammo = new NetworkVariable<int>(
         0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     private readonly NetworkVariable<int> _abilityCharges = new NetworkVariable<int>(
@@ -266,8 +273,10 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
         Vector2 launchVelocity = Vector2.up * _hammerLaunchForce;
 
         ApplyImpulseOwnerRpc(launchVelocity);
+        Vector2 footPosition = GetFootWorldPosition();
+        PlayHammerImpactVfxRpc(footPosition);
 
-        if(_fumaceiroSound != null)
+        if (_fumaceiroSound != null)
         {
             _fumaceiroSound.PlayFumaceiroSkill();
         }
@@ -301,6 +310,29 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
     {
     }
     #endregion
+    private Vector2 GetFootWorldPosition()
+    {
+        Collider2D col = GetComponent<Collider2D>();
+        if (col == null)
+        {
+            return transform.position;
+        }
+
+        Bounds bounds = col.bounds;
+        return new Vector2(bounds.center.x, bounds.min.y);
+    }
+
+    [Rpc(SendTo.Everyone)]
+    private void PlayHammerImpactVfxRpc(Vector2 spawnPosition)
+    {
+        if (_hammerImpactVfxPrefab == null)
+        {
+            return;
+        }
+
+        GameObject vfxInstance = Instantiate(_hammerImpactVfxPrefab, spawnPosition, Quaternion.identity);
+        Destroy(vfxInstance, _impactVfxLifetime);
+    }
     public void ClearProjectilesServer() { }
     private bool IsGroundedRaycast()
     {
@@ -320,12 +352,6 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
     private void ApplyImpulseOwnerRpc(Vector2 velocity)
     {
         ApplyKnockbackImpulse(velocity, 0.15f);
-    }
-
-    [Rpc(SendTo.Owner)]
-    private void ApplyKnockbackOwnerRpc(Vector2 velocity)
-    {
-        ApplyKnockbackImpulse(velocity, 0.25f);
     }
 
     private void ApplyKnockbackImpulse(Vector2 velocity, float disableDuration)

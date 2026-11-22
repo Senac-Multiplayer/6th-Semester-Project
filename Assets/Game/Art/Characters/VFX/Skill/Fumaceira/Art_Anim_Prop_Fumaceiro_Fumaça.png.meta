@@ -1,0 +1,559 @@
+fileFormatVersion: 2
+guid: 4e4acf170cebc884da0aac5af55f1f9e
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -8135546019309892336
+    second: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_0"
+  - first:
+      213: -6446737566033616229
+    second: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_1"
+  - first:
+      213: -4662492518431351320
+    second: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_2"
+  - first:
+      213: 2681011417167422403
+    second: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_3"
+  - first:
+      213: 8723142670465015771
+    second: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_4"
+  - first:
+      213: 1623935460984372398
+    second: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_5"
+  - first:
+      213: -6787523126740381875
+    second: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_6"
+  - first:
+      213: 5066553649641221351
+    second: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_7"
+  - first:
+      213: 7947242823011726996
+    second: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_8"
+  - first:
+      213: -3881546292769228349
+    second: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_9"
+  - first:
+      213: -3687173386568892862
+    second: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_10"
+  - first:
+      213: -8315886125726222628
+    second: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_11"
+  - first:
+      213: 584810669811446119
+    second: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_12"
+  - first:
+      213: 6842131890869405626
+    second: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_13"
+  - first:
+      213: 2931320321511475495
+    second: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_14"
+  - first:
+      213: 8390907323721869317
+    second: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_15"
+  - first:
+      213: -394658563356040753
+    second: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_16"
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 16
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_0"
+      rect:
+        serializedVersion: 2
+        x: 405
+        y: 17
+        width: 25
+        height: 26
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 01dc039dffbb81f80800000000000000
+      internalID: -8135546019309892336
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_1"
+      rect:
+        serializedVersion: 2
+        x: 467
+        y: 21
+        width: 23
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b92666807569886a0800000000000000
+      internalID: -6446737566033616229
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_2"
+      rect:
+        serializedVersion: 2
+        x: 530
+        y: 24
+        width: 22
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8ed9bf6e1cf7b4fb0800000000000000
+      internalID: -4662492518431351320
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_3"
+      rect:
+        serializedVersion: 2
+        x: 593
+        y: 24
+        width: 23
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3c3e707edadd43520800000000000000
+      internalID: 2681011417167422403
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_4"
+      rect:
+        serializedVersion: 2
+        x: 657
+        y: 32
+        width: 8
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bdf9e16aa04de0970800000000000000
+      internalID: 8723142670465015771
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_5"
+      rect:
+        serializedVersion: 2
+        x: 666
+        y: 39
+        width: 12
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: eac3222a2b0698610800000000000000
+      internalID: 1623935460984372398
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_6"
+      rect:
+        serializedVersion: 2
+        x: 720
+        y: 33
+        width: 6
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d4f04e59dafddc1a0800000000000000
+      internalID: -6787523126740381875
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_7"
+      rect:
+        serializedVersion: 2
+        x: 730
+        y: 42
+        width: 13
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ece25a53b3005640800000000000000
+      internalID: 5066553649641221351
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_8"
+      rect:
+        serializedVersion: 2
+        x: 162
+        y: 16
+        width: 14
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 496f261cd374a4e60800000000000000
+      internalID: 7947242823011726996
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_9"
+      rect:
+        serializedVersion: 2
+        x: 220
+        y: 16
+        width: 20
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3c97148463af12ac0800000000000000
+      internalID: -3881546292769228349
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_10"
+      rect:
+        serializedVersion: 2
+        x: 281
+        y: 16
+        width: 23
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 24e7944275784dcc0800000000000000
+      internalID: -3687173386568892862
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_11"
+      rect:
+        serializedVersion: 2
+        x: 344
+        y: 17
+        width: 22
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cd63d7bc0a9089c80800000000000000
+      internalID: -8315886125726222628
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_12"
+      rect:
+        serializedVersion: 2
+        x: 660
+        y: 24
+        width: 15
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 76138faa43aad1800800000000000000
+      internalID: 584810669811446119
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_13"
+      rect:
+        serializedVersion: 2
+        x: 673
+        y: 29
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ab784ad14b224fe50800000000000000
+      internalID: 6842131890869405626
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_14"
+      rect:
+        serializedVersion: 2
+        x: 723
+        y: 23
+        width: 22
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 72943963d442ea820800000000000000
+      internalID: 2931320321511475495
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_15"
+      rect:
+        serializedVersion: 2
+        x: 41
+        y: 16
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5086aa501cd727470800000000000000
+      internalID: 8390907323721869317
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_16"
+      rect:
+        serializedVersion: 2
+        x: 102
+        y: 16
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fc1e89ba024e58af0800000000000000
+      internalID: -394658563356040753
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_0": -8135546019309892336
+      "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_1": -6446737566033616229
+      "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_10": -3687173386568892862
+      "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_11": -8315886125726222628
+      "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_12": 584810669811446119
+      "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_13": 6842131890869405626
+      "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_14": 2931320321511475495
+      "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_15": 8390907323721869317
+      "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_16": -394658563356040753
+      "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_2": -4662492518431351320
+      "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_3": 2681011417167422403
+      "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_4": 8723142670465015771
+      "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_5": 1623935460984372398
+      "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_6": -6787523126740381875
+      "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_7": 5066553649641221351
+      "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_8": 7947242823011726996
+      "Art_Anim_Prop_Fumaceiro_Fuma\xE7a_9": -3881546292769228349
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
