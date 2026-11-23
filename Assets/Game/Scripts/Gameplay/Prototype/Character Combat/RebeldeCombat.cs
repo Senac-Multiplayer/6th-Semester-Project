@@ -26,6 +26,12 @@ namespace PiGame.Gameplay
         [SerializeField, Min(0f)] private float _abilityGraceSeconds = 0.12f;
         [SerializeField, Min(0.1f)] private float _abilityStrikeSeconds = 0.52f;
 
+        [Header("2D Impact VFX Settings")]
+        [SerializeField] private GameObject _ballImpactVfxObject;
+        [SerializeField] private SpriteRenderer _ballImpactSpriteRenderer;
+        [SerializeField] private float _impactSideOffset = 0.85f;
+        [SerializeField, Min(0.01f)] private float _vfxDurationSeconds = 0.35f;
+
         private static readonly int AbilityPhaseParameter = Animator.StringToHash("abilityPhase");
         private readonly NetworkVariable<int> _ammo = new(1, NetworkVariableReadPermission.Everyone);
         private readonly NetworkVariable<AbilityPhase> _abilityPhase = new(AbilityPhase.Idle);
@@ -42,6 +48,7 @@ namespace PiGame.Gameplay
         private Animator _animator;
         private SpriteRenderer _facingSprite;
         private ContactFilter2D _obstructionFilter;
+        private Coroutine _hideVfxRoutine;
         private float _nextShotTime;
         private int _projectileVelocityPointer;
         private float _abilityStartedAt;
@@ -65,6 +72,12 @@ namespace PiGame.Gameplay
             _obstructionFilter = new ContactFilter2D();
             _obstructionFilter.SetLayerMask(LayerMask.GetMask("Ground", "Wall", "Roof"));
             _obstructionFilter.useTriggers = false;
+
+            if (_ballImpactVfxObject)
+            {
+                if (!_ballImpactSpriteRenderer) _ballImpactSpriteRenderer = _ballImpactVfxObject.GetComponent<SpriteRenderer>();
+                HideImpactVfxImmediate();
+            }
 
             if (!_projectile || !_projectile.Prefab || _projectile.Prefab is not RebeldeProjectile
                 || _projectileVelocityStack == null || _projectileVelocityStack.Length == 0
@@ -99,6 +112,7 @@ namespace PiGame.Gameplay
             _abilityForward.OnValueChanged -= HandleAbilityDirectionChanged;
             _playerState.StateChanged -= HandlePlayerStateChanged;
             ClearProjectilesServer();
+            HideImpactVfxImmediate();
             if (_presentation) _presentation.SetSkillActive(false);
             if (_animator && _animator.runtimeAnimatorController) _animator.SetInteger(AbilityPhaseParameter, (int)AbilityPhase.Idle);
             if (_ammoIndicatorsView) _ammoIndicatorsView.SetCount(0, false, Color.white);
@@ -127,7 +141,6 @@ namespace PiGame.Gameplay
             _rebeldeSound?.PlayRebeldeShot();
         }
 
-        // Só o projétil em uso pode devolver a munição; callbacks antigos não liberam outro tiro.
         public void RecoverProjectileServer(RebeldeProjectile projectile)
         {
             if (!IsServer || !IsSpawned || !projectile || projectile != _activeProjectile) return;
@@ -184,7 +197,6 @@ namespace PiGame.Gameplay
         public void CancelAbilityServer()
         {
             if (!IsServer || _abilityPhase.Value == AbilityPhase.Idle) return;
-            // Pausar/morrer cancela a ação; não é uma soltura que atinge os adversários.
             if (_abilityPhase.Value == AbilityPhase.Preparing) StartAbilityCooldown();
             _abilityPhase.Value = AbilityPhase.Idle;
             _abilityProcessedTargets.Clear();
@@ -213,7 +225,6 @@ namespace PiGame.Gameplay
             if (!IsServer || !IsSpawned || !enabled) return;
             if (!_playerState.CanAct) { CancelAbilityServer(); RefreshAbilityAvailability(); return; }
 
-            // Atingir o limite dispara a rebatida em vez de consumir o especial sem efeito.
             if (IsPreparingAbility && Time.time >= _abilityStartedAt + _maxAbilityHoldSeconds) SwingServer();
             if (IsSwingingAbility && Time.time >= _abilityStrikeUntil) _abilityPhase.Value = AbilityPhase.Idle;
             RefreshAbilityAvailability();
@@ -252,10 +263,20 @@ namespace PiGame.Gameplay
                         || (!ownBall && (projectile.ShooterClientId == OwnerClientId
                             || !_playerState.CanReceiveHitFrom(projectile.ShooterClientId)))
                         || !_abilityProcessedTargets.Add(projectile.NetworkObject)) continue;
-                    if (ownBall) _activeProjectile.BatServer(_abilityForward.Value, _projectileReflectMinimumSpeed);
+
+                    Vector2 hitDirection = _abilityForward.Value.x < 0f ? Vector2.left : Vector2.right;
+                    bool comingTowardPlayer = IsProjectileComingTowardPlayer(projectile, hitDirection);
+
+                    if (ownBall) _activeProjectile.BatServer(hitDirection, _projectileReflectMinimumSpeed);
                     else projectile.ReflectServer(_projectileReflectMinimumSpeed);
+
+                    if (comingTowardPlayer)
+                    {
+                        PlayBallImpactVfxClientRpc(hitDirection);
+                    }
                     continue;
                 }
+                
 
                 NetworkPlayerState player = hit.GetComponentInParent<NetworkPlayerState>();
                 if (!player || !player.IsSpawned || !player.IsServer || !player.CanAct || player.IsInvulnerable
@@ -263,6 +284,69 @@ namespace PiGame.Gameplay
                     || !_abilityProcessedTargets.Add(player.NetworkObject)) continue;
                 if (player.TryGetComponent(out NetworkPlayerCombat combat)) combat.ApplyUpwardImpulseRpc(_playerUpwardImpulse);
             }
+        }
+
+        private bool IsProjectileComingTowardPlayer(NetworkProjectile projectile, Vector2 hitDirection)
+        {
+            Vector2 velocity = Vector2.zero;
+            if (projectile.TryGetComponent(out Rigidbody2D rb))
+            {
+                velocity = rb.linearVelocity;
+            }
+
+            if (velocity.sqrMagnitude > 0.001f)
+            {
+                return Vector2.Dot(velocity.normalized, hitDirection) < -0.1f;
+            }
+
+            Vector2 toProjectile = (Vector2)projectile.transform.position - (Vector2)transform.position;
+            return Vector2.Dot(toProjectile.normalized, hitDirection) > 0.1f;
+        }
+
+        [ClientRpc]
+        private void PlayBallImpactVfxClientRpc(Vector2 hitDirection)
+        {
+            if (!_ballImpactVfxObject) return;
+
+            if (_hideVfxRoutine != null)
+            {
+                StopCoroutine(_hideVfxRoutine);
+                _hideVfxRoutine = null;
+            }
+
+            bool faceLeft = hitDirection.x < 0f;
+            float sideSign = faceLeft ? -1f : 1f;
+
+            _ballImpactVfxObject.SetActive(false);
+            _ballImpactVfxObject.transform.localPosition = new Vector3(
+                sideSign * Mathf.Abs(_impactSideOffset),
+                _ballImpactVfxObject.transform.localPosition.y,
+                _ballImpactVfxObject.transform.localPosition.z);
+
+            if (_ballImpactSpriteRenderer)
+            {
+                _ballImpactSpriteRenderer.flipX = faceLeft;
+            }
+
+            _ballImpactVfxObject.SetActive(true);
+
+            if (_vfxDurationSeconds > 0f)
+            {
+                _hideVfxRoutine = StartCoroutine(HideVfxAfterDelay(_vfxDurationSeconds));
+            }
+        }
+
+        private System.Collections.IEnumerator HideVfxAfterDelay(float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            HideImpactVfxImmediate();
+            _hideVfxRoutine = null;
+        }
+
+        private void HideImpactVfxImmediate()
+        {
+            if (!_ballImpactVfxObject) return;
+            _ballImpactVfxObject.SetActive(false);
         }
 
         private Vector2 GetFacingDirection(Vector2 aimDirection, Vector2 moveDirection)
@@ -278,7 +362,6 @@ namespace PiGame.Gameplay
             if (_presentation) _presentation.SetSkillActive(active);
             ApplyAbilityFacing();
             if (!_animator || !_animator.runtimeAnimatorController) return;
-            // A fase do servidor alimenta o controller em todos os peers; ele decide os estados e as transições.
             _animator.SetInteger(AbilityPhaseParameter, (int)_abilityPhase.Value);
         }
 
