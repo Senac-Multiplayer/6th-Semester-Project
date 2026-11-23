@@ -2256,6 +2256,7 @@ GameObject:
   - component: {fileID: -2180634864467897005}
   - component: {fileID: 3317054087486104629}
   - component: {fileID: 3216733317862606300}
+  - component: {fileID: 750885784796070611}
   - component: {fileID: 7423979285644332156}
   - component: {fileID: 890000000000000002}
   - component: {fileID: 890000000000000001}
@@ -2468,8 +2469,8 @@ MonoBehaviour:
   _wallJumpHorizontalForce: 10
   _wallJumpVerticalForce: 12
   _wallJumpControlLockTime: 0.2
-  _crouchColliderOffset: -0.5
-  _crouchColliderHeightMultiplier: 0.01
+  _crouchColliderOffset: -0.13125
+  _crouchColliderHeightMultiplier: 0.78125
 --- !u!114 &880000000000000001
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2541,7 +2542,7 @@ Rigidbody2D:
   m_LinearDamping: 0
   m_AngularDamping: 0.05
   m_GravityScale: 1.1
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 6200000, guid: 1343ed8ec04c4b642a9785dd9ce7da51, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -2596,7 +2597,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 0.7, y: 1.2}
+  m_Size: {x: 0.875, y: 1.2}
   m_EdgeRadius: 0
 --- !u!95 &3216733317862606300
 Animator:
@@ -3281,3 +3282,55 @@ MonoBehaviour:
   - {fileID: 4693148425088654773}
   - {fileID: 600632348148388916}
   - {fileID: 5770279518815378814}
+--- !u!114 &750885784796070611
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1324757442989677250}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8d0727d5ae3244e3b569694d3912374, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Components.NetworkAnimator
+  ShowTopMostFoldoutHeaderGroup: 1
+  NetworkAnimatorExpanded: 0
+  AuthorityMode: 1
+  m_Animator: {fileID: 3216733317862606300}
+  TransitionStateInfoList: []
+  AnimatorParameterEntries:
+    ParameterEntries:
+    - name: xVelocity
+      NameHash: -1879171339
+      Synchronize: 1
+      ParameterType: 1
+    - name: yVelocity
+      NameHash: -1736111434
+      Synchronize: 1
+      ParameterType: 1
+    - name: isJumping
+      NameHash: -357477766
+      Synchronize: 1
+      ParameterType: 4
+    - name: isCrouching
+      NameHash: 1035320983
+      Synchronize: 1
+      ParameterType: 4
+    - name: isWallSliding
+      NameHash: -1514754429
+      Synchronize: 1
+      ParameterType: 4
+    - name: isDead
+      NameHash: 1276664872
+      Synchronize: 1
+      ParameterType: 4
+    - name: isHit
+      NameHash: -1235987232
+      Synchronize: 1
+      ParameterType: 4
+    - name: isSkill
+      NameHash: 1462408521
+      Synchronize: 1
+      ParameterType: 4
+  AnimatorParametersExpanded: 0
