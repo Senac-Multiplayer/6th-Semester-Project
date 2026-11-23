@@ -343,7 +343,7 @@ MonoBehaviour:
   m_text: "SALAS P\xDABLICAS"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f0ad3b57ab90dca41b37402d61585a11, type: 2}
-  m_sharedMaterial: {fileID: 2100000, guid: 0ec7fc3bf04645e7b0b25ff58cf3b409, type: 2}
+  m_sharedMaterial: {fileID: 8301420987674334106, guid: f0ad3b57ab90dca41b37402d61585a11, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -480,7 +480,7 @@ MonoBehaviour:
   m_text: ATUALIZE PARA BUSCAR SALAS
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f0ad3b57ab90dca41b37402d61585a11, type: 2}
-  m_sharedMaterial: {fileID: 2100000, guid: 0ec7fc3bf04645e7b0b25ff58cf3b409, type: 2}
+  m_sharedMaterial: {fileID: 8301420987674334106, guid: f0ad3b57ab90dca41b37402d61585a11, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -692,7 +692,7 @@ MonoBehaviour:
   m_text: SALA
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f0ad3b57ab90dca41b37402d61585a11, type: 2}
-  m_sharedMaterial: {fileID: 2100000, guid: 0ec7fc3bf04645e7b0b25ff58cf3b409, type: 2}
+  m_sharedMaterial: {fileID: 8301420987674334106, guid: f0ad3b57ab90dca41b37402d61585a11, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -829,7 +829,7 @@ MonoBehaviour:
   m_text: JOGADORES
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f0ad3b57ab90dca41b37402d61585a11, type: 2}
-  m_sharedMaterial: {fileID: 2100000, guid: 0ec7fc3bf04645e7b0b25ff58cf3b409, type: 2}
+  m_sharedMaterial: {fileID: 8301420987674334106, guid: f0ad3b57ab90dca41b37402d61585a11, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1401,7 +1401,7 @@ MonoBehaviour:
   m_text: ATUALIZAR
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f0ad3b57ab90dca41b37402d61585a11, type: 2}
-  m_sharedMaterial: {fileID: 2100000, guid: 0ec7fc3bf04645e7b0b25ff58cf3b409, type: 2}
+  m_sharedMaterial: {fileID: 8301420987674334106, guid: f0ad3b57ab90dca41b37402d61585a11, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1696,7 +1696,7 @@ MonoBehaviour:
   m_text: VOLTAR
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f0ad3b57ab90dca41b37402d61585a11, type: 2}
-  m_sharedMaterial: {fileID: 2100000, guid: 0ec7fc3bf04645e7b0b25ff58cf3b409, type: 2}
+  m_sharedMaterial: {fileID: 8301420987674334106, guid: f0ad3b57ab90dca41b37402d61585a11, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2013,7 +2013,7 @@ MonoBehaviour:
   m_text: ANTERIOR
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f0ad3b57ab90dca41b37402d61585a11, type: 2}
-  m_sharedMaterial: {fileID: 2100000, guid: 0ec7fc3bf04645e7b0b25ff58cf3b409, type: 2}
+  m_sharedMaterial: {fileID: 8301420987674334106, guid: f0ad3b57ab90dca41b37402d61585a11, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2308,7 +2308,7 @@ MonoBehaviour:
   m_text: "PR\xD3XIMA"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f0ad3b57ab90dca41b37402d61585a11, type: 2}
-  m_sharedMaterial: {fileID: 2100000, guid: 0ec7fc3bf04645e7b0b25ff58cf3b409, type: 2}
+  m_sharedMaterial: {fileID: 8301420987674334106, guid: f0ad3b57ab90dca41b37402d61585a11, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2445,7 +2445,7 @@ MonoBehaviour:
   m_text: 1
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f0ad3b57ab90dca41b37402d61585a11, type: 2}
-  m_sharedMaterial: {fileID: 2100000, guid: 0ec7fc3bf04645e7b0b25ff58cf3b409, type: 2}
+  m_sharedMaterial: {fileID: 8301420987674334106, guid: f0ad3b57ab90dca41b37402d61585a11, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []

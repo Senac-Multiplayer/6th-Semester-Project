@@ -509,7 +509,8 @@ namespace PiGame.UI
             _pendingRoomId = id;
             _pendingConfirmation = ConfirmationAction.JoinRoom;
             _roomBrowser.SetInteractionEnabled(false);
-            _confirmationPanel.Show($"ENTRAR NESTA SALA?\n{room.Name}\n{room.MaxPlayers - room.AvailableSlots}/{room.MaxPlayers} JOGADORES", "ENTRAR", false);
+            string roomName = room.Name.Replace("<", "‹").Replace(">", "›");
+            _confirmationPanel.Show($"ENTRAR NESTA SALA?\n<color=#F6F2DA>{roomName} · {room.MaxPlayers - room.AvailableSlots}/{room.MaxPlayers} JOGADORES</color>", "ENTRAR", false);
         }
 
         private async void ConnectRoom(Func<Task> connect, string message)
@@ -666,6 +667,7 @@ namespace PiGame.UI
                 return;
             }
 
+            if (canceledAction == ConfirmationAction.Quit) _mainMenu.ShowHome();
             RestoreOfflineInteraction();
         }
 
@@ -834,6 +836,7 @@ namespace PiGame.UI
             else
             {
                 SetOfflineInteractionEnabled(false);
+                _mainMenu.ShowConnection();
             }
 
             _confirmationPanel.Show(message, action == ConfirmationAction.Quit ? "SAIR" : "DESCONECTAR");
@@ -861,7 +864,7 @@ namespace PiGame.UI
         {
             if (!_mainMenu.IsHomeVisible || _charactersPanel.IsVisible) return;
             _guideFromLobby = false;
-            _mainMenu.ShowConnection();
+            _mainMenu.ShowConnection(false);
             PiGame.Sound.UiAudioManager.PlayButton();
             _charactersPanel.Show();
             _ignoreMenuInputFrame = Time.frameCount;

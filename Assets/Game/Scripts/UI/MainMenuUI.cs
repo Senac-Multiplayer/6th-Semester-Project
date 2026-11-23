@@ -12,6 +12,7 @@ namespace PiGame.UI
     {
         [SerializeField] private GameObject _visuals;
         [SerializeField] private CanvasGroup _home;
+        [SerializeField] private RectTransform _title;
         [Header("Botões — On Click disponível no Inspector para áudio local")]
         [SerializeField] private Button _playButton;
         [SerializeField] private Button _optionsButton;
@@ -27,6 +28,7 @@ namespace PiGame.UI
         private Button _returnButton;
         private Coroutine _focusRoutine;
         private bool _usesGamepad;
+        private Vector2 _titleHomeAnchorMin, _titleHomeAnchorMax;
 
         public bool IsHomeVisible => _home.gameObject.activeInHierarchy;
         public bool IsSubpanelVisible => _credits.activeInHierarchy;
@@ -37,7 +39,7 @@ namespace PiGame.UI
 
         private void Awake()
         {
-            if (!_visuals || !_home || !_playButton || !_optionsButton
+            if (!_visuals || !_home || !_title || !_playButton || !_optionsButton
                 || !_creditsButton || !_charactersButton || !_quitButton || !_credits || !_creditsBackButton
                 || !_promptCatalog || _backIcons == null || _backIcons.Length == 0
                 || Array.Exists(_backIcons, icon => !icon))
@@ -57,6 +59,8 @@ namespace PiGame.UI
             _charactersButton.onClick.AddListener(OpenCharacters);
             _creditsBackButton.onClick.AddListener(ShowHome);
             _returnButton = _playButton;
+            _titleHomeAnchorMin = _title.anchorMin;
+            _titleHomeAnchorMax = _title.anchorMax;
             RefreshBackIcons();
         }
 
@@ -88,15 +92,25 @@ namespace PiGame.UI
             _visuals.SetActive(true);
             _credits.SetActive(false);
             _home.gameObject.SetActive(true);
+            _title.gameObject.SetActive(true);
+            SetTitleContext(false);
             SetInteractionEnabled(true);
             FocusDefaultButton();
         }
 
-        public void ShowConnection()
+        public void ShowConnection(bool showTitle = true)
         {
             _visuals.SetActive(true);
             _home.gameObject.SetActive(false);
             _credits.SetActive(false);
+            _title.gameObject.SetActive(showTitle);
+            SetTitleContext(true);
+        }
+
+        private void SetTitleContext(bool sidePanel)
+        {
+            _title.anchorMin = sidePanel ? new Vector2(0.38f, 1f) : _titleHomeAnchorMin;
+            _title.anchorMax = sidePanel ? new Vector2(0.98f, 1f) : _titleHomeAnchorMax;
         }
 
         public void Hide()
@@ -107,6 +121,7 @@ namespace PiGame.UI
 
         public void SetInteractionEnabled(bool value)
         {
+            _home.alpha = value ? 1f : 0f;
             _home.interactable = value;
             _home.blocksRaycasts = value;
         }
@@ -152,6 +167,7 @@ namespace PiGame.UI
         {
             _returnButton = _creditsButton;
             _home.gameObject.SetActive(false);
+            _title.gameObject.SetActive(false);
             _credits.SetActive(true);
             _credits.GetComponent<CreditsPanelUI>().FocusDefaultTeam();
         }
