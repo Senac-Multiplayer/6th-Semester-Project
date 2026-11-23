@@ -2013,19 +2013,19 @@ MonoBehaviour:
   _coyoteTimer: 0.1
   _wallCheck: {fileID: 3692848841454754831}
   _wallCheckRadius: 0.15
-  _wallCheckOffest: 0.25
+  _wallCheckOffest: 0.35
   _wallLayer:
     serializedVersion: 2
-    m_Bits: 64
+    m_Bits: 72
   _wallStickTime: 0.5
-  _wallSlideSpeed: 3
+  _wallSlideSpeed: 4.5
   _fallMultiplier: 2
   _jumpHoldGravityMultiplier: 1.5
   _wallJumpHorizontalForce: 10
   _wallJumpVerticalForce: 12
   _wallJumpControlLockTime: 0.2
-  _crouchColliderOffset: -0.35
-  _crouchColliderHeightMultiplier: 0.5
+  _crouchColliderOffset: -0.13125
+  _crouchColliderHeightMultiplier: 0.78125
 --- !u!61 &1704202820134216821
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -2070,7 +2070,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 0.6, y: 1.2}
+  m_Size: {x: 0.875, y: 1.2}
   m_EdgeRadius: 0
 --- !u!114 &880000000000000001
 MonoBehaviour:
@@ -2134,7 +2134,7 @@ MonoBehaviour:
   _coneAngle: 60
   _projectileReflectMinimumSpeed: 6
   _maxAbilityHoldSeconds: 5
-  _abilityCooldownSeconds: 4
+  _abilityCooldownSeconds: 2.5
   _playerUpwardImpulse: 10
   _abilityGraceSeconds: 0.3
   _abilityStrikeSeconds: 0.52

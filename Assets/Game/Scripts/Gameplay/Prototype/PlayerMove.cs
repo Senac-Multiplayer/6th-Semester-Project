@@ -86,6 +86,7 @@ namespace PiGame.Gameplay
         private float _dropThroughEndsAt;
         private readonly RaycastHit2D[] _platformHits = new RaycastHit2D[8];
         private readonly ContactPoint2D[] _wallContacts = new ContactPoint2D[8];
+        private readonly Collider2D[] _wallOverlaps = new Collider2D[8];
 
         public bool IsCrouching => _crouching.Value;
         public bool IsGrounded => _isGrounded;
@@ -240,6 +241,9 @@ namespace PiGame.Gameplay
             int count = _bodyCollider.GetContacts(filter, _wallContacts);
             for (int i = 0; i < count; i++)
             {
+                Collider2D surface = _wallContacts[i].collider;
+                if (surface == _bodyCollider) surface = _wallContacts[i].otherCollider;
+                if (surface == null || surface == _ignoredPlatform || IsOneWayPlatform(surface)) continue;
                 if (Mathf.Abs(_wallContacts[i].normal.x) > 0.5f) return false;
             }
 
@@ -344,12 +348,22 @@ namespace PiGame.Gameplay
 
             UpdateWallCheckPosition();
 
-            Collider2D wall = Physics2D.OverlapCircle(
-                _wallCheck.position,
-                _wallCheckRadius,
-                _wallLayer);
+            var filter = new ContactFilter2D();
+            filter.SetLayerMask(_wallLayer);
+            filter.useTriggers = false;
+            int count = Physics2D.OverlapCircle(_wallCheck.position,
+                _wallCheckRadius, filter, _wallOverlaps);
+            Collider2D wall = null;
+            for (int i = 0; i < count; i++)
+            {
+                Collider2D surface = _wallOverlaps[i];
+                // Ground reúne os sólidos e as plataformas: só os sólidos permitem wall jump.
+                if (surface == _ignoredPlatform || IsOneWayPlatform(surface)) continue;
+                wall = surface;
+                break;
+            }
 
-            bool touchingWall = wall != null && wall != _ignoredPlatform;
+            bool touchingWall = wall != null;
 
             // Detecta o primeiro contato com a parede.
             if (touchingWall && !_isTouchingWall)

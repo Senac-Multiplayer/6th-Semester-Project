@@ -3348,7 +3348,7 @@ SpriteRenderer:
   m_SortingLayer: 11
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 1097947750561491309, guid: 599655a52533b24469c5967af3579db7, type: 3}
+  m_Sprite: {fileID: 6591384786708976612, guid: b9d6f17af2bc48248b74371177c508e7, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -3485,19 +3485,19 @@ MonoBehaviour:
   _coyoteTimer: 0.1
   _wallCheck: {fileID: 3692848841454754831}
   _wallCheckRadius: 0.15
-  _wallCheckOffest: 0.25
+  _wallCheckOffest: 0.35
   _wallLayer:
     serializedVersion: 2
-    m_Bits: 64
+    m_Bits: 72
   _wallStickTime: 0.5
-  _wallSlideSpeed: 3
+  _wallSlideSpeed: 4.5
   _fallMultiplier: 2
   _jumpHoldGravityMultiplier: 1.5
   _wallJumpHorizontalForce: 10
   _wallJumpVerticalForce: 12
   _wallJumpControlLockTime: 0.2
-  _crouchColliderOffset: -0.35
-  _crouchColliderHeightMultiplier: 0.5
+  _crouchColliderOffset: -0.13125
+  _crouchColliderHeightMultiplier: 0.714285714
 --- !u!61 &1704202820134216821
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -3532,7 +3532,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: 0, y: 0.05625}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.546875}
@@ -3542,7 +3542,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 0.6, y: 1.2}
+  m_Size: {x: 0.875, y: 1.3125}
   m_EdgeRadius: 0
 --- !u!114 &880000000000000001
 MonoBehaviour:
@@ -3615,7 +3615,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.CowboyCombat
   ShowTopMostFoldoutHeaderGroup: 1
   _projectile: {fileID: 11400000, guid: e8e571b683df48a7ba2d7534cb5d819e, type: 2}
-  _maximumAmmo: 6
+  _maximumAmmo: 4
   _reloadSeconds: 1.5
   _shotCooldownSeconds: 0.35
   _projectileSpawnDistance: 0.5
@@ -3631,8 +3631,6 @@ MonoBehaviour:
   - {fileID: 880000000000000105}
   - {fileID: 880000000000000108}
   - {fileID: 880000000000000111}
-  - {fileID: 880000000000000114}
-  - {fileID: 880000000000000117}
   _rollTint: {r: 0.45, g: 0.45, b: 0.45, a: 0.65}
 --- !u!114 &750885784796070611
 MonoBehaviour:
@@ -3790,7 +3788,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 42d993b2d6902d841a84d5d5d0c34606, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.PlayerHudLayout
   _settings: {fileID: 11400000, guid: f966782b26c1c1f4f8903948834cbb30, type: 2}
   _marker: {fileID: 8809000000000102}
@@ -3805,8 +3803,6 @@ MonoBehaviour:
   - {fileID: 880000000000000105}
   - {fileID: 880000000000000108}
   - {fileID: 880000000000000111}
-  - {fileID: 880000000000000114}
-  - {fileID: 880000000000000117}
 --- !u!114 &6438959898619147364
 MonoBehaviour:
   m_ObjectHideFlags: 0

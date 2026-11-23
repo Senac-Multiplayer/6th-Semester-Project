@@ -21,7 +21,7 @@ namespace PiGame.Gameplay
         [SerializeField, Range(0f, 180f)] private float _coneAngle = 60f;
         [SerializeField, Min(0f)] private float _projectileReflectMinimumSpeed = 3f;
         [SerializeField, Min(0.1f)] private float _maxAbilityHoldSeconds = 1.5f;
-        [SerializeField, Min(0f)] private float _abilityCooldownSeconds = 4f;
+        [SerializeField, Min(0f)] private float _abilityCooldownSeconds = 2.5f;
         [SerializeField, Min(0f)] private float _playerUpwardImpulse = 3f;
         [SerializeField, Min(0f)] private float _abilityGraceSeconds = 0.12f;
         [SerializeField, Min(0.1f)] private float _abilityStrikeSeconds = 0.52f;
