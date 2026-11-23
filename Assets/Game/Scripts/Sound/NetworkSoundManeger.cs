@@ -43,6 +43,11 @@ namespace PiGame.Sound
         [SerializeField] private List<SoundData> sfxList = new();
         [SerializeField] private List<MusicData> ostList = new();
 
+        [Header("Som da contagem da apresentação")]
+        [Tooltip("Variações tocadas em ordem, uma por número. Espaços vazios são ignorados; sem clipes, a contagem fica silenciosa. O sino de JÁ continua separado.")]
+        [SerializeField] private AudioClip[] countdownVariations = new AudioClip[6];
+        [SerializeField, Range(0f, 1f)] private float countdownVolume = 0.8f;
+
         private Dictionary<SFXList, SoundData> _sfxDict = new();
         private Dictionary<OSTList, MusicData> _ostDict = new();
 
@@ -104,6 +109,29 @@ namespace PiGame.Sound
         {
             if(Instance == null) return;
             Instance.PlaySFXLocal(sfx, Mathf.Clamp01(volume));
+        }
+
+        // O índice vem da etapa da apresentação: começa em zero em cada partida,
+        // mantendo a mesma sequência no host e nos clientes sem enviar outro RPC.
+        public void LocalCountdownTick(int stepIndex)
+        {
+            if (stepIndex < 0 || !sfxSource || countdownVariations == null) return;
+            AudioClip clip = CountdownVariation(stepIndex);
+            if (clip) sfxSource.PlayOneShot(clip, countdownVolume);
+        }
+
+        private AudioClip CountdownVariation(int stepIndex)
+        {
+            if (stepIndex < 0 || countdownVariations == null) return null;
+            int count = 0;
+            foreach (AudioClip clip in countdownVariations)
+                if (clip) count++;
+            if (count == 0) return null;
+
+            int selected = stepIndex % count;
+            foreach (AudioClip clip in countdownVariations)
+                if (clip && selected-- == 0) return clip;
+            return null;
         }
 
         public void PlayOST(OSTList ost, float volume = 0.3f)

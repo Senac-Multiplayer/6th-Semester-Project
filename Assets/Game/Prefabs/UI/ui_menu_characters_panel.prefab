@@ -75,7 +75,7 @@ MonoBehaviour:
     Story: "Membro dos Des\u00e9rticos, cria animais nas terras \u00e1ridas. Quer vencer o torneio e transformar a cidade em um dep\u00f3sito de sucata."
     Attack: "Dispara o rev\xF3lver na dire\xE7\xE3o da mira."
     Ability: "Rola para evitar dano e\nrecuperar parte da muni\xE7\xE3o."
-    Ammo: "6 disparos. Recarga autom\xE1tica."
+    Ammo: "4 disparos. Recarga autom\xE1tica."
     AbilityIcon: {fileID: 21300000, guid: 27880f89e1859a04687b53dc3c27987f, type: 3}
     Video: {fileID: 0}
   - Character: {fileID: 11400000, guid: c0400000000000000000000000000002, type: 2}
@@ -84,7 +84,7 @@ MonoBehaviour:
     Story: "Nerei lidera os Irrigadores, que abastecem a cidade com \u00e1gua. Quer vencer o torneio, inundar a cidade e erguer seu pr\u00f3prio imp\u00e9rio."
     Attack: "Atira pregos de gelo onde voc\u00ea mira.\nCausam dano e fincam em superf\u00edcies."
     Ability: "Ap\u00f3s 2 disparos, puxa os pregos\npresos na dire\u00e7\u00e3o da mira."
-    Ammo: "4 pregos. Colete-os por contato ou\npela habilidade. Retornam ap\u00f3s 10s."
+    Ammo: "2 pregos. Colete-os por contato ou\npela habilidade. Retornam ap\u00f3s 10s."
     AbilityIcon: {fileID: 21300000, guid: c3ff0229dd78a4343b9c826fcb387cc3, type: 3}
     PortraitOffset: {x: 140, y: 0}
     Video: {fileID: 0}
