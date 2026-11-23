@@ -19,7 +19,7 @@ namespace PiGame.Gameplay
         [SerializeField] private TMP_Text _countdownLabel;
         [SerializeField, Min(0.5f)] private float _closeupSize = 2.2f;
         [SerializeField, Min(0f)] private float _panDistance = 0.6f;
-        [Tooltip("Espera máxima pelo apoio no chão antes de liberar a apresentação.")]
+        [Tooltip("Tempo de cada tentativa de encontrar apoio seguro. Após três falhas, a sala volta ao lobby.")]
         [SerializeField, Min(0.5f)] private float _spawnSettleTimeoutSeconds = 5f;
         [Tooltip("Ligue aqui os sons: recebe de 6 a 1 durante a apresentação, ou de 3 a 1 no modo separado, e 0 para JÁ. Executado localmente uma vez por etapa.")]
         [SerializeField] private UnityEvent<int> _countdownStepChanged = new UnityEvent<int>();
@@ -68,17 +68,13 @@ namespace PiGame.Gameplay
                 .Where(p => p.IsSpawned && p.PlayerSlot >= 0).OrderBy(p => p.PlayerSlot)
                 .ToArray();
             NetworkPlayerState localPlayer = _players.First(p => p.IsOwner);
-            PlayerMove movement = localPlayer.GetComponent<PlayerMove>();
-            Rigidbody2D body = localPlayer.GetComponent<Rigidbody2D>();
-            float deadline = Time.unscaledTime + _spawnSettleTimeoutSeconds;
-            // O proprietário confirma seu apoio; o host espera a confirmação de todos.
-            while (localPlayer && localPlayer.IsSpawned
-                && (!movement.IsGrounded || Mathf.Abs(body.linearVelocity.y) > 0.1f)
-                && Time.unscaledTime < deadline)
-                yield return null;
+            yield return localPlayer.PrepareInitialSpawn(_spawnSettleTimeoutSeconds);
             if (!localPlayer || !localPlayer.IsSpawned) yield break;
-            if (!movement.IsGrounded || Mathf.Abs(body.linearVelocity.y) > 0.1f)
-                Debug.LogWarning($"O jogador P{localPlayer.PlayerSlot + 1} não encontrou apoio no spawn antes do limite de espera.", localPlayer);
+            if (!localPlayer.IsInitialSpawnPrepared)
+            {
+                _matchController.AbortIntroRpc();
+                yield break;
+            }
 
             _players = _players.Where(p => p && p.IsSpawned).ToArray();
             _playerPositions = _players.Select(p => p.transform.position).ToArray();

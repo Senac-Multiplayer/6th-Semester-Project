@@ -25,6 +25,8 @@ namespace PiGame.Gameplay
         private readonly NetworkVariable<double> _introStartsAt = new NetworkVariable<double>();
         private readonly NetworkVariable<int> _introPlayerCount = new NetworkVariable<int>();
         private readonly HashSet<ulong> _introReady = new HashSet<ulong>();
+        [SerializeField, Min(10f)] private float _spawnPreparationTimeoutSeconds = 45f;
+        private float _preparationStartedAt;
         [Header("Tela de resultado")]
         [Tooltip("Espera para assistir à subida dos pilares antes de liberar o retorno.")]
         [SerializeField, Min(0f)] private float _resultInputDelaySeconds = 3f;
@@ -157,22 +159,23 @@ namespace PiGame.Gameplay
             _introReady.Clear();
             _introStartsAt.Value = 0d;
             _phase.Value = MatchPhase.WaitingForPlayers;
+            _preparationStartedAt = Time.unscaledTime;
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void ReadyForIntroRpc(RpcParams rpcParams = default)
         {
             ulong sender = rpcParams.Receive.SenderClientId;
-            if (_phase.Value != MatchPhase.WaitingForPlayers || !_players.ContainsKey(sender)) return;
+            if (_returningToLobby || _phase.Value != MatchPhase.WaitingForPlayers || !_players.ContainsKey(sender)) return;
             _introReady.Add(sender);
             TryBeginPresentation();
         }
 
         private void TryBeginPresentation()
         {
-            if (_phase.Value != MatchPhase.WaitingForPlayers || _players.Count == 0) return;
+            if (_returningToLobby || _phase.Value != MatchPhase.WaitingForPlayers || _players.Count == 0) return;
             foreach (ulong clientId in _players.Keys)
-                if (!_introReady.Contains(clientId)) return;
+                if (!_introReady.Contains(clientId) || !_players[clientId].IsInitialSpawnPrepared) return;
 
             _introPlayerCount.Value = _players.Count;
             _introStartsAt.Value = NetworkManager.ServerTime.Time + 0.35d;
@@ -207,6 +210,14 @@ namespace PiGame.Gameplay
         private void Update()
         {
             if (!IsServer) return;
+            if (_phase.Value == MatchPhase.WaitingForPlayers && !_returningToLobby)
+            {
+                // A confirmação por RPC e a variável de preparo podem chegar em ticks diferentes.
+                TryBeginPresentation();
+                if (_phase.Value == MatchPhase.WaitingForPlayers && _players.Count > 0
+                    && Time.unscaledTime - _preparationStartedAt >= _spawnPreparationTimeoutSeconds)
+                    AbortIntroServer();
+            }
             if (_phase.Value == MatchPhase.ShowingResult)
             {
                 if (!_returningToLobby && ResultSecondsRemaining <= 0f) ReturnToLobbyServer();
@@ -387,6 +398,30 @@ namespace PiGame.Gameplay
         private void ShowLobbyRpc()
         {
             LobbySceneFlow.Instance.ShowLobbyLocally();
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        public void AbortIntroRpc(RpcParams rpcParams = default)
+        {
+            if (_players.ContainsKey(rpcParams.Receive.SenderClientId)) AbortIntroServer();
+        }
+
+        private void AbortIntroServer()
+        {
+            if (_returningToLobby || _phase.Value != MatchPhase.WaitingForPlayers) return;
+            _returningToLobby = true;
+            Debug.LogWarning("A preparação do spawn falhou. Retornando a sala ao lobby.", this);
+            SetPlayersActive(false, false);
+            if (LobbySceneFlow.Instance == null)
+            {
+                NetworkManager.Shutdown();
+                return;
+            }
+            LobbySceneFlow.Instance.PrepareNextMatchServer();
+            ShowLobbyRpc();
+            foreach (NetworkPlayerState player in _players.Values)
+                if (player != null && player.IsSpawned) player.NetworkObject.Despawn(true);
+            LobbySceneFlow.Instance.UnloadMapServer();
         }
 
         private void HandleClientDisconnected(ulong clientId)
