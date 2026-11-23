@@ -16,14 +16,11 @@ namespace PiGame.Gameplay
         [SerializeField] private AmmoIndicatorsView _nailIndicators;
         private NetworkVariable<int> _nails = new NetworkVariable<int>(0);
         public int Nails => _nails.Value;
-        
+
         [Header("Magnet Settings")]
         [SerializeField, Min(0f)] private float _magnetRadius = 8f;
-
         [SerializeField, Range(0f, 1f)] private float _magnetAimThreshold = 0.5f;
-
         [SerializeField, Min(0f)] private float _magnetSpeed = 20f;
-
         [SerializeField, Min(0f)] private float _magnetStopDistance = 0.25f;
         private bool _magnetBlockedUntilRelease;
 
@@ -31,6 +28,12 @@ namespace PiGame.Gameplay
         [SerializeField, Min(0f)] private float _abilityRadius = 8f;
         [SerializeField, Range(0f, 1f)] private float _abilityAimThreshold = 0.5f;
         [SerializeField, Min(0f)] private float _abilityPullSpeed = 25f;
+        [SerializeField] private GameObject _vortexVfxObject;
+
+        private readonly NetworkVariable<bool> _vortexActiveNet = new NetworkVariable<bool>(
+            false,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server);
 
         private readonly List<IrrigadorProjectile> _abilityTargets = new();
         private readonly List<Collider2D> _abilityHits = new(8);
@@ -53,6 +56,8 @@ namespace PiGame.Gameplay
             _playerState = GetComponent<NetworkPlayerState>();
             _rigidbody = GetComponent<Rigidbody2D>();
             _irrigadorSound = GetComponent<IrrigadorSoundManager>();
+            SetVortexVisual(false);
+
             if (_projectile == null || _projectile.Prefab == null)
             {
                 Debug.LogError("Configure uma definição com prefab de projétil no BasicCharacterCombat.", this);
@@ -62,25 +67,43 @@ namespace PiGame.Gameplay
         public override void OnNetworkSpawn()
         {
             _nails.OnValueChanged += HandleNailsChanged;
+            _vortexActiveNet.OnValueChanged += HandleVortexActiveChanged;
             _playerState.StateChanged += RefreshNailIndicators;
             RefreshNailIndicators();
+            SetVortexVisual(_vortexActiveNet.Value);
 
-            if(!IsServer)
+            if (!IsServer)
                 return;
-            
+
             _nails.Value = _maxNails;
+            _vortexActiveNet.Value = false;
         }
 
         public override void OnNetworkDespawn()
         {
             _nails.OnValueChanged -= HandleNailsChanged;
+            _vortexActiveNet.OnValueChanged -= HandleVortexActiveChanged;
             _playerState.StateChanged -= RefreshNailIndicators;
             _nailIndicators.SetCount(0, false, _playerState.IndicatorColor);
+            SetVortexVisual(false);
 
-            //Limpa quando o jogador desconectar do jogo
             if (IsServer)
             {
+                _vortexActiveNet.Value = false;
                 _activeProjectiles.Clear();
+            }
+        }
+
+        private void HandleVortexActiveChanged(bool previousValue, bool currentValue)
+        {
+            SetVortexVisual(currentValue);
+        }
+
+        private void SetVortexVisual(bool active)
+        {
+            if (_vortexVfxObject != null)
+            {
+                _vortexVfxObject.SetActive(active);
             }
         }
 
@@ -100,12 +123,12 @@ namespace PiGame.Gameplay
             if (!IsServer || !_playerState.CanAct)
                 return;
 
-            if(_nails.Value <= 0)
+            if (_nails.Value <= 0)
                 return;
 
-            if(_projectile == null || _projectile.Prefab == null || Time.time < _nextShotTime)
+            if (_projectile == null || _projectile.Prefab == null || Time.time < _nextShotTime)
                 return;
-            
+
             _nextShotTime = Time.time + _shotCooldownSeconds;
 
             Vector2 shotDirection = direction.sqrMagnitude > 0.01f
@@ -114,14 +137,14 @@ namespace PiGame.Gameplay
             NetworkProjectile projectile = Instantiate(
                 _projectile.Prefab, transform.position,
                 Quaternion.FromToRotation(Vector2.right, shotDirection));
-            if(_irrigadorSound != null)
+            if (_irrigadorSound != null)
             {
                 _irrigadorSound.PlayNailShoot();
             }
             projectile.PlaceAtMuzzle(shotDirection, _projectileSpawnDistance);
             projectile.NetworkObject.Spawn(true);
             IrrigadorProjectile irrigadorProjectile = projectile.GetComponent<IrrigadorProjectile>();
-            if(irrigadorProjectile != null)
+            if (irrigadorProjectile != null)
             {
                 irrigadorProjectile.InitializeServer(OwnerClientId, shotDirection, _playerState.IndicatorColor, _projectile, _irrigadorSound);
                 _activeProjectiles.RemoveAll(p => p == null || !p.IsSpawned);
@@ -130,17 +153,18 @@ namespace PiGame.Gameplay
             else
             {
                 projectile.InitializeServer(
-                    OwnerClientId, shotDirection, _playerState.IndicatorColor, _projectile);           
+                    OwnerClientId, shotDirection, _playerState.IndicatorColor, _projectile);
             }
-        
+
             _nails.Value--;
 
-            if(_nails.Value <= 0)
+            if (_nails.Value <= 0)
             {
                 _magnetBlockedUntilRelease = true;
                 StopMagnetServer();
             }
         }
+
         public void RefillAmmoServer()
         {
             if (!IsServer) return;
@@ -165,11 +189,12 @@ namespace PiGame.Gameplay
             }
             _activeProjectiles.Clear();
         }
+
         public void AddNailServer()
         {
-            if(!IsServer)
+            if (!IsServer)
                 return;
-            
+
             _nails.Value = Mathf.Min(_nails.Value + 1, _maxNails);
         }
 
@@ -180,38 +205,38 @@ namespace PiGame.Gameplay
 
             Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, _magnetRadius);
 
-            foreach(Collider2D hit in hits)
+            foreach (Collider2D hit in hits)
             {
                 IrrigadorProjectile nail = hit.GetComponentInParent<IrrigadorProjectile>();
 
-                if(nail == null)
+                if (nail == null)
                     continue;
-                
-                if(!nail.IsStuck)
+
+                if (!nail.IsStuck)
                     continue;
-                
-                if(nail.ShooterClientId != OwnerClientId)
+
+                if (nail.ShooterClientId != OwnerClientId)
                     continue;
-                
+
                 Vector2 toNail = ((Vector2)nail.transform.position - (Vector2)transform.position).normalized;
 
                 float alignment = Vector2.Dot(aimDirection.normalized, toNail);
 
-                if(alignment < bestAlignment)
+                if (alignment < bestAlignment)
                     continue;
-                
+
                 bestAlignment = alignment;
                 bestTarget = nail;
             }
 
             return bestTarget;
         }
-        
+
         private void TryActiveMagnetServer(Vector2 aimDirection)
         {
             IrrigadorProjectile target = FindMagnetTarget(aimDirection);
 
-            if(target == null)
+            if (target == null)
             {
                 StopMagnetServer();
                 return;
@@ -220,6 +245,7 @@ namespace PiGame.Gameplay
             _magnetTarget = target;
             _magnetActive.Value = true;
         }
+
         private void StopMagnetServer()
         {
             _magnetTarget = null;
@@ -228,19 +254,19 @@ namespace PiGame.Gameplay
 
         public void ShootReleaseServer()
         {
-           if(!IsServer)
-            return;
+            if (!IsServer)
+                return;
 
             _magnetBlockedUntilRelease = false;
-            StopMagnetServer(); 
+            StopMagnetServer();
         }
 
         public void UpdateShootAimServer(Vector2 direction)
         {
-            if(!IsServer)
+            if (!IsServer)
                 return;
 
-            if(_nails.Value > 0 || _magnetBlockedUntilRelease)
+            if (_nails.Value > 0 || _magnetBlockedUntilRelease)
             {
                 if (_magnetActive.Value)
                     StopMagnetServer();
@@ -249,14 +275,14 @@ namespace PiGame.Gameplay
 
             TryActiveMagnetServer(direction);
         }
+
         private void FixedUpdate()
         {
-            if(!IsServer)
+            if (!IsServer)
                 return;
-            
+
             UpdateMagnetServer();
             UpdateAbilityServer();
-            // Apenas apresenta as condições existentes; não altera o uso da habilidade.
             _playerState.SetAbilityAvailabilityServer(
                 _playerState.CanAct && _nails.Value <= _maxNails - 2,
                 _playerState.CanAct && _abilityActive);
@@ -272,7 +298,7 @@ namespace PiGame.Gameplay
                 return;
             }
 
-            if(_irrigadorSound != null)
+            if (_irrigadorSound != null)
             {
                 _irrigadorSound.PlayIrrigadorPull();
             }
@@ -300,39 +326,40 @@ namespace PiGame.Gameplay
 
             Vector2 normalizedAim = _abilityAimDirection;
 
-            foreach(Collider2D hit in _abilityHits)
+            foreach (Collider2D hit in _abilityHits)
             {
                 IrrigadorProjectile nail = hit.GetComponentInParent<IrrigadorProjectile>();
 
-                if(nail == null)
+                if (nail == null)
                     continue;
 
-                if(!nail.IsStuck)
+                if (!nail.IsStuck)
                     continue;
-                if(nail.ShooterClientId != OwnerClientId)
+                if (nail.ShooterClientId != OwnerClientId)
                     continue;
-                if(_abilityTargets.Contains(nail))
+                if (_abilityTargets.Contains(nail))
                     continue;
-                    
+
                 Vector2 toNail = ((Vector2)nail.transform.position - (Vector2)transform.position).normalized;
 
-                float alignment = Vector2.Dot(normalizedAim,toNail);
+                float alignment = Vector2.Dot(normalizedAim, toNail);
 
-                if(alignment < _abilityAimThreshold)
+                if (alignment < _abilityAimThreshold)
                     continue;
-                
+
                 _abilityTargets.Add(nail);
             }
         }
 
         public void BeginAbilityServer(Vector2 aimDirection, Vector2 moveDirection)
         {
-            if(!IsServer || !_playerState.CanAct)
+            if (!IsServer || !_playerState.CanAct)
                 return;
-            
-            if(_nails.Value > _maxNails - 2)
+
+            _vortexActiveNet.Value = true;
+            if (_nails.Value > _maxNails - 2)
                 return;
-            
+
             _abilityTargets.Clear();
             _abilityAimDirection = aimDirection.normalized;
             _abilityActive = true;
@@ -341,50 +368,49 @@ namespace PiGame.Gameplay
 
         private void UpdateAbilityServer()
         {
-            if(!_abilityActive)
+            if (!_abilityActive)
                 return;
 
-            if(!_playerState.CanAct)
+            if (!_playerState.CanAct)
             {
                 EndAbilityServer(_abilityAimDirection, Vector2.zero);
                 return;
             }
 
-            // Incluir também os pregos que fincam depois de apertar a habilidade.
             RefreshAbilityTargets();
 
-            if(_abilityTargets.Count > 0 && _irrigadorSound != null)
+            if (_abilityTargets.Count > 0 && _irrigadorSound != null)
             {
                 _irrigadorSound.PlayIrrigadorSkill();
             }
-            
-            for(int i = _abilityTargets.Count - 1; i >=0; i--)
+
+            for (int i = _abilityTargets.Count - 1; i >= 0; i--)
             {
                 IrrigadorProjectile nail = _abilityTargets[i];
 
-                if(nail == null || !nail.IsSpawned || !nail.IsStuck)
+                if (nail == null || !nail.IsSpawned || !nail.IsStuck)
                 {
                     _abilityTargets.RemoveAt(i);
                     continue;
                 }
 
                 Vector2 toPlayer = (Vector2)transform.position - (Vector2)nail.transform.position;
-                
-                if(toPlayer.sqrMagnitude <= 0.01f)
+
+                if (toPlayer.sqrMagnitude <= 0.01f)
                     continue;
-                
-                nail.PullServer(toPlayer.normalized, _abilityPullSpeed,true);
+
+                nail.PullServer(toPlayer.normalized, _abilityPullSpeed, true);
             }
         }
 
         public void EndAbilityServer(Vector2 aimDirection, Vector2 moveDirection)
         {
-            if(!IsServer)
+            if (!IsServer)
                 return;
 
-            foreach(IrrigadorProjectile nail in _abilityTargets)
+            foreach (IrrigadorProjectile nail in _abilityTargets)
             {
-                if(nail != null)
+                if (nail != null)
                 {
                     nail.StopPullServer();
                 }
@@ -392,9 +418,7 @@ namespace PiGame.Gameplay
 
             _abilityTargets.Clear();
             _abilityActive = false;
+            _vortexActiveNet.Value = false;
         }
-
-
     }
 }
-

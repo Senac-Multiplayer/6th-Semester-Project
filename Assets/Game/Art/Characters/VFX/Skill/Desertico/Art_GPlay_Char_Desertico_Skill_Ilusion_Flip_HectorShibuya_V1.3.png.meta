@@ -1,0 +1,431 @@
+fileFormatVersion: 2
+guid: b7268a19af6cc6649b317ad4e22c4387
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -6584730407757926376
+    second: Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_0
+  - first:
+      213: 2054220514826158412
+    second: Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_1
+  - first:
+      213: -3139414213440587201
+    second: Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_2
+  - first:
+      213: 387714861193775346
+    second: Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_3
+  - first:
+      213: 2416288512019586986
+    second: Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_4
+  - first:
+      213: 3405766529939509845
+    second: Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_5
+  - first:
+      213: -5502921539969976815
+    second: Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_6
+  - first:
+      213: 8391647544046604819
+    second: Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_7
+  - first:
+      213: 7043054112960794173
+    second: Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_8
+  - first:
+      213: 785132807452559506
+    second: Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_9
+  - first:
+      213: 7453058339232115680
+    second: Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_10
+  - first:
+      213: 5265090224557080024
+    second: Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_11
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 16
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_0
+      rect:
+        serializedVersion: 2
+        x: 7
+        y: 8
+        width: 14
+        height: 18
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c2865b433c55d024c9ff2905e3f2e902
+      internalID: -6584730407757926376
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_1
+      rect:
+        serializedVersion: 2
+        x: 39
+        y: 8
+        width: 16
+        height: 13
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ba1c72fec5e931d409d73078cc8ab6db
+      internalID: 2054220514826158412
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_2
+      rect:
+        serializedVersion: 2
+        x: 73
+        y: 8
+        width: 13
+        height: 13
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 530e070e5d1af1f4db63c8b0da529aaf
+      internalID: -3139414213440587201
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_3
+      rect:
+        serializedVersion: 2
+        x: 106
+        y: 8
+        width: 13
+        height: 11
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c812b396512e6f34cac5956cdbf1765e
+      internalID: 387714861193775346
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_4
+      rect:
+        serializedVersion: 2
+        x: 138
+        y: 8
+        width: 13
+        height: 9
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f98ac9c65f452e547a4dabb20c7bbd54
+      internalID: 2416288512019586986
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_5
+      rect:
+        serializedVersion: 2
+        x: 171
+        y: 8
+        width: 11
+        height: 9
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 23dd4ac69bac3314e9f8f197a48ff2cd
+      internalID: 3405766529939509845
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_6
+      rect:
+        serializedVersion: 2
+        x: 203
+        y: 8
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9a79b034b5bc92949bacab689057791f
+      internalID: -5502921539969976815
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_7
+      rect:
+        serializedVersion: 2
+        x: 234
+        y: 8
+        width: 13
+        height: 9
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 64040e111c2f11e479d5c15193690005
+      internalID: 8391647544046604819
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_8
+      rect:
+        serializedVersion: 2
+        x: 266
+        y: 8
+        width: 12
+        height: 10
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c707b2a75cb5903439559efae103f5ee
+      internalID: 7043054112960794173
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_9
+      rect:
+        serializedVersion: 2
+        x: 297
+        y: 8
+        width: 12
+        height: 11
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a0fa7d2e24c827b49ad3ac67c7e40cb0
+      internalID: 785132807452559506
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_10
+      rect:
+        serializedVersion: 2
+        x: 328
+        y: 7
+        width: 15
+        height: 17
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: bbb76f9955c6b1b4992bc9fed3192e6c
+      internalID: 7453058339232115680
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_11
+      rect:
+        serializedVersion: 2
+        x: 362
+        y: 8
+        width: 11
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 89a76ae13903e7c4bb22167a0f6ba85b
+      internalID: 5265090224557080024
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: aceb15aceae9c8c4688921354ee436a1
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries:
+      - key: SpriteEditor.SliceSettings
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":64.0,"y":64.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":0,"keepEmptyRects":false,"isAlternate":false}'
+    nameFileIdTable:
+      Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_0: -6584730407757926376
+      Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_1: 2054220514826158412
+      Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_10: 7453058339232115680
+      Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_11: 5265090224557080024
+      Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_2: -3139414213440587201
+      Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_3: 387714861193775346
+      Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_4: 2416288512019586986
+      Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_5: 3405766529939509845
+      Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_6: -5502921539969976815
+      Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_7: 8391647544046604819
+      Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_8: 7043054112960794173
+      Art_GPlay_Char_Desertico_Skill_Ilusion_Flip_HectorShibuya_V1.3_9: 785132807452559506
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
