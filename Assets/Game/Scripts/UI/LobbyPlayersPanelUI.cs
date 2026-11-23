@@ -96,8 +96,9 @@ namespace PiGame.UI
                 || !_state.TryGetPlayer(_targets[index], out LobbyPlayerData player)) return;
             StopFocus(); _pendingTarget = player.ClientId; RefreshInteractable();
             string playerColor = PiGame.Gameplay.PlayerSlotColors.GetHtml(player.PlayerSlot);
-            _confirmation.Show($"EXPULSAR ESTE JOGADOR?\n\n<color=#{playerColor}><noparse>{player.PlayerName}</noparse></color>"
-                + "\n\n<size=22>Ele será desconectado da sala.</size>", "EXPULSAR");
+            string name = player.PlayerName.ToString().Replace("<", "‹").Replace(">", "›");
+            _confirmation.Show($"EXPULSAR ESTE JOGADOR?\n<color=#{playerColor}>{name}</color>"
+                + "\n<size=80%>Ele será desconectado da sala.</size>", "EXPULSAR");
         }
         private void ConfirmKick()
         {
