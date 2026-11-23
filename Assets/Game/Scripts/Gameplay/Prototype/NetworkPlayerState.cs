@@ -12,7 +12,7 @@ namespace PiGame.Gameplay
     public class NetworkPlayerState : NetworkBehaviour
     {
         [SerializeField] private int _maximumHealth = 3;
-        [SerializeField, Min(0f)] private float _respawnInvulnerabilitySeconds = 1f;
+        [SerializeField, Min(0f)] private float _respawnInvulnerabilitySeconds = 1.5f;
         [SerializeField, Min(0.01f)] private float _respawnBlinkInterval = 0.1f;
         [SerializeField] private GameObject _deathPropPrefab;
         private GameObject _activeDeathProp;
@@ -49,7 +49,10 @@ namespace PiGame.Gameplay
         }
 
         private SpriteRenderer[] _spriteRenderers;
+        private const float RespawnTintMultiplier = 0.8f;
         private SpriteRenderer _bodySpriteRenderer;
+        private Color _healthTint = Color.white;
+        private bool _respawnTintDark;
         private Collider2D[] _colliders;
         private Rigidbody2D _rigidbody;
         private GeneralPlayerSoundManager _playerSound;
@@ -116,22 +119,25 @@ namespace PiGame.Gameplay
             StateChanged?.Invoke();
         }
 
-        private void Update()
+        private void LateUpdate()
         {
-            bool hideBody = false;
-            if (IsSpawned && IsAlive)
+            bool dark = false;
+            if (IsSpawned && CanAct)
             {
                 double remaining = _respawnInvulnerabilityEndsAt.Value - NetworkManager.ServerTime.Time;
-                hideBody = remaining > 0d
+                dark = remaining > 0d
                     && (long)(remaining / Mathf.Max(0.01f, _respawnBlinkInterval)) % 2 == 0;
             }
 
-            _bodySpriteRenderer.forceRenderingOff = hideBody;
+            if (_respawnTintDark == dark) return;
+            _respawnTintDark = dark;
+            ApplyBodyTint();
         }
 
         public override void OnNetworkDespawn()
         {
-            _bodySpriteRenderer.forceRenderingOff = false;
+            _respawnTintDark = false;
+            ApplyBodyTint();
             _playerSlot.OnValueChanged -= HandleIntChanged;
             _team.OnValueChanged -= HandleTeamChanged;
             _characterId.OnValueChanged -= HandleCharacterChanged;
@@ -478,9 +484,18 @@ namespace PiGame.Gameplay
                 ? (float)_currentHealth.Value / _maximumHealth
                 : 0f;
             Color damageColor = new Color(0.55f, 0.18f, 0.18f, 1f);
-            Color playerColor = Color.Lerp(damageColor, Color.white, healthRatio);
+            _healthTint = Color.Lerp(damageColor, Color.white, healthRatio);
+            ApplyBodyTint();
+        }
 
-            _bodySpriteRenderer.color = playerColor;
+        private void ApplyBodyTint()
+        {
+            float multiplier = _respawnTintDark ? RespawnTintMultiplier : 1f;
+            _bodySpriteRenderer.color = new Color(
+                _healthTint.r * multiplier,
+                _healthTint.g * multiplier,
+                _healthTint.b * multiplier,
+                _healthTint.a);
         }
 
         private void HandleCharacterChanged(
