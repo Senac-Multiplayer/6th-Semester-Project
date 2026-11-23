@@ -9,7 +9,7 @@ namespace PiGame.Gameplay
     public class CowboyCombat : NetworkBehaviour, ICharacterCombat
     {
         [SerializeField] private ProjectileDefinition _projectile;
-        [SerializeField, Min(1)] private int _maximumAmmo = 6;
+        [SerializeField, Min(1)] private int _maximumAmmo = 4;
         [SerializeField, Min(0.01f)] private float _reloadSeconds = 1.5f;
         [SerializeField, Min(0f)] private float _shotCooldownSeconds = 0.35f;
         [SerializeField, Min(0f)] private float _projectileSpawnDistance = 0.5f;

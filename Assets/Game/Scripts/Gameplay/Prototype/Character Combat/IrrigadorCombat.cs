@@ -12,9 +12,9 @@ namespace PiGame.Gameplay
         [SerializeField] private ProjectileDefinition _projectile;
         [SerializeField, Min(0f)] private float _shotCooldownSeconds = 0.35f;
         [SerializeField, Min(0f)] private float _projectileSpawnDistance = 0.85f;
-        [SerializeField, Min(1f)] private int _maxNails = 4;
+        [SerializeField, Min(2)] private int _maxNails = 2;
         [SerializeField] private AmmoIndicatorsView _nailIndicators;
-        private NetworkVariable<int> _nails = new NetworkVariable<int>(4);
+        private NetworkVariable<int> _nails = new NetworkVariable<int>(0);
         public int Nails => _nails.Value;
         
         [Header("Magnet Settings")]
@@ -38,7 +38,8 @@ namespace PiGame.Gameplay
         private Vector2 _abilityAimDirection;
 
         private IrrigadorProjectile _magnetTarget;
-        private bool _magnetActive;
+        private readonly NetworkVariable<bool> _magnetActive = new(false);
+        public bool IsMagnetActive => _magnetActive.Value;
 
         private NetworkPlayerState _playerState;
         private Rigidbody2D _rigidbody;
@@ -144,6 +145,8 @@ namespace PiGame.Gameplay
         {
             if (!IsServer) return;
             _nails.Value = _maxNails;
+            _magnetBlockedUntilRelease = false;
+            StopMagnetServer();
         }
 
         public void ClearProjectilesServer()
@@ -215,12 +218,12 @@ namespace PiGame.Gameplay
             }
 
             _magnetTarget = target;
-            _magnetActive = true;
+            _magnetActive.Value = true;
         }
         private void StopMagnetServer()
         {
             _magnetTarget = null;
-            _magnetActive = false;
+            _magnetActive.Value = false;
         }
 
         public void ShootReleaseServer()
@@ -239,7 +242,7 @@ namespace PiGame.Gameplay
 
             if(_nails.Value > 0 || _magnetBlockedUntilRelease)
             {
-                if (_magnetActive)
+                if (_magnetActive.Value)
                     StopMagnetServer();
                 return;
             }
@@ -261,8 +264,13 @@ namespace PiGame.Gameplay
 
         private void UpdateMagnetServer()
         {
-            if (!_magnetActive || _magnetTarget == null)
+            if (!_magnetActive.Value)
                 return;
+            if (_magnetTarget == null || !_magnetTarget.IsSpawned || !_magnetTarget.IsStuck || !_playerState.CanAct)
+            {
+                StopMagnetServer();
+                return;
+            }
 
             if(_irrigadorSound != null)
             {

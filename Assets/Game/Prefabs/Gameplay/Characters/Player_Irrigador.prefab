@@ -2951,19 +2951,19 @@ MonoBehaviour:
   _coyoteTimer: 0.1
   _wallCheck: {fileID: 5445607828228128791}
   _wallCheckRadius: 0.15
-  _wallCheckOffest: 0.25
+  _wallCheckOffest: 0.35
   _wallLayer:
     serializedVersion: 2
-    m_Bits: 64
+    m_Bits: 72
   _wallStickTime: 0.5
-  _wallSlideSpeed: 3
+  _wallSlideSpeed: 4.5
   _fallMultiplier: 2
   _jumpHoldGravityMultiplier: 1.5
   _wallJumpHorizontalForce: 10
   _wallJumpVerticalForce: 12
   _wallJumpControlLockTime: 0.2
-  _crouchColliderOffset: -0.25
-  _crouchColliderHeightMultiplier: 0.5
+  _crouchColliderOffset: -0.13125
+  _crouchColliderHeightMultiplier: 0.833333333
 --- !u!61 &5033178508802715014
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -2998,7 +2998,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: 0, y: -0.0375}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.421875, y: 0.5}
@@ -3008,7 +3008,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 0.6, y: 1}
+  m_Size: {x: 0.875, y: 1.125}
   m_EdgeRadius: 0
 --- !u!114 &880000000000000001
 MonoBehaviour:
@@ -3062,6 +3062,7 @@ MonoBehaviour:
   _playerLabel: {fileID: 8809000000000113}
   _abilityBackground: {fileID: 8809000000000142}
   _abilityFill: {fileID: 8809000000000152}
+  _passiveAbilityIcon: {fileID: 21300000, guid: 55c312014a4642a49f227d79d7a0ed4e, type: 3}
   _localHintLabel: {fileID: 8809000000000133}
   _localHintSeconds: 3
   _abilityOpacity: 0.7
@@ -3081,7 +3082,7 @@ MonoBehaviour:
   _projectile: {fileID: 11400000, guid: 3711db20005729045ae7e26f952e74f4, type: 2}
   _shotCooldownSeconds: 0.35
   _projectileSpawnDistance: 0.85
-  _maxNails: 4
+  _maxNails: 2
   _nailIndicators: {fileID: 880000000000000120}
   _magnetRadius: 8
   _magnetAimThreshold: 0.5
@@ -3179,8 +3180,6 @@ MonoBehaviour:
   _indicators:
   - {fileID: 880000000000000102}
   - {fileID: 880000000000000105}
-  - {fileID: 880000000000000108}
-  - {fileID: 880000000000000111}
 --- !u!114 &890000000000000002
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3338,5 +3337,3 @@ MonoBehaviour:
   _ammoIndicators:
   - {fileID: 880000000000000102}
   - {fileID: 880000000000000105}
-  - {fileID: 880000000000000108}
-  - {fileID: 880000000000000111}
