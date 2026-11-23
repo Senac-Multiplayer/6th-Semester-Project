@@ -110,7 +110,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: ART_UI_Banner_Deserticos_V1.1
+      name: ART_UI_Banner_Deserticos_V1.2
       rect:
         serializedVersion: 2
         x: 17
@@ -120,7 +120,7 @@ TextureImporter:
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
-      customData:
+      customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
@@ -128,26 +128,26 @@ TextureImporter:
       spriteID: 433d253034134342836b6555851d8bbb
       internalID: 21300000
       vertices: []
-      indices:
+      indices: 
       edges: []
       weights: []
     outline: []
-    customData:
+    customData: 
     physicsShape: []
     bones: []
     spriteID: 433d253034134342836b6555851d8bbb
     internalID: 0
     vertices: []
-    indices:
+    indices: 
     edges: []
     weights: []
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      ART_UI_Banner_Deserticos_V1.1: 21300000
-  mipmapLimitGroupName:
+      ART_UI_Banner_Deserticos_V1.2: 21300000
+  mipmapLimitGroupName: 
   pSDRemoveMatte: 0
-  userData:
-  assetBundleName:
-  assetBundleVariant:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
