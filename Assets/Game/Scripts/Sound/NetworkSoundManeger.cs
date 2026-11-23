@@ -46,7 +46,7 @@ namespace PiGame.Sound
         [Header("Som da contagem da apresentação")]
         [Tooltip("Variações tocadas em ordem, uma por número. Espaços vazios são ignorados; sem clipes, a contagem fica silenciosa. O sino de JÁ continua separado.")]
         [SerializeField] private AudioClip[] countdownVariations = new AudioClip[6];
-        [SerializeField, Range(0f, 1f)] private float countdownVolume = 0.2f;
+        [SerializeField, Range(0f, 1f)] private float countdownVolume = 0.8f;
 
         private Dictionary<SFXList, SoundData> _sfxDict = new();
         private Dictionary<OSTList, MusicData> _ostDict = new();
