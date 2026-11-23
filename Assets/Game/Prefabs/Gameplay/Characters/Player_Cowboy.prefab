@@ -3630,7 +3630,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.CowboyCombat
   ShowTopMostFoldoutHeaderGroup: 1
   _projectile: {fileID: 11400000, guid: e8e571b683df48a7ba2d7534cb5d819e, type: 2}
-  _maximumAmmo: 6
+  _maximumAmmo: 4
   _reloadSeconds: 1.5
   _shotCooldownSeconds: 0.35
   _projectileSpawnDistance: 0.5
@@ -3646,8 +3646,6 @@ MonoBehaviour:
   - {fileID: 880000000000000105}
   - {fileID: 880000000000000108}
   - {fileID: 880000000000000111}
-  - {fileID: 880000000000000114}
-  - {fileID: 880000000000000117}
   _rollTint: {r: 0.45, g: 0.45, b: 0.45, a: 0.65}
 --- !u!114 &750885784796070611
 MonoBehaviour:
@@ -3882,5 +3880,3 @@ MonoBehaviour:
   - {fileID: 880000000000000105}
   - {fileID: 880000000000000108}
   - {fileID: 880000000000000111}
-  - {fileID: 880000000000000114}
-  - {fileID: 880000000000000117}

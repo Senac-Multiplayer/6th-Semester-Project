@@ -2131,7 +2131,7 @@ MonoBehaviour:
   _coneAngle: 60
   _projectileReflectMinimumSpeed: 6
   _maxAbilityHoldSeconds: 5
-  _abilityCooldownSeconds: 4
+  _abilityCooldownSeconds: 2.5
   _playerUpwardImpulse: 10
   _abilityGraceSeconds: 0.3
   _abilityStrikeSeconds: 0.52

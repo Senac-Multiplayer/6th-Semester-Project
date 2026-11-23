@@ -3062,6 +3062,7 @@ MonoBehaviour:
   _playerLabel: {fileID: 8809000000000113}
   _abilityBackground: {fileID: 8809000000000142}
   _abilityFill: {fileID: 8809000000000152}
+  _passiveAbilityIcon: {fileID: 21300000, guid: 55c312014a4642a49f227d79d7a0ed4e, type: 3}
   _localHintLabel: {fileID: 8809000000000133}
   _localHintSeconds: 3
   _abilityOpacity: 0.7
@@ -3081,7 +3082,7 @@ MonoBehaviour:
   _projectile: {fileID: 11400000, guid: 3711db20005729045ae7e26f952e74f4, type: 2}
   _shotCooldownSeconds: 0.35
   _projectileSpawnDistance: 0.85
-  _maxNails: 4
+  _maxNails: 2
   _nailIndicators: {fileID: 880000000000000120}
   _magnetRadius: 8
   _magnetAimThreshold: 0.5
@@ -3179,8 +3180,6 @@ MonoBehaviour:
   _indicators:
   - {fileID: 880000000000000102}
   - {fileID: 880000000000000105}
-  - {fileID: 880000000000000108}
-  - {fileID: 880000000000000111}
 --- !u!114 &890000000000000002
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3338,5 +3337,3 @@ MonoBehaviour:
   _ammoIndicators:
   - {fileID: 880000000000000102}
   - {fileID: 880000000000000105}
-  - {fileID: 880000000000000108}
-  - {fileID: 880000000000000111}
