@@ -3365,7 +3365,7 @@ SpriteRenderer:
   m_SortingLayer: 11
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 1097947750561491309, guid: 599655a52533b24469c5967af3579db7, type: 3}
+  m_Sprite: {fileID: 6591384786708976612, guid: b9d6f17af2bc48248b74371177c508e7, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -3513,7 +3513,7 @@ MonoBehaviour:
   _wallJumpHorizontalForce: 10
   _wallJumpVerticalForce: 12
   _wallJumpControlLockTime: 0.2
-  _crouchColliderOffset: -0.35
+  _crouchColliderOffset: -0.3
   _crouchColliderHeightMultiplier: 0.5
 --- !u!61 &1704202820134216821
 BoxCollider2D:
