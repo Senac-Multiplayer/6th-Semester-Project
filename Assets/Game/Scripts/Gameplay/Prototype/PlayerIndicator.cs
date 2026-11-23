@@ -10,11 +10,14 @@ namespace PiGame.Gameplay
         [SerializeField] private TextMeshPro _playerLabel;
         [SerializeField] private SpriteRenderer _abilityBackground;
         [SerializeField] private SpriteRenderer _abilityFill;
+        [SerializeField] private Sprite _passiveAbilityIcon;
         [SerializeField] private TextMeshPro _localHintLabel;
         [SerializeField, Min(0f)] private float _localHintSeconds = 3f;
         [SerializeField, Range(0f, 1f)] private float _abilityOpacity = 0.7f;
 
         private NetworkPlayerState _playerState;
+        private IrrigadorCombat _irrigadorCombat;
+        private Sprite _normalAbilityIcon;
         private bool _wasVisible;
         private bool _showLocalHint;
         private float _localHintEndsAt;
@@ -24,6 +27,7 @@ namespace PiGame.Gameplay
         private void Awake()
         {
             _playerState = GetComponent<NetworkPlayerState>();
+            _irrigadorCombat = GetComponent<IrrigadorCombat>();
             if (_marker == null || _playerLabel == null || _abilityBackground == null || _abilityFill == null || _localHintLabel == null)
             {
                 Debug.LogError("Configure marcador, nome, barra de habilidade e aviso local no PlayerIndicator do prefab.", this);
@@ -31,6 +35,7 @@ namespace PiGame.Gameplay
                 return;
             }
             _abilityProperties = new MaterialPropertyBlock();
+            _normalAbilityIcon = _abilityFill.sprite;
         }
 
         private void OnEnable()
@@ -63,6 +68,8 @@ namespace PiGame.Gameplay
             _abilityBackground.enabled = false;
             _abilityFill.enabled = visible;
             if (!visible) return;
+            _abilityFill.sprite = _irrigadorCombat != null && _irrigadorCombat.IsMagnetActive
+                && _passiveAbilityIcon != null ? _passiveAbilityIcon : _normalAbilityIcon;
 
             // Uma carga disponível mantém o ícone pronto enquanto a carga extra recarrega.
             float progress = availability > 0 ? 1f
