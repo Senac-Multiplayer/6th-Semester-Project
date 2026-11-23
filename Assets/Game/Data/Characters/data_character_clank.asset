@@ -25,7 +25,7 @@ MonoBehaviour:
   _lobbyDetailsScale: 1
   _lobbyFrame: {fileID: 21300000, guid: fcd71088d5ca43c5886323af31108508, type: 3}
   _lobbyBanner: {fileID: 21300000, guid: c3015dbf28c1455a9af307c988b5324e, type: 3}
-  _lobbyReadyBannerOffset: {x: 12, y: 4}
+  _lobbyReadyBannerOffset: {x: 12, y: -8}
   _lobbyUp: {fileID: 21300000, guid: 176547bfc90e462a8724ef02a91dabe4, type: 3}
   _lobbyUpPressed: {fileID: 21300000, guid: 9c4f78688639486d81e06f13828e193b, type: 3}
   _lobbyDown: {fileID: 21300000, guid: 6d1f94c2890341a09fbae030370205e7, type: 3}
