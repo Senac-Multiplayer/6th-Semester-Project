@@ -1,0 +1,374 @@
+fileFormatVersion: 2
+guid: 642d5264d41175540a28c59bee6829ed
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 4863654779550178374
+    second: Prop_Fumaceiro_Skill_VushMartelada_V1.0_0
+  - first:
+      213: 4799169441425566765
+    second: Prop_Fumaceiro_Skill_VushMartelada_V1.0_1
+  - first:
+      213: -6425063572773625368
+    second: Prop_Fumaceiro_Skill_VushMartelada_V1.0_2
+  - first:
+      213: -6741344395804317776
+    second: Prop_Fumaceiro_Skill_VushMartelada_V1.0_3
+  - first:
+      213: 2454261874563165526
+    second: Prop_Fumaceiro_Skill_VushMartelada_V1.0_4
+  - first:
+      213: 2252067085856064802
+    second: Prop_Fumaceiro_Skill_VushMartelada_V1.0_5
+  - first:
+      213: -6162535145941998951
+    second: Prop_Fumaceiro_Skill_VushMartelada_V1.0_6
+  - first:
+      213: -1520866626763340591
+    second: Prop_Fumaceiro_Skill_VushMartelada_V1.0_7
+  - first:
+      213: -1538187121538780839
+    second: Prop_Fumaceiro_Skill_VushMartelada_V1.0_8
+  - first:
+      213: -3178383163527670221
+    second: Prop_Fumaceiro_Skill_VushMartelada_V1.0_9
+  - first:
+      213: 5992865277500493091
+    second: Prop_Fumaceiro_Skill_VushMartelada_V1.0_10
+  - first:
+      213: 5790596001492321886
+    second: Prop_Fumaceiro_Skill_VushMartelada_V1.0_11
+  - first:
+      213: 3158437568650400584
+    second: Prop_Fumaceiro_Skill_VushMartelada_V1.0_12
+  - first:
+      213: 7399354757943893990
+    second: Prop_Fumaceiro_Skill_VushMartelada_V1.0_13
+  - first:
+      213: 5051633713234246420
+    second: Prop_Fumaceiro_Skill_VushMartelada_V1.0_14
+  - first:
+      213: -8517273274636362517
+    second: Prop_Fumaceiro_Skill_VushMartelada_V1.0_15
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 16
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Prop_Fumaceiro_Skill_VushMartelada_V1.0_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 13
+        width: 64
+        height: 51
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 64c1835d04c2f7340800000000000000
+      internalID: 4863654779550178374
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Prop_Fumaceiro_Skill_VushMartelada_V1.0_1
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 13
+        width: 64
+        height: 51
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d2ca41d0e231a9240800000000000000
+      internalID: 4799169441425566765
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Prop_Fumaceiro_Skill_VushMartelada_V1.0_2
+      rect:
+        serializedVersion: 2
+        x: 128
+        y: 12
+        width: 64
+        height: 52
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8e1a685d8b695d6a0800000000000000
+      internalID: -6425063572773625368
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Prop_Fumaceiro_Skill_VushMartelada_V1.0_3
+      rect:
+        serializedVersion: 2
+        x: 192
+        y: 11
+        width: 64
+        height: 53
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0b7638b3dfee172a0800000000000000
+      internalID: -6741344395804317776
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Prop_Fumaceiro_Skill_VushMartelada_V1.0_4
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 12
+        width: 64
+        height: 52
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 65d2f13fb2a4f0220800000000000000
+      internalID: 2454261874563165526
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Prop_Fumaceiro_Skill_VushMartelada_V1.0_5
+      rect:
+        serializedVersion: 2
+        x: 320
+        y: 12
+        width: 64
+        height: 52
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 225ccc62513f04f10800000000000000
+      internalID: 2252067085856064802
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Prop_Fumaceiro_Skill_VushMartelada_V1.0_6
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 12
+        width: 64
+        height: 52
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 992644e6fe64a7aa0800000000000000
+      internalID: -6162535145941998951
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Prop_Fumaceiro_Skill_VushMartelada_V1.0_7
+      rect:
+        serializedVersion: 2
+        x: 448
+        y: 12
+        width: 64
+        height: 52
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1d446016cdbc4eae0800000000000000
+      internalID: -1520866626763340591
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Prop_Fumaceiro_Skill_VushMartelada_V1.0_8
+      rect:
+        serializedVersion: 2
+        x: 512
+        y: 12
+        width: 64
+        height: 52
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 951b99e66f247aae0800000000000000
+      internalID: -1538187121538780839
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: ea4ba0dcd4f659044b6a085f2f24047b
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries:
+      - key: SpriteEditor.SliceSettings
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":64.0,"y":64.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
+    nameFileIdTable:
+      Prop_Fumaceiro_Skill_VushMartelada_V1.0_0: 4863654779550178374
+      Prop_Fumaceiro_Skill_VushMartelada_V1.0_1: 4799169441425566765
+      Prop_Fumaceiro_Skill_VushMartelada_V1.0_2: -6425063572773625368
+      Prop_Fumaceiro_Skill_VushMartelada_V1.0_3: -6741344395804317776
+      Prop_Fumaceiro_Skill_VushMartelada_V1.0_4: 2454261874563165526
+      Prop_Fumaceiro_Skill_VushMartelada_V1.0_5: 2252067085856064802
+      Prop_Fumaceiro_Skill_VushMartelada_V1.0_6: -6162535145941998951
+      Prop_Fumaceiro_Skill_VushMartelada_V1.0_7: -1520866626763340591
+      Prop_Fumaceiro_Skill_VushMartelada_V1.0_8: -1538187121538780839
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
