@@ -136,12 +136,12 @@ TextureImporter:
       name: Art_GPlay_Char_Desertico_Skill_Ilusion_HectorShibuya_V1.3_0
       rect:
         serializedVersion: 2
-        x: 10
-        y: 7
-        width: 16
-        height: 20
+        x: 11
+        y: 8
+        width: 14
+        height: 18
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -158,12 +158,12 @@ TextureImporter:
       name: Art_GPlay_Char_Desertico_Skill_Ilusion_HectorShibuya_V1.3_1
       rect:
         serializedVersion: 2
-        x: 40
-        y: 7
-        width: 18
-        height: 15
+        x: 41
+        y: 8
+        width: 16
+        height: 13
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -180,12 +180,12 @@ TextureImporter:
       name: Art_GPlay_Char_Desertico_Skill_Ilusion_HectorShibuya_V1.3_2
       rect:
         serializedVersion: 2
-        x: 73
-        y: 7
-        width: 15
-        height: 15
+        x: 74
+        y: 8
+        width: 13
+        height: 13
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -202,12 +202,12 @@ TextureImporter:
       name: Art_GPlay_Char_Desertico_Skill_Ilusion_HectorShibuya_V1.3_3
       rect:
         serializedVersion: 2
-        x: 104
-        y: 7
-        width: 15
-        height: 13
+        x: 105
+        y: 8
+        width: 13
+        height: 11
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -224,12 +224,12 @@ TextureImporter:
       name: Art_GPlay_Char_Desertico_Skill_Ilusion_HectorShibuya_V1.3_4
       rect:
         serializedVersion: 2
-        x: 136
-        y: 7
-        width: 15
-        height: 11
+        x: 137
+        y: 8
+        width: 13
+        height: 9
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -246,12 +246,12 @@ TextureImporter:
       name: Art_GPlay_Char_Desertico_Skill_Ilusion_HectorShibuya_V1.3_5
       rect:
         serializedVersion: 2
-        x: 169
-        y: 7
-        width: 13
-        height: 11
+        x: 170
+        y: 8
+        width: 11
+        height: 9
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -268,12 +268,12 @@ TextureImporter:
       name: Art_GPlay_Char_Desertico_Skill_Ilusion_HectorShibuya_V1.3_6
       rect:
         serializedVersion: 2
-        x: 202
-        y: 7
-        width: 12
-        height: 11
+        x: 203
+        y: 8
+        width: 10
+        height: 9
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -290,12 +290,12 @@ TextureImporter:
       name: Art_GPlay_Char_Desertico_Skill_Ilusion_HectorShibuya_V1.3_7
       rect:
         serializedVersion: 2
-        x: 232
-        y: 7
-        width: 15
-        height: 11
+        x: 233
+        y: 8
+        width: 13
+        height: 9
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -312,12 +312,12 @@ TextureImporter:
       name: Art_GPlay_Char_Desertico_Skill_Ilusion_HectorShibuya_V1.3_8
       rect:
         serializedVersion: 2
-        x: 265
-        y: 7
-        width: 14
-        height: 12
+        x: 266
+        y: 8
+        width: 12
+        height: 10
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -334,12 +334,12 @@ TextureImporter:
       name: Art_GPlay_Char_Desertico_Skill_Ilusion_HectorShibuya_V1.3_9
       rect:
         serializedVersion: 2
-        x: 298
-        y: 7
-        width: 14
-        height: 13
+        x: 299
+        y: 8
+        width: 12
+        height: 11
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -356,12 +356,12 @@ TextureImporter:
       name: Art_GPlay_Char_Desertico_Skill_Ilusion_HectorShibuya_V1.3_10
       rect:
         serializedVersion: 2
-        x: 328
-        y: 6
-        width: 17
-        height: 19
+        x: 329
+        y: 7
+        width: 15
+        height: 17
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -378,12 +378,12 @@ TextureImporter:
       name: Art_GPlay_Char_Desertico_Skill_Ilusion_HectorShibuya_V1.3_11
       rect:
         serializedVersion: 2
-        x: 362
-        y: 7
-        width: 13
-        height: 21
+        x: 363
+        y: 8
+        width: 11
+        height: 19
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -400,7 +400,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: e2e0740bb5ce59c49ac27339364b963b
     internalID: 0
     vertices: []
     indices: 
@@ -408,7 +408,9 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     spriteCustomMetadata:
-      entries: []
+      entries:
+      - key: SpriteEditor.SliceSettings
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":64.0,"y":64.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":0,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
       Art_GPlay_Char_Desertico_Skill_Ilusion_HectorShibuya_V1.3_0: -4168910604457255184
       Art_GPlay_Char_Desertico_Skill_Ilusion_HectorShibuya_V1.3_1: -88574104429181551
