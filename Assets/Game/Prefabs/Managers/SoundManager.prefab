@@ -206,14 +206,6 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 90595101cba34f60ae7b1813716c60b0, type: 3}
     fadeInSeconds: 0
     fadeOutSeconds: 0
-  countdownVariations:
-  - {fileID: 8300000, guid: 643d9b69e4a346cbac6eda209a042b44, type: 3}
-  - {fileID: 8300000, guid: 4a199d5fe95d44129a82f1a2e0f6a820, type: 3}
-  - {fileID: 8300000, guid: 3027e717f46e4672aa0167ab9ffd9bf2, type: 3}
-  - {fileID: 8300000, guid: 9477ea7db4244f3a874bdefc4268441e, type: 3}
-  - {fileID: 8300000, guid: a25b433665684ea4a7375f71aca189f4, type: 3}
-  - {fileID: 8300000, guid: 06fff8c88edb44ffbc563d5a0d145b8f, type: 3}
-  countdownVolume: 0.8
   ostList:
   - ostType: 0
     clip: {fileID: 8300000, guid: 89d5b3c7f9a780e418da875a1051741a, type: 3}
