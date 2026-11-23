@@ -29,6 +29,10 @@ namespace PiGame.Gameplay
         private readonly NetworkVariable<double> _respawnInvulnerabilityEndsAt = new NetworkVariable<double>();
         private readonly NetworkVariable<bool> _matchActive = new NetworkVariable<bool>(false);
         private readonly NetworkVariable<bool> _indicatorsVisible = new NetworkVariable<bool>(true);
+        private readonly NetworkVariable<Vector3> _initialSpawnPosition = new();
+        private readonly NetworkVariable<bool> _initialSpawnAssigned = new();
+        private readonly NetworkVariable<bool> _initialSpawnPrepared = new(false,
+            NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         private readonly NetworkVariable<FixedString64Bytes> _playerName = new NetworkVariable<FixedString64Bytes>();
         private readonly NetworkVariable<double> _abilityReadyAt = new NetworkVariable<double>(-1d);
         private readonly NetworkVariable<float> _abilityCooldownDuration = new NetworkVariable<float>();
@@ -50,6 +54,8 @@ namespace PiGame.Gameplay
         private Rigidbody2D _rigidbody;
         private GeneralPlayerSoundManager _playerSound;
         private Animator _animator;
+        private BoxCollider2D _bodyCollider;
+        private bool _initialSpawnSimulationAllowed;
         private bool _isInvulnerable;
         private Coroutine _knockbackRoutine;
         private Coroutine _hitAnimationRoutine;
@@ -66,6 +72,7 @@ namespace PiGame.Gameplay
         public bool IsAlive => _isAlive.Value;
         public bool IndicatorsVisible => _indicatorsVisible.Value;
         public bool CanAct => _isAlive.Value && _matchActive.Value;
+        public bool IsInitialSpawnPrepared => _initialSpawnPrepared.Value;
         public bool IsInvulnerable => _isInvulnerable
             || (IsServer && IsSpawned && NetworkManager.ServerTime.Time < _respawnInvulnerabilityEndsAt.Value);
         public string PlayerName => _playerName.Value.ToString();
@@ -84,6 +91,8 @@ namespace PiGame.Gameplay
             _colliders = GetComponentsInChildren<Collider2D>(true);
             _rigidbody = GetComponent<Rigidbody2D>();
             _animator = GetComponent<Animator>();
+            _bodyCollider = GetComponent<BoxCollider2D>();
+            if (_rigidbody != null) _rigidbody.simulated = false;
             _playerSound = GetComponent<GeneralPlayerSoundManager>();
         }
 
@@ -99,6 +108,7 @@ namespace PiGame.Gameplay
             _matchActive.OnValueChanged += HandleBoolChanged;
             _indicatorsVisible.OnValueChanged += HandleBoolChanged;
             _playerName.OnValueChanged += HandleNameChanged;
+            _initialSpawnPrepared.OnValueChanged += HandleSpawnPreparedChanged;
 
             ApplyAlivePresentation(_isAlive.Value);
             ApplyHealthPresentation();
@@ -132,6 +142,8 @@ namespace PiGame.Gameplay
             _matchActive.OnValueChanged -= HandleBoolChanged;
             _indicatorsVisible.OnValueChanged -= HandleBoolChanged;
             _playerName.OnValueChanged -= HandleNameChanged;
+            _initialSpawnPrepared.OnValueChanged -= HandleSpawnPreparedChanged;
+            _initialSpawnSimulationAllowed = false;
 
             CleanupDeathProp();
         }
@@ -156,6 +168,59 @@ namespace PiGame.Gameplay
             _matchActive.Value = false;
             _isInvulnerable = false;
             _respawnInvulnerabilityEndsAt.Value = 0d;
+            _initialSpawnPosition.Value = transform.position;
+            _initialSpawnAssigned.Value = true;
+        }
+
+        internal IEnumerator PrepareInitialSpawn(float attemptTimeoutSeconds)
+        {
+            if (!IsOwner || _rigidbody == null || _bodyCollider == null) yield break;
+            var physicsStep = new WaitForFixedUpdate();
+            for (int attempt = 0; attempt < 3 && IsSpawned; attempt++)
+            {
+                _initialSpawnSimulationAllowed = false;
+                RefreshSpawnPhysics();
+                int stableSteps = 0;
+                float deadline = Time.unscaledTime + Mathf.Max(0.5f, attemptTimeoutSeconds);
+                while (IsSpawned && Time.unscaledTime < deadline)
+                {
+                    if (!_initialSpawnSimulationAllowed && _initialSpawnAssigned.Value
+                        && gameObject.scene.isLoaded)
+                    {
+                        Physics2D.SyncTransforms();
+                        if (InitialSpawnPlacement.TryResolve(_bodyCollider, _initialSpawnPosition.Value, out Vector3 position))
+                        {
+                            transform.position = position;
+                            _rigidbody.position = position;
+                            _rigidbody.linearVelocity = Vector2.zero;
+                            _initialSpawnSimulationAllowed = true;
+                            RefreshSpawnPhysics();
+                            Physics2D.SyncTransforms();
+                        }
+                    }
+
+                    yield return physicsStep;
+                    if (!IsSpawned) yield break;
+                    bool safe = _initialSpawnSimulationAllowed
+                        && Mathf.Abs(_rigidbody.linearVelocity.y) <= 0.1f
+                        && InitialSpawnPlacement.IsSupportedAndClear(_bodyCollider);
+                    stableSteps = safe ? stableSteps + 1 : 0;
+                    if (stableSteps < 3) continue;
+                    _initialSpawnPrepared.Value = true;
+                    yield break;
+                }
+                Debug.LogWarning($"P{PlayerSlot + 1}: nova tentativa de preparar o spawn ({attempt + 1}/3).", this);
+            }
+            _initialSpawnSimulationAllowed = false;
+            RefreshSpawnPhysics();
+        }
+
+        private void HandleSpawnPreparedChanged(bool previous, bool current) => RefreshSpawnPhysics();
+
+        private void RefreshSpawnPhysics()
+        {
+            if (_rigidbody != null)
+                _rigidbody.simulated = IsAlive && (_initialSpawnSimulationAllowed || IsInitialSpawnPrepared);
         }
 
         public void SetInvulnerableServer(bool isInvulnerable)
@@ -366,7 +431,7 @@ namespace PiGame.Gameplay
 
             if (_rigidbody != null)
             {
-                _rigidbody.simulated = isAlive;
+                RefreshSpawnPhysics();
             }
         }
 
