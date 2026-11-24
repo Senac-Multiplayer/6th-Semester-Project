@@ -2431,7 +2431,7 @@ MonoBehaviour:
   _input: {fileID: 890000000000000001}
   _presentation: {fileID: 890000000000000002}
   _moveSpeed: 6
-  _jumpForce: 13
+  _jumpForce: 12
   _groundCheckDistance: 0.1
   _groundLayer:
     serializedVersion: 2
