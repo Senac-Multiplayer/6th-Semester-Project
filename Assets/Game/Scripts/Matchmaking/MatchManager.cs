@@ -129,7 +129,8 @@ namespace PiGame.Gameplay
             {
                 int index = (start + offset) % available.Count;
                 Transform point = _spawnPoints[available[index]];
-                InitialSpawnPlacement.CollectOptions(body, point.position, _spawnOptions, reservedAreas);
+                InitialSpawnPlacement.CollectOptions(body, point.position, _spawnOptions,
+                    reservedAreas, _matchController.SpawnArea, allowNearbyFallback: true);
                 if (_spawnOptions.Count == 0) continue;
 
                 foreach (Vector3 candidate in _spawnOptions)

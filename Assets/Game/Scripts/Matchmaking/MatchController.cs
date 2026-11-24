@@ -6,6 +6,7 @@ using PiGame.Sound;
 using PiGame.UI;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 using UnityEngine.SceneManagement;
 
 namespace PiGame.Gameplay
@@ -14,6 +15,8 @@ namespace PiGame.Gameplay
     {
         private readonly NetworkVariable<int> _killLimit = new NetworkVariable<int>(3);
         [SerializeField] private float _respawnDelaySeconds = 2f;
+        [SerializeField, Min(0f)] private float _respawnPlayerClearance = 2.5f;
+        [SerializeField, Min(0f)] private float _respawnClearanceWaitSeconds = 1f;
         [Header("Apresentação da partida")]
         [Tooltip("Desative para mostrar a contagem somente depois de apresentar os jogadores.")]
         [SerializeField] private bool _countdownDuringPresentation = true;
@@ -68,6 +71,10 @@ namespace PiGame.Gameplay
         private Transform[] _respawnPoints = Array.Empty<Transform>();
         private readonly List<Vector3> _safeRespawnPositions = new(4);
         private readonly List<Vector3> _respawnOptions = new(9);
+        private readonly List<Rect> _occupiedRespawnAreas = new(4);
+        private readonly List<Rect> _occupiedPlayerBodies = new(4);
+        private float _nextArenaCheckAt;
+        public Rect? SpawnArea { get; private set; }
 
         public event Action ScoresChanged;
         public event Action PhaseChanged;
@@ -192,7 +199,47 @@ namespace PiGame.Gameplay
                     player.SetMatchActiveServer(active, indicatorsVisible);
         }
 
-        internal void SetRespawnPoints(Transform[] points) => _respawnPoints = points ?? Array.Empty<Transform>();
+        internal void SetRespawnPoints(Transform[] points)
+        {
+            _respawnPoints = points ?? Array.Empty<Transform>();
+            SpawnArea = ReadArenaBounds();
+        }
+
+        private Rect? ReadArenaBounds()
+        {
+            int terrain = LayerMask.GetMask("Ground", "Wall", "Roof");
+            int outerTilesLayer = LayerMask.NameToLayer("Out of Bounds");
+            Bounds? bounds = null;
+            Physics2D.SyncTransforms();
+            foreach (GameObject root in gameObject.scene.GetRootGameObjects())
+            {
+                foreach (Collider2D surface in root.GetComponentsInChildren<Collider2D>())
+                {
+                    if (!surface.enabled || surface.isTrigger || (terrain & (1 << surface.gameObject.layer)) == 0
+                        || (surface.usedByEffector && surface.GetComponent<PlatformEffector2D>())
+                        || (surface.attachedRigidbody && surface.attachedRigidbody.bodyType != RigidbodyType2D.Static))
+                        continue;
+
+                    Bounds combined = bounds ?? surface.bounds;
+                    combined.Encapsulate(surface.bounds);
+                    bounds = combined;
+                }
+
+                // The external tilemap describes the edge after decorative tiles are split from the terrain.
+                foreach (TilemapRenderer tiles in root.GetComponentsInChildren<TilemapRenderer>())
+                {
+                    if (tiles.gameObject.layer != outerTilesLayer) continue;
+
+                    Bounds combined = bounds ?? tiles.bounds;
+                    combined.Encapsulate(tiles.bounds);
+                    bounds = combined;
+                }
+            }
+
+            if (!bounds.HasValue || bounds.Value.size.x <= 0f || bounds.Value.size.y <= 0f) return null;
+            Bounds arena = bounds.Value;
+            return Rect.MinMaxRect(arena.min.x, arena.min.y, arena.max.x, arena.max.y);
+        }
 
         public void RegisterPlayer(NetworkPlayerState player, Vector3 spawnPosition, LobbyPlayerData playerData)
         {
@@ -238,12 +285,35 @@ namespace PiGame.Gameplay
                 SetPlayersActive(true, true);
                 _phase.Value = MatchPhase.Playing;
             }
-            if (_phase.Value != MatchPhase.Playing || _remainingTime.Value < 0f) return;
+            if (_phase.Value != MatchPhase.Playing) return;
+            RecoverPlayersOutsideArena();
+            if (_remainingTime.Value < 0f) return;
 
             _remainingTime.Value = Mathf.Max(0f, _remainingTime.Value - Time.deltaTime);
             if (_remainingTime.Value <= 0f)
             {
                 EndByHighestScore();
+            }
+        }
+
+        private void RecoverPlayersOutsideArena()
+        {
+            if (!SpawnArea.HasValue || Time.unscaledTime < _nextArenaCheckAt) return;
+            _nextArenaCheckAt = Time.unscaledTime + 0.2f;
+
+            const float sideAndFloorMargin = 1f;
+            const float overheadMargin = 6f;
+            Rect arena = SpawnArea.Value;
+            foreach (NetworkPlayerState player in _players.Values)
+            {
+                if (!player || !player.IsSpawned || !player.CanAct) continue;
+
+                Vector2 position = player.transform.position;
+                if (position.x >= arena.xMin - sideAndFloorMargin && position.x <= arena.xMax + sideAndFloorMargin
+                    && position.y >= arena.yMin - sideAndFloorMargin && position.y <= arena.yMax + overheadMargin)
+                    continue;
+
+                player.HandleArenaExitServer();
             }
         }
 
@@ -286,10 +356,12 @@ namespace PiGame.Gameplay
         {
             yield return new WaitForSeconds(_respawnDelaySeconds);
 
+            float fallbackAt = Time.time + _respawnClearanceWaitSeconds;
             var retryDelay = new WaitForSeconds(0.2f);
             while (_phase.Value == MatchPhase.Playing && player && player.IsSpawned && !player.IsAlive)
             {
-                if (TryPickRespawnPosition(player, out Vector3 position))
+                bool foundClearPosition = TryPickRespawnPosition(player, out Vector3 position);
+                if (foundClearPosition || (Time.time >= fallbackAt && TryReusePreviousRespawn(player, out position)))
                 {
                     _spawnPositions[player.OwnerClientId] = position;
                     player.RespawnServer(position);
@@ -306,11 +378,24 @@ namespace PiGame.Gameplay
             if (!body.Collider) return false;
 
             Physics2D.SyncTransforms();
+            _occupiedRespawnAreas.Clear();
+            _occupiedPlayerBodies.Clear();
+            Vector2 margin = Vector2.one * _respawnPlayerClearance;
+            foreach (NetworkPlayerState other in _players.Values)
+            {
+                if (!other || other == player || !other.IsSpawned || !other.IsAlive) continue;
+
+                Rect occupied = other.StandingSpawnBody.BoundsAt(other.PositionForSpawnClearance);
+                _occupiedPlayerBodies.Add(occupied);
+                _occupiedRespawnAreas.Add(new Rect(occupied.position - margin, occupied.size + margin * 2f));
+            }
+
             _safeRespawnPositions.Clear();
             foreach (Transform point in _respawnPoints)
             {
                 if (!point) continue;
-                InitialSpawnPlacement.CollectOptions(body, point.position, _respawnOptions);
+                InitialSpawnPlacement.CollectOptions(body, point.position, _respawnOptions,
+                    _occupiedRespawnAreas, SpawnArea, allowNearbyFallback: true);
                 if (_respawnOptions.Count > 0) _safeRespawnPositions.Add(_respawnOptions[0]);
             }
 
@@ -318,7 +403,7 @@ namespace PiGame.Gameplay
             if (_safeRespawnPositions.Count == 0)
             {
                 if (!hasPrevious) return false;
-                InitialSpawnPlacement.CollectOptions(body, previous, _respawnOptions);
+                InitialSpawnPlacement.CollectOptions(body, previous, _respawnOptions, _occupiedRespawnAreas, SpawnArea);
                 if (_respawnOptions.Count == 0) return false;
                 position = _respawnOptions[0];
                 return true;
@@ -327,6 +412,21 @@ namespace PiGame.Gameplay
             if (hasPrevious && _safeRespawnPositions.Exists(candidate => (candidate - previous).sqrMagnitude >= 0.04f))
                 _safeRespawnPositions.RemoveAll(candidate => (candidate - previous).sqrMagnitude < 0.04f);
             position = _safeRespawnPositions[UnityEngine.Random.Range(0, _safeRespawnPositions.Count)];
+            return true;
+        }
+
+        private bool TryReusePreviousRespawn(NetworkPlayerState player, out Vector3 position)
+        {
+            position = default;
+            if (!_spawnPositions.TryGetValue(player.OwnerClientId, out Vector3 previous)) return false;
+
+            var body = player.StandingSpawnBody;
+            if (!body.Collider) return false;
+
+            InitialSpawnPlacement.CollectOptions(body, previous, _respawnOptions, _occupiedPlayerBodies, SpawnArea);
+            if (_respawnOptions.Count == 0) return false;
+
+            position = _respawnOptions[0];
             return true;
         }
 

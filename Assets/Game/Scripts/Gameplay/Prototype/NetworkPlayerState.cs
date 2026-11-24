@@ -26,7 +26,21 @@ namespace PiGame.Gameplay
         private readonly NetworkVariable<Color> _indicatorColor =
             new NetworkVariable<Color>(Color.white);
         private readonly NetworkVariable<int> _currentHealth = new NetworkVariable<int>();
-        private readonly NetworkVariable<bool> _isAlive = new NetworkVariable<bool>(true);
+        private struct LifeState : INetworkSerializeByMemcpy, IEquatable<LifeState>
+        {
+            public bool Alive;
+            public Vector3 SpawnPosition;
+
+            public LifeState(bool alive, Vector3 spawnPosition = default)
+            {
+                Alive = alive;
+                SpawnPosition = spawnPosition;
+            }
+
+            public bool Equals(LifeState other) => Alive == other.Alive && SpawnPosition.Equals(other.SpawnPosition);
+        }
+
+        private readonly NetworkVariable<LifeState> _life = new(new LifeState(true));
         private readonly NetworkVariable<double> _respawnInvulnerabilityEndsAt = new NetworkVariable<double>();
         private readonly NetworkVariable<bool> _matchActive = new NetworkVariable<bool>(false);
         private readonly NetworkVariable<bool> _indicatorsVisible = new NetworkVariable<bool>(true);
@@ -57,6 +71,10 @@ namespace PiGame.Gameplay
         private bool _respawnTintDark;
         private Collider2D[] _colliders;
         private Rigidbody2D _rigidbody;
+        private NetworkTransform _networkTransform;
+        private bool _waitingForRespawnTeleport;
+        private bool _receivedTeleport;
+        private Vector2 _lastTeleportPosition;
         private GeneralPlayerSoundManager _playerSound;
         private Animator _animator;
         private BoxCollider2D _bodyCollider;
@@ -75,9 +93,10 @@ namespace PiGame.Gameplay
         public Color IndicatorColor => _indicatorColor.Value;
         public int CurrentHealth => _currentHealth.Value;
         public int MaximumHealth => _maximumHealth;
-        public bool IsAlive => _isAlive.Value;
-        public bool IndicatorsVisible => _indicatorsVisible.Value && _remoteHudRevealAt <= 0f;
-        public bool CanAct => _isAlive.Value && _matchActive.Value;
+        public bool IsAlive => _life.Value.Alive;
+        public Vector3 PositionForSpawnClearance => _waitingForRespawnTeleport ? _life.Value.SpawnPosition : transform.position;
+        public bool IndicatorsVisible => _indicatorsVisible.Value && _remoteHudRevealAt <= 0f && !_waitingForRespawnTeleport;
+        public bool CanAct => IsAlive && _matchActive.Value && !_waitingForRespawnTeleport;
         public bool IsInitialSpawnPrepared => _initialSpawnPrepared.Value;
         public bool IsInvulnerable => _isInvulnerable
             || (IsServer && IsSpawned && NetworkManager.ServerTime.Time < _respawnInvulnerabilityEndsAt.Value);
@@ -96,6 +115,7 @@ namespace PiGame.Gameplay
             _spriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
             _colliders = GetComponentsInChildren<Collider2D>(true);
             _rigidbody = GetComponent<Rigidbody2D>();
+            _networkTransform = GetComponent<NetworkTransform>();
             _animator = GetComponent<Animator>();
             _bodyCollider = GetComponent<BoxCollider2D>();
             if (_bodyCollider) StandingSpawnBody = new InitialSpawnPlacement.Body(_bodyCollider);
@@ -111,15 +131,15 @@ namespace PiGame.Gameplay
             _inputDevice.OnValueChanged += HandleInputChanged;
             _indicatorColor.OnValueChanged += HandleColorChanged;
             _currentHealth.OnValueChanged += HandleIntChanged;
-            _isAlive.OnValueChanged += HandleAliveChanged;
+            _life.OnValueChanged += HandleLifeChanged;
             _matchActive.OnValueChanged += HandleBoolChanged;
             _indicatorsVisible.OnValueChanged += HandleIndicatorsChanged;
             _playerName.OnValueChanged += HandleNameChanged;
             _initialSpawnPrepared.OnValueChanged += HandleSpawnPreparedChanged;
 
-            ApplyAlivePresentation(_isAlive.Value);
+            ApplyAlivePresentation(IsAlive);
             ApplyHealthPresentation();
-            UpdateDeathAnimation(_isAlive.Value);
+            UpdateDeathAnimation(IsAlive);
             StateChanged?.Invoke();
         }
 
@@ -154,7 +174,9 @@ namespace PiGame.Gameplay
             _inputDevice.OnValueChanged -= HandleInputChanged;
             _indicatorColor.OnValueChanged -= HandleColorChanged;
             _currentHealth.OnValueChanged -= HandleIntChanged;
-            _isAlive.OnValueChanged -= HandleAliveChanged;
+            _life.OnValueChanged -= HandleLifeChanged;
+            _waitingForRespawnTeleport = false;
+            _receivedTeleport = false;
             _matchActive.OnValueChanged -= HandleBoolChanged;
             _indicatorsVisible.OnValueChanged -= HandleIndicatorsChanged;
             _remoteHudRevealAt = 0f;
@@ -188,7 +210,7 @@ namespace PiGame.Gameplay
             _inputDevice.Value = playerData.InputDevice;
             _indicatorColor.Value = LobbyTeams.IsValid(playerData.Team) ? LobbyTeams.Color(playerData.Team) : indicatorColor;
             _currentHealth.Value = _maximumHealth;
-            _isAlive.Value = true;
+            _life.Value = new LifeState(true);
             _matchActive.Value = false;
             _isInvulnerable = false;
             _respawnInvulnerabilityEndsAt.Value = 0d;
@@ -199,6 +221,8 @@ namespace PiGame.Gameplay
         {
             if (!IsOwner || !_rigidbody || !_bodyCollider) yield break;
 
+            const int requiredStableSteps = 3;
+            int settleStepBudget = Mathf.Max(requiredStableSteps, Mathf.CeilToInt(0.5f / Time.fixedDeltaTime));
             var physicsStep = new WaitForFixedUpdate();
             int nextOption = 0;
             for (int attempt = 0; attempt < 3 && IsSpawned; attempt++)
@@ -206,22 +230,22 @@ namespace PiGame.Gameplay
                 _initialSpawnSimulationAllowed = false;
                 RefreshSpawnPhysics();
                 int stableSteps = 0;
-                float settleDeadline = 0f;
+                int remainingSettleSteps = 0;
                 float deadline = Time.unscaledTime + Mathf.Max(0.5f, attemptTimeoutSeconds);
                 while (IsSpawned && Time.unscaledTime < deadline)
                 {
                     if (!_initialSpawnSimulationAllowed && gameObject.scene.isLoaded
                         && TryPlaceInitialSpawn(ref nextOption))
-                        settleDeadline = Time.unscaledTime + 0.5f;
+                        remainingSettleSteps = settleStepBudget;
 
                     yield return physicsStep;
                     if (!IsSpawned) yield break;
                     if (!_initialSpawnSimulationAllowed) continue;
 
                     bool safe = Mathf.Abs(_rigidbody.linearVelocity.y) <= 0.1f
-                        && InitialSpawnPlacement.IsSupportedAndClear(_bodyCollider);
+                        && InitialSpawnPlacement.CanPlace(StandingSpawnBody, _rigidbody.position);
                     stableSteps = safe ? stableSteps + 1 : 0;
-                    if (stableSteps >= 3)
+                    if (stableSteps >= requiredStableSteps)
                     {
                         ReplicateSpawnPosition();
                         _initialSpawnPrepared.Value = true;
@@ -229,7 +253,7 @@ namespace PiGame.Gameplay
                     }
 
                     // Aguarda a física resolver o contato com o piso antes de trocar de posição.
-                    if (Time.unscaledTime >= settleDeadline)
+                    if (--remainingSettleSteps <= 0)
                     {
                         _initialSpawnSimulationAllowed = false;
                         RefreshSpawnPhysics();
@@ -268,7 +292,8 @@ namespace PiGame.Gameplay
         private void RefreshSpawnPhysics()
         {
             if (_rigidbody != null)
-                _rigidbody.simulated = IsAlive && (_initialSpawnSimulationAllowed || IsInitialSpawnPrepared);
+                _rigidbody.simulated = IsAlive && !_waitingForRespawnTeleport
+                    && (_initialSpawnSimulationAllowed || IsInitialSpawnPrepared);
         }
 
         public void SetInvulnerableServer(bool isInvulnerable)
@@ -366,9 +391,21 @@ namespace PiGame.Gameplay
                 _playerSound.PlayDeathHit();
             }
 
-            _isAlive.Value = false;
+            DefeatServer(attackerClientId, showDeathProp: true);
+        }
+
+        public void HandleArenaExitServer()
+        {
+            if (!IsServer || !IsSpawned || !CanAct) return;
+            _currentHealth.Value = 0;
+            DefeatServer(ulong.MaxValue, showDeathProp: false);
+        }
+
+        private void DefeatServer(ulong attackerClientId, bool showDeathProp)
+        {
+            _life.Value = new LifeState(false);
             _matchActive.Value = false;
-            SpawnDeathProp();
+            if (showDeathProp) SpawnDeathProp();
             if (TryGetComponent<ICharacterCombat>(out var characterCombat))
             {
                 characterCombat.ClearProjectilesServer();
@@ -383,11 +420,6 @@ namespace PiGame.Gameplay
                 return;
             }
             CleanupDeathProp();
-            PlaceAtSpawn(position);
-
-            TeleportOwnerRpc(
-                position,
-                RpcTarget.Single(OwnerClientId, RpcTargetUse.Temp));
             
             if(_playerSound != null)
             {
@@ -397,14 +429,28 @@ namespace PiGame.Gameplay
             _currentHealth.Value = _maximumHealth;
             _respawnInvulnerabilityEndsAt.Value = NetworkManager.ServerTime.Time
                 + Mathf.Max(0f, _respawnInvulnerabilitySeconds);
-            _isAlive.Value = true;
-            _matchActive.Value = true;
             _isInvulnerable = false;
+            _life.Value = new LifeState(true, position);
+            _matchActive.Value = true;
             if (TryGetComponent<ICharacterCombat>(out var characterCombat))
             {
                 characterCombat.RefillAmmoServer();
             }
         }
+#if UNITY_EDITOR
+        public void TeleportForMapPlaytest(Vector3 position)
+        {
+            if (!IsServer || !IsOwner || !IsSpawned) return;
+
+            if (IsAlive)
+            {
+                PlaceAtSpawn(position);
+                ReplicateSpawnPosition();
+            }
+            RespawnServer(position);
+        }
+#endif
+
         private void SpawnDeathProp()
         {
             if (_deathPropPrefab != null && _activeDeathProp == null)
@@ -435,12 +481,6 @@ namespace PiGame.Gameplay
                 _activeDeathProp = null;
             }
         }
-        [Rpc(SendTo.SpecifiedInParams)]
-        private void TeleportOwnerRpc(Vector3 position, RpcParams rpcParams)
-        {
-            PlaceAtSpawn(position);
-            ReplicateSpawnPosition();
-        }
 
         private void PlaceAtSpawn(Vector3 position)
         {
@@ -453,14 +493,53 @@ namespace PiGame.Gameplay
 
         private void ReplicateSpawnPosition()
         {
-            if (TryGetComponent(out NetworkTransform networkTransform) && networkTransform.CanCommitToTransform)
-                networkTransform.Teleport(transform.position, transform.rotation, transform.localScale);
+            if (_networkTransform && _networkTransform.CanCommitToTransform)
+                _networkTransform.Teleport(transform.position, transform.rotation, transform.localScale);
         }
 
-        private void HandleAliveChanged(bool previousValue, bool currentValue)
+        private void HandleLifeChanged(LifeState previous, LifeState current)
         {
-            ApplyAlivePresentation(currentValue);
-            UpdateDeathAnimation(currentValue);
+            if (previous.Alive == current.Alive) return;
+
+            if (!current.Alive)
+            {
+                _receivedTeleport = false;
+                _waitingForRespawnTeleport = false;
+            }
+            else if (_networkTransform is PlayerNetworkTransform && !_networkTransform.CanCommitToTransform)
+            {
+                // Observers wait for the teleport to clear the old interpolation state.
+                _waitingForRespawnTeleport = !HasReceivedRespawnTeleport(current.SpawnPosition);
+                if (!_waitingForRespawnTeleport) PlaceAtSpawn(current.SpawnPosition);
+            }
+            else
+            {
+                PlaceAtSpawn(current.SpawnPosition);
+                ReplicateSpawnPosition();
+            }
+
+            RefreshLifePresentation();
+        }
+
+        public void NotifyPositionTeleported(Vector3 position)
+        {
+            _lastTeleportPosition = position;
+            _receivedTeleport = true;
+            if (!_waitingForRespawnTeleport || !HasReceivedRespawnTeleport(_life.Value.SpawnPosition)) return;
+
+            PlaceAtSpawn(_life.Value.SpawnPosition);
+            _waitingForRespawnTeleport = false;
+            RefreshLifePresentation();
+        }
+
+        private bool HasReceivedRespawnTeleport(Vector3 position) =>
+            _receivedTeleport && (_lastTeleportPosition - (Vector2)position).sqrMagnitude < 0.0001f;
+
+        private void RefreshLifePresentation()
+        {
+            bool visible = IsAlive && !_waitingForRespawnTeleport;
+            ApplyAlivePresentation(visible);
+            UpdateDeathAnimation(visible);
             StateChanged?.Invoke();
         }
 
@@ -480,10 +559,7 @@ namespace PiGame.Gameplay
             }
 
             foreach (Collider2D playerCollider in _colliders)
-            {
                 playerCollider.enabled = isAlive;
-                Debug.Log("Sumiu Colisou");
-            }
 
             if (_rigidbody != null)
             {

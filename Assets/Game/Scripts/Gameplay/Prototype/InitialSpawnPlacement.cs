@@ -18,6 +18,7 @@ namespace PiGame.Gameplay
         private const float ProbeBelow = 8f;
         private const float HorizontalStep = 0.4f;
         private const int HorizontalSteps = 4;
+        private const int NearbyFallbackSteps = 12;
         private static readonly int TerrainMask = LayerMask.GetMask("Ground", "Wall");
         private static readonly int PlayerMask = LayerMask.GetMask("Player");
 
@@ -39,14 +40,25 @@ namespace PiGame.Gameplay
         }
 
         public static void CollectOptions(Body body, Vector3 anchor, List<Vector3> positions,
-            List<Rect> reserved = null)
+            List<Rect> reserved = null, Rect? arena = null, bool allowNearbyFallback = false)
         {
             positions.Clear();
             for (int step = -HorizontalSteps; step <= HorizontalSteps; step++)
             {
                 Vector3 probe = anchor + Vector3.right * (step * HorizontalStep);
-                if (TryFindSupport(body, probe, reserved, out Vector3 position))
+                if (TryFindSupport(body, probe, reserved, arena, out Vector3 position))
                     positions.Add(position);
+            }
+
+            if (allowNearbyFallback)
+            {
+                for (int step = HorizontalSteps + 1; step <= NearbyFallbackSteps && positions.Count < MaxOptions; step++)
+                {
+                    if (TryFindSupport(body, anchor - Vector3.right * (step * HorizontalStep), reserved, arena, out Vector3 left))
+                        positions.Add(left);
+                    if (TryFindSupport(body, anchor + Vector3.right * (step * HorizontalStep), reserved, arena, out Vector3 right))
+                        positions.Add(right);
+                }
             }
 
             positions.Sort((a, b) => (a - anchor).sqrMagnitude.CompareTo((b - anchor).sqrMagnitude));
@@ -54,25 +66,41 @@ namespace PiGame.Gameplay
                 positions.RemoveRange(MaxOptions, positions.Count - MaxOptions);
         }
 
-        private static bool TryFindSupport(Body body, Vector3 anchor, List<Rect> reserved, out Vector3 position)
+        private static bool TryFindSupport(Body body, Vector3 anchor, List<Rect> reserved, Rect? arena,
+            out Vector3 position)
         {
             position = anchor;
-            Vector2 origin = (Vector2)anchor + new Vector2(body.Offset.x, ProbeAbove);
             float nearest = float.PositiveInfinity;
-            foreach (RaycastHit2D hit in Physics2D.RaycastAll(origin, Vector2.down, ProbeAbove + ProbeBelow, TerrainMask))
+            // Start below low ceilings that can hide the floor on the same tilemap collider.
+            Vector2 origin = (Vector2)anchor + new Vector2(body.Offset.x, 0f);
+            ConsiderSupport(body, anchor, reserved, arena, origin, ProbeBelow, ref nearest, ref position);
+            ConsiderSupport(body, anchor, reserved, arena, origin + Vector2.up * ProbeAbove,
+                ProbeAbove + ProbeBelow, ref nearest, ref position);
+            return nearest < float.PositiveInfinity;
+        }
+
+        private static void ConsiderSupport(Body body, Vector3 anchor, List<Rect> reserved, Rect? arena,
+            Vector2 origin, float probeDistance, ref float nearest, ref Vector3 position)
+        {
+            foreach (RaycastHit2D hit in Physics2D.RaycastAll(origin, Vector2.down, probeDistance, TerrainMask))
             {
                 if (!IsSupport(hit)) continue;
                 Vector3 candidate = anchor;
                 candidate.y = hit.point.y + Skin + body.Size.y * 0.5f - body.Offset.y;
                 float distance = Mathf.Abs(candidate.y - anchor.y);
-                if (distance >= nearest || IsReserved(body, candidate, reserved) || !CanPlace(body, candidate))
+                if (distance >= nearest || IsReserved(body, candidate, reserved)
+                    || (arena.HasValue && !IsInsideArena(body.BoundsAt(candidate), arena.Value))
+                    || !CanPlace(body, candidate))
                     continue;
 
                 nearest = distance;
                 position = candidate;
             }
-            return nearest < float.PositiveInfinity;
         }
+
+        private static bool IsInsideArena(Rect body, Rect arena) =>
+            body.xMin >= arena.xMin && body.xMax <= arena.xMax
+            && body.yMin >= arena.yMin && body.yMax <= arena.yMax;
 
         private static bool IsReserved(Body body, Vector3 position, List<Rect> reserved)
         {
