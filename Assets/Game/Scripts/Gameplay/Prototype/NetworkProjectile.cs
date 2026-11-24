@@ -14,6 +14,7 @@ namespace PiGame.Gameplay
         private Collider2D _projectileBodyCollider;
         private readonly RaycastHit2D[] _surfaceHits = new RaycastHit2D[8];
         private ContactFilter2D _surfaceFilter;
+        private readonly Collider2D[] _terrainOverlap = new Collider2D[1];
         protected Vector2 _direction;
         protected ulong _shooterClientId;
         public ulong ShooterClientId => _shooterClientId;
@@ -171,6 +172,19 @@ namespace PiGame.Gameplay
             {
                 _spriteRenderer.color = color;
             }
+        }
+
+        protected static Vector2 GetWorldBoxSize(BoxCollider2D box)
+        {
+            Vector3 scale = box.transform.lossyScale;
+            return Vector2.Scale(box.size, new Vector2(Mathf.Abs(scale.x), Mathf.Abs(scale.y)));
+        }
+
+        protected bool IsTerrainClear(Vector2 center, Vector2 size, float angle, LayerMask terrain)
+        {
+            var filter = new ContactFilter2D { useTriggers = false };
+            filter.SetLayerMask(terrain);
+            return Physics2D.OverlapBox(center, size, angle, filter, _terrainOverlap) == 0;
         }
 
         public virtual void ReflectServer(float minimumSpeed)

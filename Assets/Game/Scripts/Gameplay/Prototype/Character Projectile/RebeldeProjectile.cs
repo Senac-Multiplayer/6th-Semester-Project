@@ -34,6 +34,8 @@ namespace PiGame.Gameplay
         [SerializeField] private Collider2D _solidCollider;
         private Rigidbody2D _rigidbody;
         private BoxCollider2D _collisionBox;
+        private int _terrainLayers;
+        private Vector3 _previousFlightPosition;
         private CircleCollider2D _collectionTrigger;
         private readonly List<Collider2D> _collectionHits = new(8);
         private RebeldeSoundManager _ownerSound;
@@ -57,6 +59,8 @@ namespace PiGame.Gameplay
 
             _useLifetime = false;
             _solidCollider.enabled = false;
+            _terrainLayers = LayerMask.GetMask("Ground", "Wall", "Roof");
+            _solidCollider.excludeLayers = _solidCollider.excludeLayers.value | ~_terrainLayers;
 
             _rigidbody.bodyType = RigidbodyType2D.Kinematic;
             _rigidbody.gravityScale = 0f;
@@ -76,6 +80,7 @@ namespace PiGame.Gameplay
                 : Vector2.right;
 
             _speed = speed;
+            _previousFlightPosition = transform.position;
 
             _isStopped = false;
             _falling = false; 
@@ -200,14 +205,13 @@ namespace PiGame.Gameplay
                 return;
 
             // O centro pode estar fora do tile enquanto a borda da bola já entrou nele.
-            Vector2 scale = _collisionBox.transform.lossyScale;
-            Vector2 size = Vector2.Scale(_collisionBox.size,
-                new Vector2(Mathf.Abs(scale.x), Mathf.Abs(scale.y)));
+            Vector2 size = GetWorldBoxSize(_collisionBox);
             // Reservar a margem de contato da física antes de ativar o collider na queda.
             size += Vector2.one * (Physics2D.defaultContactOffset * 2f);
             var filter = new ContactFilter2D();
             filter.SetLayerMask(_collisionLayers);
             filter.useTriggers = true;
+            _previousFlightPosition = transform.position;
             int hitCount = Physics2D.BoxCast(_collisionBox.transform.TransformPoint(_collisionBox.offset),
                 size, _collisionBox.transform.eulerAngles.z, movement.normalized,
                 filter, _flightHits, distance);
@@ -234,6 +238,22 @@ namespace PiGame.Gameplay
             if (_falling)
                 return;
 
+            Vector2 center = _collisionBox.transform.TransformPoint(_collisionBox.offset);
+            Vector2 size = GetWorldBoxSize(_collisionBox);
+            float angle = _collisionBox.transform.eulerAngles.z;
+            if (!IsTerrainClear(center, size, angle, _terrainLayers))
+            {
+                Vector2 retreat = _previousFlightPosition - transform.position;
+                if (!IsTerrainClear(center + retreat, size, angle, _terrainLayers))
+                {
+                    ReturnToShooterServer();
+                    return;
+                }
+
+                transform.position = _previousFlightPosition;
+                _rigidbody.position = _previousFlightPosition;
+            }
+
             _falling = true;
             _fallingStartedAt = Time.time;
 
@@ -248,7 +268,7 @@ namespace PiGame.Gameplay
 
         private void OnCollisionEnter2D(Collision2D collision)
         {
-            if (!IsServer || !_falling || _isStopped)
+            if (!IsServer || !_falling || _isStopped || (_terrainLayers & (1 << collision.gameObject.layer)) == 0)
                 return;
 
             foreach (ContactPoint2D contact in collision.contacts)
