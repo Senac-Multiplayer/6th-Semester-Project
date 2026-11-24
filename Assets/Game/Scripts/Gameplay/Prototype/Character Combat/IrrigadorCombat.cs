@@ -40,9 +40,14 @@ namespace PiGame.Gameplay
         private bool _abilityActive;
         private Vector2 _abilityAimDirection;
 
+        private readonly List<Collider2D> _magnetHits = new(8);
         private IrrigadorProjectile _magnetTarget;
+        private readonly NetworkVariable<bool> _magnetAvailable = new(false);
         private readonly NetworkVariable<bool> _magnetActive = new(false);
         public bool IsMagnetActive => _magnetActive.Value;
+        public bool CanUseMagnet => _nails.Value == 0 && _magnetAvailable.Value;
+
+        private bool CanStartMagnet => _playerState.CanAct && _nails.Value == 0 && !_magnetBlockedUntilRelease;
 
         private NetworkPlayerState _playerState;
         private Rigidbody2D _rigidbody;
@@ -90,6 +95,7 @@ namespace PiGame.Gameplay
             if (IsServer)
             {
                 _vortexActiveNet.Value = false;
+                _magnetAvailable.Value = false;
                 _activeProjectiles.Clear();
             }
         }
@@ -198,14 +204,17 @@ namespace PiGame.Gameplay
             _nails.Value = Mathf.Min(_nails.Value + 1, _maxNails);
         }
 
-        private IrrigadorProjectile FindMagnetTarget(Vector2 aimDirection)
+        private IrrigadorProjectile FindMagnetTarget(Vector2? aimDirection = null)
         {
             IrrigadorProjectile bestTarget = null;
             float bestAlignment = _magnetAimThreshold;
 
-            Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, _magnetRadius);
+            Vector2? normalizedAim = aimDirection?.normalized;
+            var filter = new ContactFilter2D { useTriggers = Physics2D.queriesHitTriggers };
+            filter.SetLayerMask(Physics2D.DefaultRaycastLayers);
+            Physics2D.OverlapCircle(transform.position, _magnetRadius, filter, _magnetHits);
 
-            foreach (Collider2D hit in hits)
+            foreach (Collider2D hit in _magnetHits)
             {
                 IrrigadorProjectile nail = hit.GetComponentInParent<IrrigadorProjectile>();
 
@@ -218,9 +227,11 @@ namespace PiGame.Gameplay
                 if (nail.ShooterClientId != OwnerClientId)
                     continue;
 
-                Vector2 toNail = ((Vector2)nail.transform.position - (Vector2)transform.position).normalized;
+                if (normalizedAim is not Vector2 aim)
+                    return nail;
 
-                float alignment = Vector2.Dot(aimDirection.normalized, toNail);
+                Vector2 toNail = ((Vector2)nail.transform.position - (Vector2)transform.position).normalized;
+                float alignment = Vector2.Dot(aim, toNail);
 
                 if (alignment < bestAlignment)
                     continue;
@@ -266,7 +277,7 @@ namespace PiGame.Gameplay
             if (!IsServer)
                 return;
 
-            if (_nails.Value > 0 || _magnetBlockedUntilRelease)
+            if (!CanStartMagnet)
             {
                 if (_magnetActive.Value)
                     StopMagnetServer();
@@ -283,6 +294,7 @@ namespace PiGame.Gameplay
 
             UpdateMagnetServer();
             UpdateAbilityServer();
+            _magnetAvailable.Value = CanStartMagnet && FindMagnetTarget() != null;
             _playerState.SetAbilityAvailabilityServer(
                 _playerState.CanAct && _nails.Value <= _maxNails - 2,
                 _playerState.CanAct && _abilityActive);

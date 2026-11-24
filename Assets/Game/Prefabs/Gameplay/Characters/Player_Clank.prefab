@@ -2509,6 +2509,7 @@ MonoBehaviour:
   _playerLabel: {fileID: 8809000000000113}
   _abilityBackground: {fileID: 8809000000000142}
   _abilityFill: {fileID: 8809000000000152}
+  _passiveAbilityIcon: {fileID: 21300000, guid: 063496e22963477e9d38bb10d5e7bc16, type: 3}
   _localHintLabel: {fileID: 8809000000000133}
   _localHintSeconds: 3
   _abilityOpacity: 0.7

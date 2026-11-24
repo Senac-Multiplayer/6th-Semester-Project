@@ -17,6 +17,7 @@ namespace PiGame.Gameplay
 
         private NetworkPlayerState _playerState;
         private IrrigadorCombat _irrigadorCombat;
+        private ClankCombat _clankCombat;
         private Sprite _normalAbilityIcon;
         private bool _wasVisible;
         private bool _showLocalHint;
@@ -28,6 +29,7 @@ namespace PiGame.Gameplay
         {
             _playerState = GetComponent<NetworkPlayerState>();
             _irrigadorCombat = GetComponent<IrrigadorCombat>();
+            _clankCombat = GetComponent<ClankCombat>();
             if (_marker == null || _playerLabel == null || _abilityBackground == null || _abilityFill == null || _localHintLabel == null)
             {
                 Debug.LogError("Configure marcador, nome, barra de habilidade e aviso local no PlayerIndicator do prefab.", this);
@@ -68,11 +70,13 @@ namespace PiGame.Gameplay
             _abilityBackground.enabled = false;
             _abilityFill.enabled = visible;
             if (!visible) return;
-            _abilityFill.sprite = _irrigadorCombat != null && _irrigadorCombat.IsMagnetActive
-                && _passiveAbilityIcon != null ? _passiveAbilityIcon : _normalAbilityIcon;
+            bool showPassiveIcon = _passiveAbilityIcon != null && _playerState.CanAct
+                && ((_irrigadorCombat != null && _irrigadorCombat.CanUseMagnet && availability != 2)
+                    || (_clankCombat != null && _clankCombat.IsReloadingAmmo));
+            _abilityFill.sprite = showPassiveIcon ? _passiveAbilityIcon : _normalAbilityIcon;
 
             // Uma carga disponível mantém o ícone pronto enquanto a carga extra recarrega.
-            float progress = availability > 0 ? 1f
+            float progress = showPassiveIcon || availability > 0 ? 1f
                 : remaining > 0f ? _playerState.AbilityCooldownProgress
                 : availability == 0 ? 0f : 1f;
             _abilityFill.color = new Color(1f, 1f, 1f, _abilityOpacity);
