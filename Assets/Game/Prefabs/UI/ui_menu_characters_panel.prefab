@@ -79,16 +79,16 @@ MonoBehaviour:
     PortraitOffset: {x: 0, y: 0}
     Topics:
     - Heading: TIRO E RECARGA
-      Description: "Cowboy possui 4 tiros que v\xE3o em uma linha reta. Quando ele
-        gasta todos seus tiros, leva um tempo para recarregar sua arma e volta a
-        poder atirar novamente."
+      Description: "Cowboy possui 4 tiros que seguem em linha reta. Quando gasta todos os seus
+        tiros, precisa esperar um tempo para recarregar sua arma e poder atirar
+        novamente."
       Icon: {fileID: 0}
       Videos:
       - {fileID: 32900000, guid: a4fdc9d8555e1a94792cb7726aec8fca, type: 3}
     - Heading: HABILIDADE
-      Description: "D\xE1 um dash em que fica intang\xEDvel (atravessa jogadores
-        e proj\xE9teis), n\xE3o recebendo dano do que \xE9 atirado nele e ganhando
-        2 muni\xE7\xF5es."
+      Description: "Cowboy realiza um dash durante o qual fica intang\xEDvel (atravessa
+        jogadores e proj\xE9teis), n\xE3o recebe dano dos disparos e recupera 2
+        muni\xE7\xF5es."
       Icon: {fileID: 21300000, guid: 27880f89e1859a04687b53dc3c27987f, type: 3}
       Videos:
       - {fileID: 32900000, guid: 74c3dede174f88b4ca53632ca6282fc0, type: 3}
@@ -100,21 +100,20 @@ MonoBehaviour:
     PortraitOffset: {x: 0, y: 0}
     Topics:
     - Heading: TIRO
-      Description: "Irrigador possui 2 pregos que ele dispara e que ficam presos
-        nas superf\xEDcies que atingem."
+      Description: "Irrigador possui 2 pregos que dispara e que ficam presos nas superf\xEDcies
+        que atingem."
       Icon: {fileID: 0}
       Videos:
       - {fileID: 32900000, guid: e1db9c677ec7f294887671561f45ea1f, type: 3}
     - Heading: PASSIVA E RECARGA
-      Description: "Quando ele gasta todos os seus tiros, pode se puxar na dire\xE7\xE3o
-        deles apertando o mesmo bot\xE3o de atirar, recuperando 1 prego se encostar
-        nele."
+      Description: "Quando gasta todos os seus tiros, pode se puxar na dire\xE7\xE3o dos pregos
+        apertando o mesmo bot\xE3o de atirar, recuperando 1 prego ao encostar nele."
       Icon: {fileID: 21300000, guid: 55c312014a4642a49f227d79d7a0ed4e, type: 3}
       Videos:
       - {fileID: 32900000, guid: 559231b2562eb2c4fa0d7eb0ec4685c8, type: 3}
     - Heading: HABILIDADE
-      Description: "O Irrigador usa um \xEDm\xE3 que puxa os pregos que est\xE3o
-        na dire\xE7\xE3o em que a mira dele aponta. Os pregos puxados podem causar
+      Description: "Irrigador usa um \xEDm\xE3 que puxa os pregos que estiverem na
+        dire\xE7\xE3o para a qual sua mira aponta. Os pregos puxados podem causar
         dano."
       Icon: {fileID: 21300000, guid: c3ff0229dd78a4343b9c826fcb387cc3, type: 3}
       Videos:
@@ -128,16 +127,16 @@ MonoBehaviour:
     PortraitOffset: {x: 0, y: 0}
     Topics:
     - Heading: TIRO E RECARGA
-      Description: "Fumaceira tem 4 min\xE9rios que ela dispara com seu martelo.
-        Os min\xE9rios s\xE3o lan\xE7ados em uma linha reta. Ela pode a qualquer
-        momento miner\xE1-los novamente se abaixando em qualquer superf\xEDcie, recuperando
-        assim a muni\xE7\xE3o."
+      Description: "Fumaceira possui 4 min\xE9rios que dispara com seu martelo. Os min\xE9rios
+        s\xE3o lan\xE7ados em linha reta. Ela pode miner\xE1-los novamente a
+        qualquer momento, abaixando-se sobre qualquer superf\xEDcie, recuperando
+        assim todos eles."
       Icon: {fileID: 0}
       Videos:
       - {fileID: 32900000, guid: b51908fb4691a964b92e30ed8c12ae65, type: 3}
     - Heading: HABILIDADE
-      Description: "Fumaceira bate no ch\xE3o, pulando bem alto e arremessando os
-        jogadores para longe."
+      Description: "Fumaceira bate no ch\xE3o, saltando bem alto e arremessando os jogadores
+        para longe."
       Icon: {fileID: 21300000, guid: 16fbb32c1b7d2794fb75cd46a4ca0f1b, type: 3}
       Videos:
       - {fileID: 32900000, guid: aca6cc1876cd8c049b84665f93cc13d3, type: 3}
@@ -149,23 +148,25 @@ MonoBehaviour:
     PortraitOffset: {x: 0, y: 0}
     Topics:
     - Heading: "TIRO E RECUPERA\xC7\xC3O"
-      Description: "Rebelde lan\xE7a uma bola como proj\xE9til que quica nas paredes.
-        A bola para depois de perder sua for\xE7a ou bater no jogador. Ele recupera
-        a bola passando por cima dela no ch\xE3o ou encostando nela durante o trajeto."
+      Description: "Rebelde lan\xE7a uma bola como proj\xE9til, que quica nas paredes. A bola
+        para depois de perder sua for\xE7a ou atingir um jogador. Rebelde recupera a
+        bola caso passe por cima dela enquanto estiver no ch\xE3o ou encoste nela
+        durante sua trajet\xF3ria."
       Icon: {fileID: 0}
       Videos:
       - {fileID: 32900000, guid: b96225ad72386e84491f230f5cdf18bd, type: 3}
     - Heading: PASSIVA
-      Description: "A cada arremesso do Rebelde, a velocidade da bola aumenta, podendo
-        aumentar 2 vezes. Ao ser pega pela 3\xAA vez, volta para a velocidade inicial
-        no pr\xF3ximo arremesso."
+      Description: "A cada arremesso, a velocidade da bola aumenta, podendo aumentar at\xE9 2
+        vezes. Ao ser pega pela 3\xAA vez, a bola volta \xE0 velocidade inicial no
+        pr\xF3ximo arremesso."
       Icon: {fileID: 0}
       Videos:
       - {fileID: 32900000, guid: 057cd24abdc68a5449076a02ee5818cf, type: 3}
     - Heading: HABILIDADE
-      Description: "Rebelde rebate tudo o que vier na dire\xE7\xE3o dele para a dire\xE7\xE3o
-        em que est\xE1 olhando quando rebateu, direcionando os disparos tanto de
-        inimigos quanto sua bola, se foi arremessada."
+      Description: "Rebelde rebate tudo o que vier em sua dire\xE7\xE3o, direcionando os
+        proj\xE9teis para onde estiver olhando no momento da rebatida. Isso se
+        aplica tanto aos disparos dos inimigos quanto \xE0 sua pr\xF3pria bola, caso
+        tenha sido arremessada."
       Icon: {fileID: 21300000, guid: c2f2db52242a0784c828c7b3da6c4da6, type: 3}
       Videos:
       - {fileID: 32900000, guid: 2e3873bfb0e4fcf47bb3d6b71279370d, type: 3}
@@ -829,7 +830,7 @@ MonoBehaviour:
     m_RichText: 1
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 1
-    m_LineSpacing: 1.12
+    m_LineSpacing: 1.02
   m_Text: 
 --- !u!1 &2111156270470027639
 GameObject:
@@ -1522,7 +1523,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 300, y: 24}
+  m_AnchoredPosition: {x: 300, y: 21}
   m_SizeDelta: {x: 744, y: 690}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &741436246494154000
@@ -1543,7 +1544,7 @@ MonoBehaviour:
     m_Top: 0
     m_Bottom: 0
   m_ChildAlignment: 3
-  m_Spacing: 14
+  m_Spacing: 12
   m_ChildForceExpandWidth: 1
   m_ChildForceExpandHeight: 0
   m_ChildControlWidth: 1
@@ -1953,7 +1954,7 @@ MonoBehaviour:
     m_RichText: 1
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 1
-    m_LineSpacing: 1.12
+    m_LineSpacing: 1.02
   m_Text: 
 --- !u!1 &4497682896995203171
 GameObject:
@@ -2927,7 +2928,7 @@ MonoBehaviour:
     m_RichText: 1
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 1
-    m_LineSpacing: 1.12
+    m_LineSpacing: 1.02
   m_Text: 
 --- !u!1 &7651160634282797083
 GameObject:
@@ -3288,7 +3289,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 126}
+  m_AnchoredPosition: {x: 0, y: 134}
   m_SizeDelta: {x: 448, y: 34}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2525045432534300022
