@@ -2,6 +2,7 @@ using System.Collections;
 using System;
 using PiGame.Lobby;
 using Unity.Netcode;
+using Unity.Netcode.Components;
 using Unity.Collections;
 using UnityEngine;
 using PiGame.Sound;
@@ -29,8 +30,7 @@ namespace PiGame.Gameplay
         private readonly NetworkVariable<double> _respawnInvulnerabilityEndsAt = new NetworkVariable<double>();
         private readonly NetworkVariable<bool> _matchActive = new NetworkVariable<bool>(false);
         private readonly NetworkVariable<bool> _indicatorsVisible = new NetworkVariable<bool>(true);
-        private readonly NetworkVariable<Vector3> _initialSpawnPosition = new();
-        private readonly NetworkVariable<bool> _initialSpawnAssigned = new();
+        private readonly NetworkVariable<SpawnOptions> _initialSpawnOptions = new();
         private readonly NetworkVariable<bool> _initialSpawnPrepared = new(false,
             NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         private readonly NetworkVariable<FixedString64Bytes> _playerName = new NetworkVariable<FixedString64Bytes>();
@@ -60,6 +60,7 @@ namespace PiGame.Gameplay
         private GeneralPlayerSoundManager _playerSound;
         private Animator _animator;
         private BoxCollider2D _bodyCollider;
+        internal InitialSpawnPlacement.Body StandingSpawnBody { get; private set; }
         private bool _initialSpawnSimulationAllowed;
         private bool _isInvulnerable;
         private Coroutine _knockbackRoutine;
@@ -97,6 +98,7 @@ namespace PiGame.Gameplay
             _rigidbody = GetComponent<Rigidbody2D>();
             _animator = GetComponent<Animator>();
             _bodyCollider = GetComponent<BoxCollider2D>();
+            if (_bodyCollider) StandingSpawnBody = new InitialSpawnPlacement.Body(_bodyCollider);
             if (_rigidbody != null) _rigidbody.simulated = false;
             _playerSound = GetComponent<GeneralPlayerSoundManager>();
         }
@@ -167,6 +169,13 @@ namespace PiGame.Gameplay
 
         public void InitializeServer(LobbyPlayerData playerData, Color indicatorColor)
         {
+            var options = new SpawnOptions();
+            options.Positions.Add(transform.position);
+            InitializeServer(playerData, indicatorColor, options);
+        }
+
+        internal void InitializeServer(LobbyPlayerData playerData, Color indicatorColor, SpawnOptions options)
+        {
             if (!IsServer)
             {
                 return;
@@ -183,51 +192,75 @@ namespace PiGame.Gameplay
             _matchActive.Value = false;
             _isInvulnerable = false;
             _respawnInvulnerabilityEndsAt.Value = 0d;
-            _initialSpawnPosition.Value = transform.position;
-            _initialSpawnAssigned.Value = true;
+            _initialSpawnOptions.Value = options;
         }
 
         internal IEnumerator PrepareInitialSpawn(float attemptTimeoutSeconds)
         {
-            if (!IsOwner || _rigidbody == null || _bodyCollider == null) yield break;
+            if (!IsOwner || !_rigidbody || !_bodyCollider) yield break;
+
             var physicsStep = new WaitForFixedUpdate();
+            int nextOption = 0;
             for (int attempt = 0; attempt < 3 && IsSpawned; attempt++)
             {
                 _initialSpawnSimulationAllowed = false;
                 RefreshSpawnPhysics();
                 int stableSteps = 0;
+                float settleDeadline = 0f;
                 float deadline = Time.unscaledTime + Mathf.Max(0.5f, attemptTimeoutSeconds);
                 while (IsSpawned && Time.unscaledTime < deadline)
                 {
-                    if (!_initialSpawnSimulationAllowed && _initialSpawnAssigned.Value
-                        && gameObject.scene.isLoaded)
-                    {
-                        Physics2D.SyncTransforms();
-                        if (InitialSpawnPlacement.TryResolve(_bodyCollider, _initialSpawnPosition.Value, out Vector3 position))
-                        {
-                            transform.position = position;
-                            _rigidbody.position = position;
-                            _rigidbody.linearVelocity = Vector2.zero;
-                            _initialSpawnSimulationAllowed = true;
-                            RefreshSpawnPhysics();
-                            Physics2D.SyncTransforms();
-                        }
-                    }
+                    if (!_initialSpawnSimulationAllowed && gameObject.scene.isLoaded
+                        && TryPlaceInitialSpawn(ref nextOption))
+                        settleDeadline = Time.unscaledTime + 0.5f;
 
                     yield return physicsStep;
                     if (!IsSpawned) yield break;
-                    bool safe = _initialSpawnSimulationAllowed
-                        && Mathf.Abs(_rigidbody.linearVelocity.y) <= 0.1f
+                    if (!_initialSpawnSimulationAllowed) continue;
+
+                    bool safe = Mathf.Abs(_rigidbody.linearVelocity.y) <= 0.1f
                         && InitialSpawnPlacement.IsSupportedAndClear(_bodyCollider);
                     stableSteps = safe ? stableSteps + 1 : 0;
-                    if (stableSteps < 3) continue;
-                    _initialSpawnPrepared.Value = true;
-                    yield break;
+                    if (stableSteps >= 3)
+                    {
+                        ReplicateSpawnPosition();
+                        _initialSpawnPrepared.Value = true;
+                        yield break;
+                    }
+
+                    // Aguarda a física resolver o contato com o piso antes de trocar de posição.
+                    if (Time.unscaledTime >= settleDeadline)
+                    {
+                        _initialSpawnSimulationAllowed = false;
+                        RefreshSpawnPhysics();
+                        stableSteps = 0;
+                    }
                 }
                 Debug.LogWarning($"P{PlayerSlot + 1}: nova tentativa de preparar o spawn ({attempt + 1}/3).", this);
             }
             _initialSpawnSimulationAllowed = false;
             RefreshSpawnPhysics();
+        }
+
+        private bool TryPlaceInitialSpawn(ref int nextOption)
+        {
+            var options = _initialSpawnOptions.Value.Positions;
+            if (options.Length == 0) return false;
+
+            Physics2D.SyncTransforms();
+            for (int checkedOptions = 0; checkedOptions < options.Length; checkedOptions++)
+            {
+                Vector3 position = options[nextOption];
+                nextOption = (nextOption + 1) % options.Length;
+                if (!InitialSpawnPlacement.CanPlace(StandingSpawnBody, position)) continue;
+
+                PlaceAtSpawn(position);
+                _initialSpawnSimulationAllowed = true;
+                RefreshSpawnPhysics();
+                Physics2D.SyncTransforms();
+                return true;
+            }
+            return false;
         }
 
         private void HandleSpawnPreparedChanged(bool previous, bool current) => RefreshSpawnPhysics();
@@ -350,11 +383,7 @@ namespace PiGame.Gameplay
                 return;
             }
             CleanupDeathProp();
-            transform.position = position;
-            if (_rigidbody != null)
-            {
-                _rigidbody.linearVelocity = Vector2.zero;
-            }
+            PlaceAtSpawn(position);
 
             TeleportOwnerRpc(
                 position,
@@ -409,11 +438,23 @@ namespace PiGame.Gameplay
         [Rpc(SendTo.SpecifiedInParams)]
         private void TeleportOwnerRpc(Vector3 position, RpcParams rpcParams)
         {
+            PlaceAtSpawn(position);
+            ReplicateSpawnPosition();
+        }
+
+        private void PlaceAtSpawn(Vector3 position)
+        {
             transform.position = position;
-            if (_rigidbody != null)
-            {
-                _rigidbody.linearVelocity = Vector2.zero;
-            }
+            if (!_rigidbody) return;
+            _rigidbody.position = position;
+            _rigidbody.linearVelocity = Vector2.zero;
+            _rigidbody.angularVelocity = 0f;
+        }
+
+        private void ReplicateSpawnPosition()
+        {
+            if (TryGetComponent(out NetworkTransform networkTransform) && networkTransform.CanCommitToTransform)
+                networkTransform.Teleport(transform.position, transform.rotation, transform.localScale);
         }
 
         private void HandleAliveChanged(bool previousValue, bool currentValue)

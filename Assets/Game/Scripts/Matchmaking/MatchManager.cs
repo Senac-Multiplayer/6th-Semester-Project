@@ -16,6 +16,7 @@ namespace PiGame.Gameplay
         [SerializeField] private MatchController _matchController;
 
         private MatchSnapshot _snapshot;
+        private readonly List<Vector3> _spawnOptions = new(9);
 
         public override void OnNetworkSpawn()
         {
@@ -65,6 +66,7 @@ namespace PiGame.Gameplay
                 }
             }
 
+            var reservedAreas = new List<Rect>(_snapshot.Players.Length * InitialSpawnPlacement.MaxOptions);
             foreach (LobbyPlayerData playerData in _snapshot.Players)
             {
                 if (availableSpawnPoints.Count == 0)
@@ -82,12 +84,13 @@ namespace PiGame.Gameplay
                 }
 
                 if (!TryPickInitialSpawn(character.PlayerPrefab.GetComponent<BoxCollider2D>(), availableSpawnPoints,
-                        out Transform spawnPoint, out Vector3 spawnPosition))
+                        reservedAreas, out Transform spawnPoint, out SpawnOptions options))
                 {
                     Debug.LogWarning($"Nenhum ponto seguro de spawn para {character.DisplayName} no mapa {gameObject.scene.name}.", this);
                     _matchController.AbortIntroServer();
                     return;
                 }
+                Vector3 spawnPosition = options.Positions[0];
                 NetworkObject playerObject = Instantiate(
                     character.PlayerPrefab,
                     spawnPosition,
@@ -107,30 +110,37 @@ namespace PiGame.Gameplay
 
                 playerState.InitializeServer(
                     playerData,
-                    PlayerSlotColors.Get(playerData.PlayerSlot));
+                    PlayerSlotColors.Get(playerData.PlayerSlot), options);
                 _matchController.RegisterPlayer(playerState, spawnPosition, playerData);
             }
         }
 
-        private bool TryPickInitialSpawn(BoxCollider2D body, List<int> available,
-            out Transform spawnPoint, out Vector3 position)
+        private bool TryPickInitialSpawn(BoxCollider2D collider, List<int> available, List<Rect> reservedAreas,
+            out Transform spawnPoint, out SpawnOptions options)
         {
+            spawnPoint = null;
+            options = default;
+            if (!collider) return false;
+
+            var body = new InitialSpawnPlacement.Body(collider);
             Physics2D.SyncTransforms();
             int start = Random.Range(0, available.Count);
-            for (int offset = 0; body && offset < available.Count; offset++)
+            for (int offset = 0; offset < available.Count; offset++)
             {
                 int index = (start + offset) % available.Count;
                 Transform point = _spawnPoints[available[index]];
-                if (!InitialSpawnPlacement.TryResolve(body, point.position, out position)
-                    || InitialSpawnPlacement.IsOccupiedByPlayer(body, position)) continue;
+                InitialSpawnPlacement.CollectOptions(body, point.position, _spawnOptions, reservedAreas);
+                if (_spawnOptions.Count == 0) continue;
 
+                foreach (Vector3 candidate in _spawnOptions)
+                {
+                    options.Positions.Add(candidate);
+                    reservedAreas.Add(body.BoundsAt(candidate));
+                }
                 available.RemoveAt(index);
                 spawnPoint = point;
                 return true;
             }
-
-            spawnPoint = null;
-            position = default;
             return false;
         }
 

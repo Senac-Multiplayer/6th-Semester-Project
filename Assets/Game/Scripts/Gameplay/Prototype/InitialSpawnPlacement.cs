@@ -1,87 +1,121 @@
+using System.Collections.Generic;
+using Unity.Collections;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace PiGame.Gameplay
 {
-    // Consultas locais: a cena e seus colliders precisam existir na máquina do proprietário.
+    internal struct SpawnOptions : INetworkSerializeByMemcpy
+    {
+        public FixedList64Bytes<Vector3> Positions;
+    }
+
     internal static class InitialSpawnPlacement
     {
+        internal const int MaxOptions = 3;
         private const float Skin = 0.025f;
+        private const float ProbeAbove = 3f;
+        private const float ProbeBelow = 8f;
+        private const float HorizontalStep = 0.4f;
+        private const int HorizontalSteps = 4;
         private static readonly int TerrainMask = LayerMask.GetMask("Ground", "Wall");
         private static readonly int PlayerMask = LayerMask.GetMask("Player");
 
-        internal static bool TryResolve(BoxCollider2D body, Vector3 anchor, out Vector3 position)
+        internal readonly struct Body
         {
-            if (TryResolveAtX(body, anchor, out position)) return true;
+            internal readonly BoxCollider2D Collider;
+            internal readonly Vector2 Size;
+            internal readonly Vector2 Offset;
 
-            const float sideStep = 0.35f;
-            for (int step = 1; step <= 3; step++)
+            internal Body(BoxCollider2D collider)
             {
-                Vector3 offset = Vector3.right * (sideStep * step);
-                if (TryResolveAtX(body, anchor + offset, out position)
-                    || TryResolveAtX(body, anchor - offset, out position)) return true;
+                Collider = collider;
+                Vector3 scale = collider.transform.lossyScale;
+                Size = Vector2.Scale(collider.size, new Vector2(Mathf.Abs(scale.x), Mathf.Abs(scale.y)));
+                Offset = collider.transform.TransformVector(collider.offset);
             }
-            position = anchor;
-            return false;
+
+            internal Rect BoundsAt(Vector3 position) => new((Vector2)position + Offset - Size * 0.5f, Size);
         }
 
-        private static bool TryResolveAtX(BoxCollider2D body, Vector3 anchor, out Vector3 position)
+        internal static void CollectOptions(Body body, Vector3 anchor, List<Vector3> positions,
+            List<Rect> reserved = null)
+        {
+            positions.Clear();
+            for (int step = -HorizontalSteps; step <= HorizontalSteps; step++)
+            {
+                Vector3 probe = anchor + Vector3.right * (step * HorizontalStep);
+                if (TryFindSupport(body, probe, reserved, out Vector3 position))
+                    positions.Add(position);
+            }
+
+            positions.Sort((a, b) => (a - anchor).sqrMagnitude.CompareTo((b - anchor).sqrMagnitude));
+            if (positions.Count > MaxOptions)
+                positions.RemoveRange(MaxOptions, positions.Count - MaxOptions);
+        }
+
+        private static bool TryFindSupport(Body body, Vector3 anchor, List<Rect> reserved, out Vector3 position)
         {
             position = anchor;
-            Vector2 size = WorldSize(body);
-            Vector2 offset = body.transform.TransformVector(body.offset);
-            Vector2 origin = (Vector2)anchor + new Vector2(offset.x, 2f);
+            Vector2 origin = (Vector2)anchor + new Vector2(body.Offset.x, ProbeAbove);
             float nearest = float.PositiveInfinity;
-            foreach (RaycastHit2D hit in Physics2D.RaycastAll(origin, Vector2.down, 10f, TerrainMask))
+            foreach (RaycastHit2D hit in Physics2D.RaycastAll(origin, Vector2.down, ProbeAbove + ProbeBelow, TerrainMask))
             {
                 if (!IsSupport(hit)) continue;
                 Vector3 candidate = anchor;
-                candidate.y = hit.point.y + Skin + size.y * 0.5f - offset.y;
+                candidate.y = hit.point.y + Skin + body.Size.y * 0.5f - body.Offset.y;
                 float distance = Mathf.Abs(candidate.y - anchor.y);
-                if (distance >= nearest || HasSolidOverlap(body, candidate)) continue;
-                if (!HasSupport(body, candidate)) continue;
+                if (distance >= nearest || IsReserved(body, candidate, reserved) || !CanPlace(body, candidate))
+                    continue;
+
                 nearest = distance;
                 position = candidate;
             }
             return nearest < float.PositiveInfinity;
         }
 
-        internal static bool IsSupportedAndClear(BoxCollider2D body)
+        private static bool IsReserved(Body body, Vector3 position, List<Rect> reserved)
         {
-            return !HasSolidOverlap(body, body.transform.position)
-                && HasSupport(body, body.transform.position);
+            if (reserved == null) return false;
+            Rect bounds = body.BoundsAt(position);
+            foreach (Rect area in reserved)
+                if (bounds.Overlaps(area)) return true;
+            return false;
         }
 
-        internal static bool IsOccupiedByPlayer(BoxCollider2D body, Vector3 position)
+        internal static bool CanPlace(Body body, Vector3 position) =>
+            !HasSolidOverlap(body, position)
+            && !IsOccupiedByPlayer(body, position)
+            && HasSupport(body, position);
+
+        internal static bool IsSupportedAndClear(BoxCollider2D collider) =>
+            CanPlace(new Body(collider), collider.transform.position);
+
+        internal static bool HasSolidOverlap(Body body, Vector3 position)
         {
-            Vector2 center = (Vector2)position + (Vector2)body.transform.TransformVector(body.offset);
-            foreach (Collider2D other in Physics2D.OverlapBoxAll(center, WorldSize(body), 0f, PlayerMask))
-                if (other != body && !other.isTrigger
+            Vector2 center = (Vector2)position + body.Offset;
+            Vector2 size = body.Size - Vector2.one * 0.02f;
+            int collisionMask = TerrainMask | (Physics2D.GetLayerCollisionMask(body.Collider.gameObject.layer) & ~PlayerMask);
+            foreach (Collider2D other in Physics2D.OverlapBoxAll(center, size, 0f, collisionMask))
+                if (!other.isTrigger && !other.transform.IsChildOf(body.Collider.transform)) return true;
+            return false;
+        }
+
+        private static bool IsOccupiedByPlayer(Body body, Vector3 position)
+        {
+            Vector2 center = (Vector2)position + body.Offset;
+            foreach (Collider2D other in Physics2D.OverlapBoxAll(center, body.Size, 0f, PlayerMask))
+                if (!other.isTrigger && !other.transform.IsChildOf(body.Collider.transform)
                     && other.GetComponentInParent<NetworkPlayerState>() is { IsAlive: true }) return true;
             return false;
         }
 
-        private static Vector2 WorldSize(BoxCollider2D body)
+        private static bool HasSupport(Body body, Vector3 position)
         {
-            Vector3 scale = body.transform.lossyScale;
-            return Vector2.Scale(body.size, new Vector2(Mathf.Abs(scale.x), Mathf.Abs(scale.y)));
-        }
-
-        private static bool HasSolidOverlap(BoxCollider2D body, Vector3 position)
-        {
-            Vector2 center = (Vector2)position + (Vector2)body.transform.TransformVector(body.offset);
-            Vector2 size = WorldSize(body) - Vector2.one * 0.02f;
-            foreach (Collider2D other in Physics2D.OverlapBoxAll(center, size, 0f, TerrainMask))
-                if (other != body && !other.isTrigger && !other.usedByEffector) return true;
-            return false;
-        }
-
-        private static bool HasSupport(BoxCollider2D body, Vector3 position)
-        {
-            Vector2 size = WorldSize(body);
-            Vector2 center = (Vector2)position + (Vector2)body.transform.TransformVector(body.offset);
-            Vector2 origin = center + Vector2.down * (size.y * 0.5f - 0.02f);
+            Vector2 center = (Vector2)position + body.Offset;
+            Vector2 origin = center + Vector2.down * (body.Size.y * 0.5f - 0.02f);
             foreach (RaycastHit2D hit in Physics2D.BoxCastAll(origin,
-                         new Vector2(size.x * 0.8f, 0.01f), 0f, Vector2.down, 0.1f, TerrainMask))
+                         new Vector2(body.Size.x * 0.8f, 0.01f), 0f, Vector2.down, 0.1f, TerrainMask))
                 if (IsSupport(hit)) return true;
             return false;
         }

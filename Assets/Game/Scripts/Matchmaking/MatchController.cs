@@ -67,6 +67,7 @@ namespace PiGame.Gameplay
             new Dictionary<ulong, Vector3>();
         private Transform[] _respawnPoints = Array.Empty<Transform>();
         private readonly List<Vector3> _safeRespawnPositions = new(4);
+        private readonly List<Vector3> _respawnOptions = new(9);
 
         public event Action ScoresChanged;
         public event Action PhaseChanged;
@@ -301,21 +302,27 @@ namespace PiGame.Gameplay
         private bool TryPickRespawnPosition(NetworkPlayerState player, out Vector3 position)
         {
             position = default;
-            if (!player.TryGetComponent(out BoxCollider2D body)) return false;
+            var body = player.StandingSpawnBody;
+            if (!body.Collider) return false;
 
             Physics2D.SyncTransforms();
             _safeRespawnPositions.Clear();
             foreach (Transform point in _respawnPoints)
             {
-                if (point && InitialSpawnPlacement.TryResolve(body, point.position, out Vector3 candidate)
-                    && !InitialSpawnPlacement.IsOccupiedByPlayer(body, candidate))
-                    _safeRespawnPositions.Add(candidate);
+                if (!point) continue;
+                InitialSpawnPlacement.CollectOptions(body, point.position, _respawnOptions);
+                if (_respawnOptions.Count > 0) _safeRespawnPositions.Add(_respawnOptions[0]);
             }
 
             bool hasPrevious = _spawnPositions.TryGetValue(player.OwnerClientId, out Vector3 previous);
             if (_safeRespawnPositions.Count == 0)
-                return hasPrevious && InitialSpawnPlacement.TryResolve(body, previous, out position)
-                    && !InitialSpawnPlacement.IsOccupiedByPlayer(body, position);
+            {
+                if (!hasPrevious) return false;
+                InitialSpawnPlacement.CollectOptions(body, previous, _respawnOptions);
+                if (_respawnOptions.Count == 0) return false;
+                position = _respawnOptions[0];
+                return true;
+            }
 
             if (hasPrevious && _safeRespawnPositions.Exists(candidate => (candidate - previous).sqrMagnitude >= 0.04f))
                 _safeRespawnPositions.RemoveAll(candidate => (candidate - previous).sqrMagnitude < 0.04f);
