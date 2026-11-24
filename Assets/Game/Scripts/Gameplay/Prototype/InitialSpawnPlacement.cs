@@ -5,14 +5,14 @@ using UnityEngine;
 
 namespace PiGame.Gameplay
 {
-    internal struct SpawnOptions : INetworkSerializeByMemcpy
+    public struct SpawnOptions : INetworkSerializeByMemcpy
     {
         public FixedList64Bytes<Vector3> Positions;
     }
 
-    internal static class InitialSpawnPlacement
+    public static class InitialSpawnPlacement
     {
-        internal const int MaxOptions = 3;
+        public const int MaxOptions = 3;
         private const float Skin = 0.025f;
         private const float ProbeAbove = 3f;
         private const float ProbeBelow = 8f;
@@ -21,13 +21,13 @@ namespace PiGame.Gameplay
         private static readonly int TerrainMask = LayerMask.GetMask("Ground", "Wall");
         private static readonly int PlayerMask = LayerMask.GetMask("Player");
 
-        internal readonly struct Body
+        public readonly struct Body
         {
-            internal readonly BoxCollider2D Collider;
-            internal readonly Vector2 Size;
-            internal readonly Vector2 Offset;
+            public readonly BoxCollider2D Collider;
+            public readonly Vector2 Size;
+            public readonly Vector2 Offset;
 
-            internal Body(BoxCollider2D collider)
+            public Body(BoxCollider2D collider)
             {
                 Collider = collider;
                 Vector3 scale = collider.transform.lossyScale;
@@ -35,10 +35,10 @@ namespace PiGame.Gameplay
                 Offset = collider.transform.TransformVector(collider.offset);
             }
 
-            internal Rect BoundsAt(Vector3 position) => new((Vector2)position + Offset - Size * 0.5f, Size);
+            public Rect BoundsAt(Vector3 position) => new((Vector2)position + Offset - Size * 0.5f, Size);
         }
 
-        internal static void CollectOptions(Body body, Vector3 anchor, List<Vector3> positions,
+        public static void CollectOptions(Body body, Vector3 anchor, List<Vector3> positions,
             List<Rect> reserved = null)
         {
             positions.Clear();
@@ -83,15 +83,15 @@ namespace PiGame.Gameplay
             return false;
         }
 
-        internal static bool CanPlace(Body body, Vector3 position) =>
+        public static bool CanPlace(Body body, Vector3 position) =>
             !HasSolidOverlap(body, position)
             && !IsOccupiedByPlayer(body, position)
             && HasSupport(body, position);
 
-        internal static bool IsSupportedAndClear(BoxCollider2D collider) =>
+        public static bool IsSupportedAndClear(BoxCollider2D collider) =>
             CanPlace(new Body(collider), collider.transform.position);
 
-        internal static bool HasSolidOverlap(Body body, Vector3 position)
+        private static bool HasSolidOverlap(Body body, Vector3 position)
         {
             Vector2 center = (Vector2)position + body.Offset;
             Vector2 size = body.Size - Vector2.one * 0.02f;

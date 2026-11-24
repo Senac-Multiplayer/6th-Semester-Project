@@ -60,7 +60,7 @@ namespace PiGame.Gameplay
         private GeneralPlayerSoundManager _playerSound;
         private Animator _animator;
         private BoxCollider2D _bodyCollider;
-        internal InitialSpawnPlacement.Body StandingSpawnBody { get; private set; }
+        public InitialSpawnPlacement.Body StandingSpawnBody { get; private set; }
         private bool _initialSpawnSimulationAllowed;
         private bool _isInvulnerable;
         private Coroutine _knockbackRoutine;
@@ -174,7 +174,7 @@ namespace PiGame.Gameplay
             InitializeServer(playerData, indicatorColor, options);
         }
 
-        internal void InitializeServer(LobbyPlayerData playerData, Color indicatorColor, SpawnOptions options)
+        public void InitializeServer(LobbyPlayerData playerData, Color indicatorColor, SpawnOptions options)
         {
             if (!IsServer)
             {
@@ -195,7 +195,7 @@ namespace PiGame.Gameplay
             _initialSpawnOptions.Value = options;
         }
 
-        internal IEnumerator PrepareInitialSpawn(float attemptTimeoutSeconds)
+        public IEnumerator PrepareInitialSpawn(float attemptTimeoutSeconds)
         {
             if (!IsOwner || !_rigidbody || !_bodyCollider) yield break;
 
