@@ -2002,7 +2002,7 @@ MonoBehaviour:
   _input: {fileID: 890000000000000001}
   _presentation: {fileID: 890000000000000002}
   _moveSpeed: 7
-  _jumpForce: 10
+  _jumpForce: 13
   _groundCheckDistance: 0.1
   _groundLayer:
     serializedVersion: 2
@@ -2158,6 +2158,7 @@ MonoBehaviour:
   _playerLabel: {fileID: 8809000000000113}
   _abilityBackground: {fileID: 8809000000000142}
   _abilityFill: {fileID: 8809000000000152}
+  _passiveAbilityIcon: {fileID: 0}
   _localHintLabel: {fileID: 8809000000000133}
   _localHintSeconds: 3
   _abilityOpacity: 0.7
