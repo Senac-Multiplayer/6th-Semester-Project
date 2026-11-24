@@ -86,6 +86,7 @@ namespace PiGame.UI
         private LobbyInputDeviceKind _lastInputDevice = LobbyInputDeviceKind.Keyboard;
         private Gamepad _lastGamepad;
         private Vector2[] _deviceIconPositions;
+        private Vector2[] _selectionBannerPositions;
         private bool _interactionEnabled = true;
         private int _localPlayerSlot = -1;
         private bool _localPlayerIsReady = true;
@@ -144,7 +145,7 @@ namespace PiGame.UI
                 enabled = false;
                 return;
             }
-            CacheDeviceIconPositions();
+            CacheSlotArtworkPositions();
 
             DisableAutomaticNavigation(_previousCharacterButton);
             DisableAutomaticNavigation(_nextCharacterButton);
@@ -152,13 +153,17 @@ namespace PiGame.UI
             RefreshLegend();
         }
 
-        private void CacheDeviceIconPositions()
+        private void CacheSlotArtworkPositions()
         {
             // O controlador pode renderizar um painel ainda inativo, antes do Awake.
             if (_deviceIconPositions != null) return;
             _deviceIconPositions = new Vector2[_deviceIcons.Length];
             for (int i = 0; i < _deviceIcons.Length; i++)
                 _deviceIconPositions[i] = _deviceIcons[i].rectTransform.anchoredPosition;
+
+            _selectionBannerPositions = new Vector2[_selectionBanners.Length];
+            for (int i = 0; i < _selectionBanners.Length; i++)
+                _selectionBannerPositions[i] = _selectionBanners[i].rectTransform.anchoredPosition;
         }
 
         private void OnEnable()
@@ -273,7 +278,7 @@ namespace PiGame.UI
             bool requireUniqueCharacters)
         {
             if (!enabled) return;
-            CacheDeviceIconPositions();
+            CacheSlotArtworkPositions();
             _connectionView.SetPlayers(players);
             _localPlayerSlot = -1;
             _localPlayerIsReady = true;
@@ -462,7 +467,11 @@ namespace PiGame.UI
                 _clanDetails[slot].rectTransform.localScale = Vector3.one * character.LobbyDetailsScale;
                 _readyBannerMotifs[slot].sprite = character.LobbyBanner;
                 _readyBannerMotifs[slot].rectTransform.anchoredPosition = character.LobbyReadyBannerOffset;
-                _selectionBanners[slot].sprite = character.LobbyBanner;
+                Image selectionBanner = _selectionBanners[slot];
+                selectionBanner.sprite = character.LobbyBanner;
+                selectionBanner.rectTransform.anchoredPosition = _selectionBannerPositions[slot]
+                    + Vector2.up * character.LobbySelectionBannerOffsetY;
+                selectionBanner.rectTransform.localScale = Vector3.one * character.LobbySelectionBannerScale;
 
                 if (isLocalPlayer)
                 {
