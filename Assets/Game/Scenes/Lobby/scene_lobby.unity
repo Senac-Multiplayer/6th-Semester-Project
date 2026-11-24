@@ -2302,10 +2302,6 @@ PrefabInstance:
       value: 65535
       objectReference: {fileID: 0}
     - target: {fileID: 2280000323, guid: c33981f1453cc72f7e0e325732862077, type: 3}
-      propertyPath: m_sharedMaterial
-      value: 
-      objectReference: {fileID: 8301420987674334106, guid: f0ad3b57ab90dca41b37402d61585a11, type: 2}
-    - target: {fileID: 2280000323, guid: c33981f1453cc72f7e0e325732862077, type: 3}
       propertyPath: m_fontColor32.rgba
       value: 4292604149
       objectReference: {fileID: 0}

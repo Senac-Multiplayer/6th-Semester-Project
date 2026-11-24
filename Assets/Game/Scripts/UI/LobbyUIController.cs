@@ -864,7 +864,7 @@ namespace PiGame.UI
         {
             if (!_mainMenu.IsHomeVisible || _charactersPanel.IsVisible) return;
             _guideFromLobby = false;
-            _mainMenu.ShowConnection(false);
+            _mainMenu.ShowConnection();
             PiGame.Sound.UiAudioManager.PlayButton();
             _charactersPanel.Show();
             _ignoreMenuInputFrame = Time.frameCount;

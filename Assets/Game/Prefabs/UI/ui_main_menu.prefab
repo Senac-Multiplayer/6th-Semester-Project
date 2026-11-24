@@ -53,7 +53,6 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   _visuals: {fileID: 2280000020}
   _home: {fileID: 2280000302}
-  _title: {fileID: 2280000321}
   _playButton: {fileID: 2280000364}
   _optionsButton: {fileID: 2280000484}
   _creditsButton: {fileID: 2280000544}
@@ -110,7 +109,6 @@ RectTransform:
   - {fileID: 2280000101}
   - {fileID: 2280000281}
   - {fileID: 2280000301}
-  - {fileID: 2280000321}
   m_Father: {fileID: 2280000001}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -1436,6 +1434,7 @@ RectTransform:
   - {fileID: 2280000601}
   - {fileID: 2280000661}
   - {fileID: 4926797273713761964}
+  - {fileID: 2280000321}
   m_Father: {fileID: 2280000021}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -1485,7 +1484,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 2280000021}
+  m_Father: {fileID: 2280000301}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.15, y: 1}
   m_AnchorMax: {x: 0.85, y: 1}
