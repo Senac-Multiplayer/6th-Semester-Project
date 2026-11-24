@@ -45,6 +45,7 @@ namespace PiGame.Gameplay
                 _matchController != null && _matchController.IsSpawned);
 
             _matchController.Initialize(_snapshot.MatchSettings);
+            _matchController.SetRespawnPoints(_spawnPoints);
             SpawnPlayers();
         }
 
@@ -69,6 +70,7 @@ namespace PiGame.Gameplay
                 if (availableSpawnPoints.Count == 0)
                 {
                     Debug.LogWarning("Não há spawn points suficientes para todos os jogadores.");
+                    _matchController.AbortIntroServer();
                     return;
                 }
 
@@ -79,14 +81,16 @@ namespace PiGame.Gameplay
                     continue;
                 }
 
-                int randomIndex = Random.Range(0, availableSpawnPoints.Count);
-                int spawnPointIndex = availableSpawnPoints[randomIndex];
-                availableSpawnPoints.RemoveAt(randomIndex);
-
-                Transform spawnPoint = _spawnPoints[spawnPointIndex];
+                if (!TryPickInitialSpawn(character.PlayerPrefab.GetComponent<BoxCollider2D>(), availableSpawnPoints,
+                        out Transform spawnPoint, out Vector3 spawnPosition))
+                {
+                    Debug.LogWarning($"Nenhum ponto seguro de spawn para {character.DisplayName} no mapa {gameObject.scene.name}.", this);
+                    _matchController.AbortIntroServer();
+                    return;
+                }
                 NetworkObject playerObject = Instantiate(
                     character.PlayerPrefab,
-                    spawnPoint.position,
+                    spawnPosition,
                     spawnPoint.rotation);
 
                 playerObject.SpawnAsPlayerObject(playerData.ClientId, true);
@@ -104,8 +108,30 @@ namespace PiGame.Gameplay
                 playerState.InitializeServer(
                     playerData,
                     PlayerSlotColors.Get(playerData.PlayerSlot));
-                _matchController.RegisterPlayer(playerState, spawnPoint.position, playerData);
+                _matchController.RegisterPlayer(playerState, spawnPosition, playerData);
             }
+        }
+
+        private bool TryPickInitialSpawn(BoxCollider2D body, List<int> available,
+            out Transform spawnPoint, out Vector3 position)
+        {
+            Physics2D.SyncTransforms();
+            int start = Random.Range(0, available.Count);
+            for (int offset = 0; body && offset < available.Count; offset++)
+            {
+                int index = (start + offset) % available.Count;
+                Transform point = _spawnPoints[available[index]];
+                if (!InitialSpawnPlacement.TryResolve(body, point.position, out position)
+                    || InitialSpawnPlacement.IsOccupiedByPlayer(body, position)) continue;
+
+                available.RemoveAt(index);
+                spawnPoint = point;
+                return true;
+            }
+
+            spawnPoint = null;
+            position = default;
+            return false;
         }
 
         private LobbyCharacterDefinition FindCharacter(LobbyCharacterId characterId)

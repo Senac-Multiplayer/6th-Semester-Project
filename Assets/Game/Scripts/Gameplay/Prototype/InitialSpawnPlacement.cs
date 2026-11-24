@@ -7,8 +7,24 @@ namespace PiGame.Gameplay
     {
         private const float Skin = 0.025f;
         private static readonly int TerrainMask = LayerMask.GetMask("Ground", "Wall");
+        private static readonly int PlayerMask = LayerMask.GetMask("Player");
 
         internal static bool TryResolve(BoxCollider2D body, Vector3 anchor, out Vector3 position)
+        {
+            if (TryResolveAtX(body, anchor, out position)) return true;
+
+            const float sideStep = 0.35f;
+            for (int step = 1; step <= 3; step++)
+            {
+                Vector3 offset = Vector3.right * (sideStep * step);
+                if (TryResolveAtX(body, anchor + offset, out position)
+                    || TryResolveAtX(body, anchor - offset, out position)) return true;
+            }
+            position = anchor;
+            return false;
+        }
+
+        private static bool TryResolveAtX(BoxCollider2D body, Vector3 anchor, out Vector3 position)
         {
             position = anchor;
             Vector2 size = WorldSize(body);
@@ -33,6 +49,15 @@ namespace PiGame.Gameplay
         {
             return !HasSolidOverlap(body, body.transform.position)
                 && HasSupport(body, body.transform.position);
+        }
+
+        internal static bool IsOccupiedByPlayer(BoxCollider2D body, Vector3 position)
+        {
+            Vector2 center = (Vector2)position + (Vector2)body.transform.TransformVector(body.offset);
+            foreach (Collider2D other in Physics2D.OverlapBoxAll(center, WorldSize(body), 0f, PlayerMask))
+                if (other != body && !other.isTrigger
+                    && other.GetComponentInParent<NetworkPlayerState>() is { IsAlive: true }) return true;
+            return false;
         }
 
         private static Vector2 WorldSize(BoxCollider2D body)

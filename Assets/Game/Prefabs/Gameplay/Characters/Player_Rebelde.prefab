@@ -2086,7 +2086,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.NetworkPlayerState
   ShowTopMostFoldoutHeaderGroup: 1
   _maximumHealth: 3
-  _respawnInvulnerabilitySeconds: 1
+  _respawnInvulnerabilitySeconds: 2
   _respawnBlinkInterval: 0.1
   _deathPropPrefab: {fileID: 6841368190081493115, guid: e9acb8cfc71dcf344b2e3855a62df3d5, type: 3}
 --- !u!114 &880000000000000002

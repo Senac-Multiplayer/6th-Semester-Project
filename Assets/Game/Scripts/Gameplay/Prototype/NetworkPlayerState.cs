@@ -12,7 +12,7 @@ namespace PiGame.Gameplay
     public class NetworkPlayerState : NetworkBehaviour
     {
         [SerializeField] private int _maximumHealth = 3;
-        [SerializeField, Min(0f)] private float _respawnInvulnerabilitySeconds = 1.5f;
+        [SerializeField, Min(0f)] private float _respawnInvulnerabilitySeconds = 2f;
         [SerializeField, Min(0.01f)] private float _respawnBlinkInterval = 0.1f;
         [SerializeField] private GameObject _deathPropPrefab;
         private GameObject _activeDeathProp;
@@ -50,6 +50,8 @@ namespace PiGame.Gameplay
 
         private SpriteRenderer[] _spriteRenderers;
         private const float RespawnTintMultiplier = 0.8f;
+        private const float RemoteHudRevealDelaySeconds = 0.35f;
+        private float _remoteHudRevealAt;
         private SpriteRenderer _bodySpriteRenderer;
         private Color _healthTint = Color.white;
         private bool _respawnTintDark;
@@ -73,7 +75,7 @@ namespace PiGame.Gameplay
         public int CurrentHealth => _currentHealth.Value;
         public int MaximumHealth => _maximumHealth;
         public bool IsAlive => _isAlive.Value;
-        public bool IndicatorsVisible => _indicatorsVisible.Value;
+        public bool IndicatorsVisible => _indicatorsVisible.Value && _remoteHudRevealAt <= 0f;
         public bool CanAct => _isAlive.Value && _matchActive.Value;
         public bool IsInitialSpawnPrepared => _initialSpawnPrepared.Value;
         public bool IsInvulnerable => _isInvulnerable
@@ -109,7 +111,7 @@ namespace PiGame.Gameplay
             _currentHealth.OnValueChanged += HandleIntChanged;
             _isAlive.OnValueChanged += HandleAliveChanged;
             _matchActive.OnValueChanged += HandleBoolChanged;
-            _indicatorsVisible.OnValueChanged += HandleBoolChanged;
+            _indicatorsVisible.OnValueChanged += HandleIndicatorsChanged;
             _playerName.OnValueChanged += HandleNameChanged;
             _initialSpawnPrepared.OnValueChanged += HandleSpawnPreparedChanged;
 
@@ -121,6 +123,12 @@ namespace PiGame.Gameplay
 
         private void LateUpdate()
         {
+            if (_remoteHudRevealAt > 0f && Time.unscaledTime >= _remoteHudRevealAt)
+            {
+                _remoteHudRevealAt = 0f;
+                StateChanged?.Invoke();
+            }
+
             bool dark = false;
             if (IsSpawned && CanAct)
             {
@@ -146,7 +154,8 @@ namespace PiGame.Gameplay
             _currentHealth.OnValueChanged -= HandleIntChanged;
             _isAlive.OnValueChanged -= HandleAliveChanged;
             _matchActive.OnValueChanged -= HandleBoolChanged;
-            _indicatorsVisible.OnValueChanged -= HandleBoolChanged;
+            _indicatorsVisible.OnValueChanged -= HandleIndicatorsChanged;
+            _remoteHudRevealAt = 0f;
             _playerName.OnValueChanged -= HandleNameChanged;
             _initialSpawnPrepared.OnValueChanged -= HandleSpawnPreparedChanged;
             _initialSpawnSimulationAllowed = false;
@@ -514,6 +523,12 @@ namespace PiGame.Gameplay
 
         private void HandleColorChanged(Color previousValue, Color currentValue)
         {
+            StateChanged?.Invoke();
+        }
+
+        private void HandleIndicatorsChanged(bool previousValue, bool currentValue)
+        {
+            _remoteHudRevealAt = currentValue && !IsOwner ? Time.unscaledTime + RemoteHudRevealDelaySeconds : 0f;
             StateChanged?.Invoke();
         }
 

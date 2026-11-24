@@ -65,6 +65,8 @@ namespace PiGame.Gameplay
             new Dictionary<ulong, NetworkPlayerState>();
         private readonly Dictionary<ulong, Vector3> _spawnPositions =
             new Dictionary<ulong, Vector3>();
+        private Transform[] _respawnPoints = Array.Empty<Transform>();
+        private readonly List<Vector3> _safeRespawnPositions = new(4);
 
         public event Action ScoresChanged;
         public event Action PhaseChanged;
@@ -189,6 +191,8 @@ namespace PiGame.Gameplay
                     player.SetMatchActiveServer(active, indicatorsVisible);
         }
 
+        internal void SetRespawnPoints(Transform[] points) => _respawnPoints = points ?? Array.Empty<Transform>();
+
         public void RegisterPlayer(NetworkPlayerState player, Vector3 spawnPosition, LobbyPlayerData playerData)
         {
             if (!IsServer || player == null)
@@ -281,15 +285,42 @@ namespace PiGame.Gameplay
         {
             yield return new WaitForSeconds(_respawnDelaySeconds);
 
-            if (_phase.Value != MatchPhase.Playing
-                || player == null
-                || !player.IsSpawned
-                || !_spawnPositions.TryGetValue(player.OwnerClientId, out Vector3 spawnPosition))
+            var retryDelay = new WaitForSeconds(0.2f);
+            while (_phase.Value == MatchPhase.Playing && player && player.IsSpawned && !player.IsAlive)
             {
-                yield break;
+                if (TryPickRespawnPosition(player, out Vector3 position))
+                {
+                    _spawnPositions[player.OwnerClientId] = position;
+                    player.RespawnServer(position);
+                    yield break;
+                }
+                yield return retryDelay;
+            }
+        }
+
+        private bool TryPickRespawnPosition(NetworkPlayerState player, out Vector3 position)
+        {
+            position = default;
+            if (!player.TryGetComponent(out BoxCollider2D body)) return false;
+
+            Physics2D.SyncTransforms();
+            _safeRespawnPositions.Clear();
+            foreach (Transform point in _respawnPoints)
+            {
+                if (point && InitialSpawnPlacement.TryResolve(body, point.position, out Vector3 candidate)
+                    && !InitialSpawnPlacement.IsOccupiedByPlayer(body, candidate))
+                    _safeRespawnPositions.Add(candidate);
             }
 
-            player.RespawnServer(spawnPosition);
+            bool hasPrevious = _spawnPositions.TryGetValue(player.OwnerClientId, out Vector3 previous);
+            if (_safeRespawnPositions.Count == 0)
+                return hasPrevious && InitialSpawnPlacement.TryResolve(body, previous, out position)
+                    && !InitialSpawnPlacement.IsOccupiedByPlayer(body, position);
+
+            if (hasPrevious && _safeRespawnPositions.Exists(candidate => (candidate - previous).sqrMagnitude >= 0.04f))
+                _safeRespawnPositions.RemoveAll(candidate => (candidate - previous).sqrMagnitude < 0.04f);
+            position = _safeRespawnPositions[UnityEngine.Random.Range(0, _safeRespawnPositions.Count)];
+            return true;
         }
 
         private void EndByHighestScore()
@@ -406,7 +437,7 @@ namespace PiGame.Gameplay
             if (_players.ContainsKey(rpcParams.Receive.SenderClientId)) AbortIntroServer();
         }
 
-        private void AbortIntroServer()
+        internal void AbortIntroServer()
         {
             if (_returningToLobby || _phase.Value != MatchPhase.WaitingForPlayers) return;
             _returningToLobby = true;
