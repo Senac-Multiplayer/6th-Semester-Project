@@ -233,7 +233,7 @@ namespace PiGame.UI
         private void RefreshValues(float value = 0)
         {
             _durationValue.text = SelectedDurationMinutes == 0
-                ? $"<size={_durationValue.fontSize * 2}>∞</size>" : $"{SelectedDurationMinutes} MIN";
+                ? "∞" : $"{SelectedDurationMinutes} MIN";
             _killLimitValue.text = ((int)_killLimitSlider.value).ToString();
         }
 
