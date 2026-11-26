@@ -24,6 +24,7 @@ namespace PiGame.Gameplay
         private float _flightExpiresAt;
         private float _automaticReturnAt;
         private RebeldeCombat _shooterCombat;
+        public ulong DamageSourceClientId { get; private set; }
 
         [Header("Collision")]
         [SerializeField] private LayerMask _collisionLayers;
@@ -72,6 +73,7 @@ namespace PiGame.Gameplay
                 return;
 
             _shooterClientId = shooterClientId;
+            DamageSourceClientId = shooterClientId;
 
             _damage = definition.Damage;
 
@@ -116,6 +118,10 @@ namespace PiGame.Gameplay
 
 
             if (playerState.OwnerClientId != _shooterClientId)
+                return;
+
+            // Uma bola rebatida por um adversário continua perigosa até cair.
+            if (DamageSourceClientId != _shooterClientId && !_falling)
                 return;
 
             RebeldeCombat combat =
@@ -221,8 +227,8 @@ namespace PiGame.Gameplay
                 RaycastHit2D hit = _flightHits[i];
                 NetworkPlayerState player = hit.collider.GetComponentInParent<NetworkPlayerState>();
                 if (hit.collider.GetComponentInParent<NetworkProjectile>() != null
-                    || (player != null && (player.OwnerClientId == _shooterClientId
-                        || !player.CanReceiveHitFrom(_shooterClientId)))) continue;
+                    || (player && (player.OwnerClientId == DamageSourceClientId
+                        || !player.CanReceiveHitFrom(DamageSourceClientId)))) continue;
 
                 transform.position += (Vector3)(movement.normalized * hit.distance
                     + hit.normal * _collisionOffset);
@@ -316,15 +322,6 @@ namespace PiGame.Gameplay
 
         private void HandlePlayerCollision(NetworkPlayerState player, RaycastHit2D hit)
         {
-            // Ignora o próprio jogador que disparou o projétil.
-            if (player.OwnerClientId == _shooterClientId || !player.CanReceiveHitFrom(_shooterClientId))
-            {
-                transform.position +=
-                    (Vector3)(_direction * _speed * Time.fixedDeltaTime);
-
-                return;
-            }
-
             // Verifica se este jogador já recebeu dano deste projétil.
             bool alreadyDamaged = _damagedPlayers.Contains(player.OwnerClientId);
 
@@ -333,7 +330,7 @@ namespace PiGame.Gameplay
                 // Registra antes de aplicar o dano para impedir chamadas duplicadas.
                 _damagedPlayers.Add(player.OwnerClientId);
 
-                player.ApplyDamageServer(_damage, _shooterClientId);
+                player.ApplyDamageServer(_damage, DamageSourceClientId);
             }
 
             // Continua permitindo o ricochete, mesmo sem aplicar dano novamente.
@@ -389,12 +386,20 @@ namespace PiGame.Gameplay
         public void BatServer(Vector2 direction, float minimumSpeed)
         {
             if (!IsServer || !IsSpawned || _isReturningToShooter || direction.sqrMagnitude <= 0.0001f) return;
+            DamageSourceClientId = _shooterClientId;
             ReflectServer(Mathf.Max(minimumSpeed, _fallSpeedThreshold + 0.01f));
             // A própria bola sai para o lado do golpe, inclusive quando estava parada no chão.
             _direction = direction.normalized;
             transform.rotation = Quaternion.FromToRotation(Vector2.right, _direction);
             _pickupNeedsSeparation = true;
             _flightExpiresAt = Time.time + _maxFlightTime;
+        }
+
+        public void ReflectFromPlayerServer(ulong reflectorClientId, float minimumSpeed)
+        {
+            if (!IsServer || !IsSpawned || _isReturningToShooter) return;
+            DamageSourceClientId = reflectorClientId;
+            ReflectServer(Mathf.Max(minimumSpeed, _fallSpeedThreshold + 0.01f));
         }
 
         private void ReturnToShooterServer()

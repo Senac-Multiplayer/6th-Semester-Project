@@ -16,7 +16,6 @@ namespace PiGame.Gameplay
         [SerializeField] private MatchController _matchController;
 
         private MatchSnapshot _snapshot;
-        private readonly List<Vector3> _spawnOptions = new(9);
 
         public override void OnNetworkSpawn()
         {
@@ -57,16 +56,10 @@ namespace PiGame.Gameplay
                 return;
             }
 
-            List<int> availableSpawnPoints = new List<int>();
-            for (int i = 0; i < _spawnPoints.Length; i++)
-            {
-                if (_spawnPoints[i] != null)
-                {
-                    availableSpawnPoints.Add(i);
-                }
-            }
+            var availableSpawnPoints = new List<Transform>(_spawnPoints.Length);
+            foreach (Transform point in _spawnPoints)
+                if (point) availableSpawnPoints.Add(point);
 
-            var reservedAreas = new List<Rect>(_snapshot.Players.Length * InitialSpawnPlacement.MaxOptions);
             foreach (LobbyPlayerData playerData in _snapshot.Players)
             {
                 if (availableSpawnPoints.Count == 0)
@@ -83,14 +76,10 @@ namespace PiGame.Gameplay
                     continue;
                 }
 
-                if (!TryPickInitialSpawn(character.PlayerPrefab.GetComponent<BoxCollider2D>(), availableSpawnPoints,
-                        reservedAreas, out Transform spawnPoint, out SpawnOptions options))
-                {
-                    Debug.LogWarning($"Nenhum ponto seguro de spawn para {character.DisplayName} no mapa {gameObject.scene.name}.", this);
-                    _matchController.AbortIntroServer();
-                    return;
-                }
-                Vector3 spawnPosition = options.Positions[0];
+                int index = Random.Range(0, availableSpawnPoints.Count);
+                Transform spawnPoint = availableSpawnPoints[index];
+                availableSpawnPoints.RemoveAt(index);
+                Vector3 spawnPosition = spawnPoint.position;
                 NetworkObject playerObject = Instantiate(
                     character.PlayerPrefab,
                     spawnPosition,
@@ -110,39 +99,9 @@ namespace PiGame.Gameplay
 
                 playerState.InitializeServer(
                     playerData,
-                    PlayerSlotColors.Get(playerData.PlayerSlot), options);
+                    PlayerSlotColors.Get(playerData.PlayerSlot));
                 _matchController.RegisterPlayer(playerState, spawnPosition, playerData);
             }
-        }
-
-        private bool TryPickInitialSpawn(BoxCollider2D collider, List<int> available, List<Rect> reservedAreas,
-            out Transform spawnPoint, out SpawnOptions options)
-        {
-            spawnPoint = null;
-            options = default;
-            if (!collider) return false;
-
-            var body = new InitialSpawnPlacement.Body(collider);
-            Physics2D.SyncTransforms();
-            int start = Random.Range(0, available.Count);
-            for (int offset = 0; offset < available.Count; offset++)
-            {
-                int index = (start + offset) % available.Count;
-                Transform point = _spawnPoints[available[index]];
-                InitialSpawnPlacement.CollectOptions(body, point.position, _spawnOptions,
-                    reservedAreas, _matchController.SpawnArea, allowNearbyFallback: true);
-                if (_spawnOptions.Count == 0) continue;
-
-                foreach (Vector3 candidate in _spawnOptions)
-                {
-                    options.Positions.Add(candidate);
-                    reservedAreas.Add(body.BoundsAt(candidate));
-                }
-                available.RemoveAt(index);
-                spawnPoint = point;
-                return true;
-            }
-            return false;
         }
 
         private LobbyCharacterDefinition FindCharacter(LobbyCharacterId characterId)

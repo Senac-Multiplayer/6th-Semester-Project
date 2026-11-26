@@ -70,7 +70,6 @@ namespace PiGame.Gameplay
             new Dictionary<ulong, Vector3>();
         private Transform[] _respawnPoints = Array.Empty<Transform>();
         private readonly List<Vector3> _safeRespawnPositions = new(4);
-        private readonly List<Vector3> _respawnOptions = new(9);
         private readonly List<Rect> _occupiedRespawnAreas = new(4);
         private readonly List<Rect> _occupiedPlayerBodies = new(4);
         private float _nextArenaCheckAt;
@@ -394,18 +393,16 @@ namespace PiGame.Gameplay
             foreach (Transform point in _respawnPoints)
             {
                 if (!point) continue;
-                InitialSpawnPlacement.CollectOptions(body, point.position, _respawnOptions,
-                    _occupiedRespawnAreas, SpawnArea, allowNearbyFallback: true);
-                if (_respawnOptions.Count > 0) _safeRespawnPositions.Add(_respawnOptions[0]);
+                if (HasRespawnClearance(body.BoundsAt(point.position), _occupiedRespawnAreas))
+                    _safeRespawnPositions.Add(point.position);
             }
 
             bool hasPrevious = _spawnPositions.TryGetValue(player.OwnerClientId, out Vector3 previous);
             if (_safeRespawnPositions.Count == 0)
             {
-                if (!hasPrevious) return false;
-                InitialSpawnPlacement.CollectOptions(body, previous, _respawnOptions, _occupiedRespawnAreas, SpawnArea);
-                if (_respawnOptions.Count == 0) return false;
-                position = _respawnOptions[0];
+                if (!hasPrevious || !HasRespawnClearance(body.BoundsAt(previous), _occupiedRespawnAreas))
+                    return false;
+                position = previous;
                 return true;
             }
 
@@ -423,10 +420,15 @@ namespace PiGame.Gameplay
             var body = player.StandingSpawnBody;
             if (!body.Collider) return false;
 
-            InitialSpawnPlacement.CollectOptions(body, previous, _respawnOptions, _occupiedPlayerBodies, SpawnArea);
-            if (_respawnOptions.Count == 0) return false;
+            if (!HasRespawnClearance(body.BoundsAt(previous), _occupiedPlayerBodies)) return false;
+            position = previous;
+            return true;
+        }
 
-            position = _respawnOptions[0];
+        private static bool HasRespawnClearance(Rect position, List<Rect> occupied)
+        {
+            foreach (Rect area in occupied)
+                if (position.Overlaps(area)) return false;
             return true;
         }
 

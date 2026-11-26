@@ -44,7 +44,6 @@ namespace PiGame.Gameplay
         private readonly NetworkVariable<double> _respawnInvulnerabilityEndsAt = new NetworkVariable<double>();
         private readonly NetworkVariable<bool> _matchActive = new NetworkVariable<bool>(false);
         private readonly NetworkVariable<bool> _indicatorsVisible = new NetworkVariable<bool>(true);
-        private readonly NetworkVariable<SpawnOptions> _initialSpawnOptions = new();
         private readonly NetworkVariable<bool> _initialSpawnPrepared = new(false,
             NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         private readonly NetworkVariable<FixedString64Bytes> _playerName = new NetworkVariable<FixedString64Bytes>();
@@ -191,13 +190,6 @@ namespace PiGame.Gameplay
 
         public void InitializeServer(LobbyPlayerData playerData, Color indicatorColor)
         {
-            var options = new SpawnOptions();
-            options.Positions.Add(transform.position);
-            InitializeServer(playerData, indicatorColor, options);
-        }
-
-        public void InitializeServer(LobbyPlayerData playerData, Color indicatorColor, SpawnOptions options)
-        {
             if (!IsServer)
             {
                 return;
@@ -214,77 +206,28 @@ namespace PiGame.Gameplay
             _matchActive.Value = false;
             _isInvulnerable = false;
             _respawnInvulnerabilityEndsAt.Value = 0d;
-            _initialSpawnOptions.Value = options;
         }
 
-        public IEnumerator PrepareInitialSpawn(float attemptTimeoutSeconds)
+        public IEnumerator PrepareInitialSpawn(float delaySeconds)
         {
-            if (!IsOwner || !_rigidbody || !_bodyCollider) yield break;
+            if (!IsOwner || !IsSpawned || IsInitialSpawnPrepared) yield break;
 
-            const int requiredStableSteps = 3;
-            int settleStepBudget = Mathf.Max(requiredStableSteps, Mathf.CeilToInt(0.5f / Time.fixedDeltaTime));
+            _initialSpawnSimulationAllowed = true;
+            RefreshSpawnPhysics();
+
+            // A espera acompanha os passos da física, inclusive quando o cliente carrega devagar.
             var physicsStep = new WaitForFixedUpdate();
-            int nextOption = 0;
-            for (int attempt = 0; attempt < 3 && IsSpawned; attempt++)
+            int steps = Mathf.CeilToInt(delaySeconds / Time.fixedDeltaTime);
+            for (int step = 0; step < steps; step++)
             {
-                _initialSpawnSimulationAllowed = false;
-                RefreshSpawnPhysics();
-                int stableSteps = 0;
-                int remainingSettleSteps = 0;
-                float deadline = Time.unscaledTime + Mathf.Max(0.5f, attemptTimeoutSeconds);
-                while (IsSpawned && Time.unscaledTime < deadline)
-                {
-                    if (!_initialSpawnSimulationAllowed && gameObject.scene.isLoaded
-                        && TryPlaceInitialSpawn(ref nextOption))
-                        remainingSettleSteps = settleStepBudget;
-
-                    yield return physicsStep;
-                    if (!IsSpawned) yield break;
-                    if (!_initialSpawnSimulationAllowed) continue;
-
-                    bool safe = Mathf.Abs(_rigidbody.linearVelocity.y) <= 0.1f
-                        && InitialSpawnPlacement.CanPlace(StandingSpawnBody, _rigidbody.position);
-                    stableSteps = safe ? stableSteps + 1 : 0;
-                    if (stableSteps >= requiredStableSteps)
-                    {
-                        ReplicateSpawnPosition();
-                        _initialSpawnPrepared.Value = true;
-                        yield break;
-                    }
-
-                    // Aguarda a física resolver o contato com o piso antes de trocar de posição.
-                    if (--remainingSettleSteps <= 0)
-                    {
-                        _initialSpawnSimulationAllowed = false;
-                        RefreshSpawnPhysics();
-                        stableSteps = 0;
-                    }
-                }
-                Debug.LogWarning($"P{PlayerSlot + 1}: nova tentativa de preparar o spawn ({attempt + 1}/3).", this);
+                yield return physicsStep;
+                if (!IsSpawned || !IsOwner) yield break;
             }
+
+            ReplicateSpawnPosition();
+            _initialSpawnPrepared.Value = true;
             _initialSpawnSimulationAllowed = false;
             RefreshSpawnPhysics();
-        }
-
-        private bool TryPlaceInitialSpawn(ref int nextOption)
-        {
-            var options = _initialSpawnOptions.Value.Positions;
-            if (options.Length == 0) return false;
-
-            Physics2D.SyncTransforms();
-            for (int checkedOptions = 0; checkedOptions < options.Length; checkedOptions++)
-            {
-                Vector3 position = options[nextOption];
-                nextOption = (nextOption + 1) % options.Length;
-                if (!InitialSpawnPlacement.CanPlace(StandingSpawnBody, position)) continue;
-
-                PlaceAtSpawn(position);
-                _initialSpawnSimulationAllowed = true;
-                RefreshSpawnPhysics();
-                Physics2D.SyncTransforms();
-                return true;
-            }
-            return false;
         }
 
         private void HandleSpawnPreparedChanged(bool previous, bool current) => RefreshSpawnPhysics();
