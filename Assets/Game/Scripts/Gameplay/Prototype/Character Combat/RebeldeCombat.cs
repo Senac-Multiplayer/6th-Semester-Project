@@ -259,8 +259,7 @@ namespace PiGame.Gameplay
                 if (projectile)
                 {
                     bool ownBall = projectile == _activeProjectile;
-                    var rebeldeBall = projectile as RebeldeProjectile;
-                    ulong damageSource = rebeldeBall ? rebeldeBall.DamageSourceClientId : projectile.ShooterClientId;
+                    ulong damageSource = projectile.DamageSourceClientId;
                     if (!projectile.IsSpawned || !projectile.IsServer
                         || (!ownBall && (damageSource == OwnerClientId
                             || !_playerState.CanReceiveHitFrom(damageSource)))
@@ -270,8 +269,7 @@ namespace PiGame.Gameplay
                     bool comingTowardPlayer = IsProjectileComingTowardPlayer(projectile, hitDirection);
 
                     if (ownBall) _activeProjectile.BatServer(hitDirection, _projectileReflectMinimumSpeed);
-                    else if (rebeldeBall) rebeldeBall.ReflectFromPlayerServer(OwnerClientId, _projectileReflectMinimumSpeed);
-                    else projectile.ReflectServer(_projectileReflectMinimumSpeed);
+                    else projectile.ReflectServer(OwnerClientId, _projectileReflectMinimumSpeed);
 
                     if (comingTowardPlayer)
                     {

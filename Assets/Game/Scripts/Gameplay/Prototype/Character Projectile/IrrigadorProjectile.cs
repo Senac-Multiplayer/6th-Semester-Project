@@ -244,11 +244,19 @@ namespace PiGame.Gameplay
 
             ReturnToShooterServer(combat);
         }
+
+        public override void ReflectServer(ulong reflectorClientId, float minimumSpeed)
+        {
+            if (_IsStuck || _falling || _isReturningToShooter) return;
+            base.ReflectServer(reflectorClientId, minimumSpeed);
+        }
+
         public void PullServer(Vector2 direction, float speed, bool abilityPull = false)
         {
             if (!IsServer || !IsStuck)
                 return;
 
+            DamageSourceClientId = ShooterClientId;
             _beingPulled = true;
             _abilityPull = abilityPull;
 
@@ -372,10 +380,7 @@ namespace PiGame.Gameplay
             if (_falling)
                 return;
 
-            if (playerState.OwnerClientId == _shooterClientId && !_canDoSelfDamage)
-                return;
-
-            if (!playerState.CanReceiveHitFrom(_shooterClientId)) return;
+            if (!IsEnemyOfDamageSource(playerState)) return;
 
             if (_hasHitPlayer &&
                 _lastHitClientId == playerState.OwnerClientId)
@@ -392,7 +397,7 @@ namespace PiGame.Gameplay
 
             playerState.ApplyDamageServer(
                 _damage,
-                _shooterClientId
+                DamageSourceClientId
             );
         }
 

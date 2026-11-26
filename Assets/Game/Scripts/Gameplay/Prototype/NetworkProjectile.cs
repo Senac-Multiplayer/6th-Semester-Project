@@ -18,12 +18,12 @@ namespace PiGame.Gameplay
         protected Vector2 _direction;
         protected ulong _shooterClientId;
         public ulong ShooterClientId => _shooterClientId;
+        public ulong DamageSourceClientId { get; protected set; }
         protected float _despawnAt;
         protected float _speed;
         protected int _damage;
 
         protected bool _useLifetime = true;
-        protected bool _canDoSelfDamage = false;
 
         private void Awake()
         {
@@ -76,7 +76,7 @@ namespace PiGame.Gameplay
                 return;
             }
 
-            _shooterClientId = shooterClientId;
+            InitializeShooter(shooterClientId);
             _speed = definition.Speed;
             _damage = definition.Damage;
             _direction = direction.sqrMagnitude > 0f
@@ -84,8 +84,12 @@ namespace PiGame.Gameplay
                 : Vector2.right;
             _color.Value = color;
             _despawnAt = Time.time + definition.LifetimeSeconds;
+        }
 
-            _canDoSelfDamage = false;
+        protected void InitializeShooter(ulong shooterClientId)
+        {
+            _shooterClientId = shooterClientId;
+            DamageSourceClientId = shooterClientId;
         }
 
         protected virtual void Update()
@@ -145,17 +149,12 @@ namespace PiGame.Gameplay
             NetworkPlayerState playerState = other.GetComponentInParent<NetworkPlayerState>();
             if (playerState != null)
             {
-                if (playerState.OwnerClientId == _shooterClientId && !_canDoSelfDamage)
+                if (!IsEnemyOfDamageSource(playerState) || playerState.IsInvulnerable)
                 {
                     return;
                 }
 
-                if (!playerState.CanReceiveHitFrom(_shooterClientId) || playerState.IsInvulnerable)
-                {
-                    return;
-                }
-
-                playerState.ApplyDamageServer(_damage, _shooterClientId);
+                playerState.ApplyDamageServer(_damage, DamageSourceClientId);
             }
 
             NetworkObject.Despawn();
@@ -187,7 +186,10 @@ namespace PiGame.Gameplay
             return Physics2D.OverlapBox(center, size, angle, filter, _terrainOverlap) == 0;
         }
 
-        public virtual void ReflectServer(float minimumSpeed)
+        protected bool IsEnemyOfDamageSource(NetworkPlayerState player) =>
+            player.OwnerClientId != DamageSourceClientId && player.CanReceiveHitFrom(DamageSourceClientId);
+
+        public virtual void ReflectServer(ulong reflectorClientId, float minimumSpeed)
         {
             if (!IsServer || !IsSpawned)
                 return;
@@ -195,7 +197,8 @@ namespace PiGame.Gameplay
             _direction = -_direction;
 
             _speed = Mathf.Max(_speed, minimumSpeed);
-            _canDoSelfDamage = true;
+            // Quem disparou continua sendo o dono da munição. Quem rebateu assume o dano.
+            DamageSourceClientId = reflectorClientId;
 
             float angle = Mathf.Atan2(_direction.y, _direction.x) * Mathf.Rad2Deg;
 

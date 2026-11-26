@@ -10186,10 +10186,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: OST Scene Manager
       objectReference: {fileID: 0}
-    - target: {fileID: 4986482872561809570, guid: 81af07c29ebc86441a5c09a376715937, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 7513078691831894693, guid: 81af07c29ebc86441a5c09a376715937, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.56413

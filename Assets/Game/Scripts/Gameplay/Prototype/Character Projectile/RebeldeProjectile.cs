@@ -24,7 +24,6 @@ namespace PiGame.Gameplay
         private float _flightExpiresAt;
         private float _automaticReturnAt;
         private RebeldeCombat _shooterCombat;
-        public ulong DamageSourceClientId { get; private set; }
 
         [Header("Collision")]
         [SerializeField] private LayerMask _collisionLayers;
@@ -72,8 +71,7 @@ namespace PiGame.Gameplay
             if (!IsServer)
                 return;
 
-            _shooterClientId = shooterClientId;
-            DamageSourceClientId = shooterClientId;
+            InitializeShooter(shooterClientId);
 
             _damage = definition.Damage;
 
@@ -227,8 +225,7 @@ namespace PiGame.Gameplay
                 RaycastHit2D hit = _flightHits[i];
                 NetworkPlayerState player = hit.collider.GetComponentInParent<NetworkPlayerState>();
                 if (hit.collider.GetComponentInParent<NetworkProjectile>() != null
-                    || (player && (player.OwnerClientId == DamageSourceClientId
-                        || !player.CanReceiveHitFrom(DamageSourceClientId)))) continue;
+                    || (player && !IsEnemyOfDamageSource(player))) continue;
 
                 transform.position += (Vector3)(movement.normalized * hit.distance
                     + hit.normal * _collisionOffset);
@@ -363,12 +360,12 @@ namespace PiGame.Gameplay
             _speed = currentSpeed;
         }
 
-        public override void ReflectServer(float minimumSpeed)
+        public override void ReflectServer(ulong reflectorClientId, float minimumSpeed)
         {
-            if (!IsServer || !IsSpawned)
+            if (!IsServer || !IsSpawned || _isReturningToShooter)
                 return;
 
-            base.ReflectServer(minimumSpeed);
+            base.ReflectServer(reflectorClientId, Mathf.Max(minimumSpeed, _fallSpeedThreshold + 0.01f));
 
             _falling = false;
             _fallingStartedAt = 0f;
@@ -386,20 +383,12 @@ namespace PiGame.Gameplay
         public void BatServer(Vector2 direction, float minimumSpeed)
         {
             if (!IsServer || !IsSpawned || _isReturningToShooter || direction.sqrMagnitude <= 0.0001f) return;
-            DamageSourceClientId = _shooterClientId;
-            ReflectServer(Mathf.Max(minimumSpeed, _fallSpeedThreshold + 0.01f));
+            ReflectServer(_shooterClientId, minimumSpeed);
             // A própria bola sai para o lado do golpe, inclusive quando estava parada no chão.
             _direction = direction.normalized;
             transform.rotation = Quaternion.FromToRotation(Vector2.right, _direction);
             _pickupNeedsSeparation = true;
             _flightExpiresAt = Time.time + _maxFlightTime;
-        }
-
-        public void ReflectFromPlayerServer(ulong reflectorClientId, float minimumSpeed)
-        {
-            if (!IsServer || !IsSpawned || _isReturningToShooter) return;
-            DamageSourceClientId = reflectorClientId;
-            ReflectServer(Mathf.Max(minimumSpeed, _fallSpeedThreshold + 0.01f));
         }
 
         private void ReturnToShooterServer()
