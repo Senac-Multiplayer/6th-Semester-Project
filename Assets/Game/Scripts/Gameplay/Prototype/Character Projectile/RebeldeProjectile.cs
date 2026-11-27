@@ -34,6 +34,8 @@ namespace PiGame.Gameplay
         [SerializeField] private Collider2D _solidCollider;
         private Rigidbody2D _rigidbody;
         private BoxCollider2D _collisionBox;
+        private int _terrainLayers;
+        private Vector3 _previousFlightPosition;
         private CircleCollider2D _collectionTrigger;
         private readonly List<Collider2D> _collectionHits = new(8);
         private RebeldeSoundManager _ownerSound;
@@ -57,6 +59,8 @@ namespace PiGame.Gameplay
 
             _useLifetime = false;
             _solidCollider.enabled = false;
+            _terrainLayers = LayerMask.GetMask("Ground", "Wall", "Roof");
+            _solidCollider.excludeLayers = _solidCollider.excludeLayers.value | ~_terrainLayers;
 
             _rigidbody.bodyType = RigidbodyType2D.Kinematic;
             _rigidbody.gravityScale = 0f;
@@ -67,7 +71,7 @@ namespace PiGame.Gameplay
             if (!IsServer)
                 return;
 
-            _shooterClientId = shooterClientId;
+            InitializeShooter(shooterClientId);
 
             _damage = definition.Damage;
 
@@ -76,6 +80,7 @@ namespace PiGame.Gameplay
                 : Vector2.right;
 
             _speed = speed;
+            _previousFlightPosition = transform.position;
 
             _isStopped = false;
             _falling = false; 
@@ -111,6 +116,10 @@ namespace PiGame.Gameplay
 
 
             if (playerState.OwnerClientId != _shooterClientId)
+                return;
+
+            // Uma bola rebatida por um adversário continua perigosa até cair.
+            if (DamageSourceClientId != _shooterClientId && !_falling)
                 return;
 
             RebeldeCombat combat =
@@ -200,14 +209,13 @@ namespace PiGame.Gameplay
                 return;
 
             // O centro pode estar fora do tile enquanto a borda da bola já entrou nele.
-            Vector2 scale = _collisionBox.transform.lossyScale;
-            Vector2 size = Vector2.Scale(_collisionBox.size,
-                new Vector2(Mathf.Abs(scale.x), Mathf.Abs(scale.y)));
+            Vector2 size = GetWorldBoxSize(_collisionBox);
             // Reservar a margem de contato da física antes de ativar o collider na queda.
             size += Vector2.one * (Physics2D.defaultContactOffset * 2f);
             var filter = new ContactFilter2D();
             filter.SetLayerMask(_collisionLayers);
             filter.useTriggers = true;
+            _previousFlightPosition = transform.position;
             int hitCount = Physics2D.BoxCast(_collisionBox.transform.TransformPoint(_collisionBox.offset),
                 size, _collisionBox.transform.eulerAngles.z, movement.normalized,
                 filter, _flightHits, distance);
@@ -217,8 +225,7 @@ namespace PiGame.Gameplay
                 RaycastHit2D hit = _flightHits[i];
                 NetworkPlayerState player = hit.collider.GetComponentInParent<NetworkPlayerState>();
                 if (hit.collider.GetComponentInParent<NetworkProjectile>() != null
-                    || (player != null && (player.OwnerClientId == _shooterClientId
-                        || !player.CanReceiveHitFrom(_shooterClientId)))) continue;
+                    || (player && !IsEnemyOfDamageSource(player))) continue;
 
                 transform.position += (Vector3)(movement.normalized * hit.distance
                     + hit.normal * _collisionOffset);
@@ -234,6 +241,22 @@ namespace PiGame.Gameplay
             if (_falling)
                 return;
 
+            Vector2 center = _collisionBox.transform.TransformPoint(_collisionBox.offset);
+            Vector2 size = GetWorldBoxSize(_collisionBox);
+            float angle = _collisionBox.transform.eulerAngles.z;
+            if (!IsTerrainClear(center, size, angle, _terrainLayers))
+            {
+                Vector2 retreat = _previousFlightPosition - transform.position;
+                if (!IsTerrainClear(center + retreat, size, angle, _terrainLayers))
+                {
+                    ReturnToShooterServer();
+                    return;
+                }
+
+                transform.position = _previousFlightPosition;
+                _rigidbody.position = _previousFlightPosition;
+            }
+
             _falling = true;
             _fallingStartedAt = Time.time;
 
@@ -248,7 +271,7 @@ namespace PiGame.Gameplay
 
         private void OnCollisionEnter2D(Collision2D collision)
         {
-            if (!IsServer || !_falling || _isStopped)
+            if (!IsServer || !_falling || _isStopped || (_terrainLayers & (1 << collision.gameObject.layer)) == 0)
                 return;
 
             foreach (ContactPoint2D contact in collision.contacts)
@@ -296,15 +319,6 @@ namespace PiGame.Gameplay
 
         private void HandlePlayerCollision(NetworkPlayerState player, RaycastHit2D hit)
         {
-            // Ignora o próprio jogador que disparou o projétil.
-            if (player.OwnerClientId == _shooterClientId || !player.CanReceiveHitFrom(_shooterClientId))
-            {
-                transform.position +=
-                    (Vector3)(_direction * _speed * Time.fixedDeltaTime);
-
-                return;
-            }
-
             // Verifica se este jogador já recebeu dano deste projétil.
             bool alreadyDamaged = _damagedPlayers.Contains(player.OwnerClientId);
 
@@ -313,7 +327,7 @@ namespace PiGame.Gameplay
                 // Registra antes de aplicar o dano para impedir chamadas duplicadas.
                 _damagedPlayers.Add(player.OwnerClientId);
 
-                player.ApplyDamageServer(_damage, _shooterClientId);
+                player.ApplyDamageServer(_damage, DamageSourceClientId);
             }
 
             // Continua permitindo o ricochete, mesmo sem aplicar dano novamente.
@@ -346,12 +360,12 @@ namespace PiGame.Gameplay
             _speed = currentSpeed;
         }
 
-        public override void ReflectServer(float minimumSpeed)
+        public override void ReflectServer(ulong reflectorClientId, float minimumSpeed)
         {
-            if (!IsServer || !IsSpawned)
+            if (!IsServer || !IsSpawned || _isReturningToShooter)
                 return;
 
-            base.ReflectServer(minimumSpeed);
+            base.ReflectServer(reflectorClientId, Mathf.Max(minimumSpeed, _fallSpeedThreshold + 0.01f));
 
             _falling = false;
             _fallingStartedAt = 0f;
@@ -369,7 +383,7 @@ namespace PiGame.Gameplay
         public void BatServer(Vector2 direction, float minimumSpeed)
         {
             if (!IsServer || !IsSpawned || _isReturningToShooter || direction.sqrMagnitude <= 0.0001f) return;
-            ReflectServer(Mathf.Max(minimumSpeed, _fallSpeedThreshold + 0.01f));
+            ReflectServer(_shooterClientId, minimumSpeed);
             // A própria bola sai para o lado do golpe, inclusive quando estava parada no chão.
             _direction = direction.normalized;
             transform.rotation = Quaternion.FromToRotation(Vector2.right, _direction);

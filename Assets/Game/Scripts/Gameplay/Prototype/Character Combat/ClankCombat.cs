@@ -80,6 +80,8 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
     private float _abilityCooldownTimer;
     private Vector2 _lastShotDirection = Vector2.right;
 
+    public bool IsReloadingAmmo => _playerState.CanAct && _playerMove.IsCrouching && _ammo.Value < _maximumAmmo;
+
     private void Awake()
     {
         _playerState = GetComponent<NetworkPlayerState>();
@@ -165,7 +167,7 @@ public class ClankCombat : NetworkBehaviour, ICharacterCombat
 
     private void UpdateCrouchReloadServer()
     {
-        if (_playerMove.IsCrouching && _ammo.Value < _maximumAmmo)
+        if (IsReloadingAmmo)
         {
             _crouchTimer += Time.deltaTime;
             if (_crouchTimer >= _crouchReloadInterval)

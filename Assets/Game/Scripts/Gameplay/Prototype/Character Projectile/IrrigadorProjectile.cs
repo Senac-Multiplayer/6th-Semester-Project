@@ -33,6 +33,7 @@ namespace PiGame.Gameplay
 
         private Collider2D _projectileCollider;
         private BoxCollider2D _tipBox;
+        private readonly RaycastHit2D[] _tipSurfaceHits = new RaycastHit2D[8];
         private IrrigadorSoundManager _ownerSound;
         private readonly List<Collider2D> _collectionHits = new(8);
         private readonly List<RaycastHit2D> _collectionCastHits = new(8);
@@ -46,6 +47,7 @@ namespace PiGame.Gameplay
         private float _pullSpeed;
 
         private Collider2D _stuckSurface;
+        private Vector2 _stuckSurfaceNormal;
 
         private bool _hasHitPlayer;
 
@@ -121,20 +123,28 @@ namespace PiGame.Gameplay
             if (_beingPulled)
                 Physics2D.SyncTransforms();
 
-            Vector2 scale = _tipBox.transform.lossyScale;
-            Vector2 tipSize = Vector2.Scale(_tipBox.size,
-                new Vector2(Mathf.Abs(scale.x), Mathf.Abs(scale.y)));
-            RaycastHit2D hit = Physics2D.BoxCast(
-                _tip.TransformPoint(_tipBox.offset),
-                tipSize,
-                _tip.eulerAngles.z,
-                movement.normalized,
-                movement.magnitude,
-                _surfaceLayer
-            );
+            Vector2 tipSize = GetWorldBoxSize(_tipBox);
+            Vector2 tipCenter = _tip.TransformPoint(_tipBox.offset);
+            float angle = _tip.eulerAngles.z;
+            Vector2 directionOfTravel = movement.normalized;
+            var surfaceFilter = new ContactFilter2D { useTriggers = false };
+            surfaceFilter.SetLayerMask(_surfaceLayer);
 
-            bool blockedBySurface = hit.collider != null
-                && (!_beingPulled || hit.collider != _stuckSurface);
+            if (_beingPulled && _stuckSurface && Vector2.Dot(directionOfTravel, _stuckSurfaceNormal) > 0f)
+            {
+                Vector2 separation = _stuckSurfaceNormal * (Physics2D.defaultContactOffset * 2f);
+                if (IsTerrainClear(tipCenter + separation, tipSize, angle, _surfaceLayer))
+                {
+                    transform.position += (Vector3)separation;
+                    tipCenter += separation;
+                    _stuckSurface = null;
+                }
+            }
+
+            int surfaceCount = Physics2D.BoxCast(tipCenter, tipSize, angle, directionOfTravel,
+                surfaceFilter, _tipSurfaceHits, movement.magnitude);
+            RaycastHit2D hit = surfaceCount > 0 ? _tipSurfaceHits[0] : default;
+            bool blockedBySurface = hit.collider != null;
 
             // Verificar também o trajeto evita atravessar o dono entre dois frames.
             Vector2 collectionMovement = blockedBySurface
@@ -147,7 +157,7 @@ namespace PiGame.Gameplay
             {
                 transform.position += (Vector3)(movement.normalized * hit.distance
                     + hit.normal * Physics2D.defaultContactOffset);
-                HandleTipSurfaceContact(hit.collider);
+                StickToSurface(hit.collider, hit.normal);
                 return;
             }
 
@@ -161,19 +171,21 @@ namespace PiGame.Gameplay
 
         public void HandleTipSurfaceContact(Collider2D other)
         {
-            if (!IsServer || _IsStuck)
+            if (!IsServer || _IsStuck || other.isTrigger)
                 return;
 
             StickToSurface(other);
         }
 
-        private void StickToSurface(Collider2D surface)
+        private void StickToSurface(Collider2D surface, Vector2 surfaceNormal = default)
         {
             if(!_falling)
             {
                 Vector2 stickDirection = _beingPulled ? _pullDirection : _direction;
 
-                transform.rotation = Quaternion.FromToRotation(Vector2.right,stickDirection);
+                Vector3 previousTip = _tip.TransformPoint(_tipBox.offset);
+                transform.rotation = Quaternion.FromToRotation(Vector2.right, stickDirection);
+                transform.position += previousTip - _tip.TransformPoint(_tipBox.offset);
             }
 
             if(_ownerSound != null)
@@ -187,14 +199,19 @@ namespace PiGame.Gameplay
             _beingPulled = false;
             _abilityPull = false;
             _stuckSurface = surface;
+            _stuckSurfaceNormal = surfaceNormal;
 
             // O trigger também pode avisar depois de um passo da física. Só despenetrar:
             // aproximar colliders já separados puxava o prego para dentro das bordas.
             Physics2D.SyncTransforms();
             ColliderDistance2D distance = _tipCollider.Distance(surface);
-            if (distance.isValid && distance.isOverlapped)
-                transform.position += (Vector3)(distance.normal
-                    * (distance.distance - Physics2D.defaultContactOffset));
+            if (distance.isValid)
+            {
+                if (_stuckSurfaceNormal == Vector2.zero) _stuckSurfaceNormal = -distance.normal;
+                if (distance.isOverlapped)
+                    transform.position += (Vector3)(distance.normal
+                        * (distance.distance - Physics2D.defaultContactOffset));
+            }
 
             UpdateColliders();
         }
@@ -227,11 +244,19 @@ namespace PiGame.Gameplay
 
             ReturnToShooterServer(combat);
         }
+
+        public override void ReflectServer(ulong reflectorClientId, float minimumSpeed)
+        {
+            if (_IsStuck || _falling || _isReturningToShooter) return;
+            base.ReflectServer(reflectorClientId, minimumSpeed);
+        }
+
         public void PullServer(Vector2 direction, float speed, bool abilityPull = false)
         {
             if (!IsServer || !IsStuck)
                 return;
 
+            DamageSourceClientId = ShooterClientId;
             _beingPulled = true;
             _abilityPull = abilityPull;
 
@@ -320,15 +345,30 @@ namespace PiGame.Gameplay
 
         private void StartFalling()
         {
+            Vector3 previousTip = _tip.TransformPoint(_tipBox.offset);
+            transform.rotation = Quaternion.Euler(0f, 0f, -90f);
+            Vector2 size = GetWorldBoxSize(_tipBox);
+            float angle = _tip.eulerAngles.z;
+            var filter = new ContactFilter2D { useTriggers = false };
+            filter.SetLayerMask(_surfaceLayer);
+            float lift = Mathf.Max(0f, _fallStartOffset);
+            int hits = Physics2D.BoxCast(previousTip, size, angle, Vector2.up, filter, _tipSurfaceHits, lift);
+            if (hits > 0)
+                lift = Mathf.Max(0f, _tipSurfaceHits[0].distance - Physics2D.defaultContactOffset);
+
+            transform.position += previousTip - _tip.TransformPoint(_tipBox.offset) + Vector3.up * lift;
+            if (!IsTerrainClear(_tip.TransformPoint(_tipBox.offset), size, angle, _surfaceLayer))
+            {
+                ReturnToShooterServer();
+                return;
+            }
+
+            _IsStuck = false;
             _falling = true;
             _beingPulled = false;
             _abilityPull = false;
-
-            transform.rotation = Quaternion.Euler(0f,0f,-90f);
-            transform.position += Vector3.up * _fallStartOffset;
-
+            _stuckSurface = null;
             _fallVelocity = Vector2.down * 2f;
-
             UpdateColliders();
         }
 
@@ -340,10 +380,7 @@ namespace PiGame.Gameplay
             if (_falling)
                 return;
 
-            if (playerState.OwnerClientId == _shooterClientId && !_canDoSelfDamage)
-                return;
-
-            if (!playerState.CanReceiveHitFrom(_shooterClientId)) return;
+            if (!IsEnemyOfDamageSource(playerState)) return;
 
             if (_hasHitPlayer &&
                 _lastHitClientId == playerState.OwnerClientId)
@@ -360,7 +397,7 @@ namespace PiGame.Gameplay
 
             playerState.ApplyDamageServer(
                 _damage,
-                _shooterClientId
+                DamageSourceClientId
             );
         }
 

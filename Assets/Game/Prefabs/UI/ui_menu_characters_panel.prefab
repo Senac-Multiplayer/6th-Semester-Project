@@ -131,7 +131,7 @@ MonoBehaviour:
         s\xE3o lan\xE7ados em linha reta. Ela pode miner\xE1-los novamente a
         qualquer momento, abaixando-se sobre qualquer superf\xEDcie, recuperando
         assim todos eles."
-      Icon: {fileID: 0}
+      Icon: {fileID: 21300000, guid: 063496e22963477e9d38bb10d5e7bc16, type: 3}
       Videos:
       - {fileID: 32900000, guid: b51908fb4691a964b92e30ed8c12ae65, type: 3}
     - Heading: HABILIDADE

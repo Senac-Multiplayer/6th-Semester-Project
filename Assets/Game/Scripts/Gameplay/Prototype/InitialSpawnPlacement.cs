@@ -2,61 +2,58 @@ using UnityEngine;
 
 namespace PiGame.Gameplay
 {
-    // Consultas locais: a cena e seus colliders precisam existir na máquina do proprietário.
-    internal static class InitialSpawnPlacement
+    public static class InitialSpawnPlacement
     {
-        private const float Skin = 0.025f;
         private static readonly int TerrainMask = LayerMask.GetMask("Ground", "Wall");
+        private static readonly int PlayerMask = LayerMask.GetMask("Player");
 
-        internal static bool TryResolve(BoxCollider2D body, Vector3 anchor, out Vector3 position)
+        public readonly struct Body
         {
-            position = anchor;
-            Vector2 size = WorldSize(body);
-            Vector2 offset = body.transform.TransformVector(body.offset);
-            Vector2 origin = (Vector2)anchor + new Vector2(offset.x, 2f);
-            float nearest = float.PositiveInfinity;
-            foreach (RaycastHit2D hit in Physics2D.RaycastAll(origin, Vector2.down, 10f, TerrainMask))
+            public readonly BoxCollider2D Collider;
+            public readonly Vector2 Size;
+            public readonly Vector2 Offset;
+
+            public Body(BoxCollider2D collider)
             {
-                if (!IsSupport(hit)) continue;
-                Vector3 candidate = anchor;
-                candidate.y = hit.point.y + Skin + size.y * 0.5f - offset.y;
-                float distance = Mathf.Abs(candidate.y - anchor.y);
-                if (distance >= nearest || HasSolidOverlap(body, candidate)) continue;
-                if (!HasSupport(body, candidate)) continue;
-                nearest = distance;
-                position = candidate;
+                Collider = collider;
+                Vector3 scale = collider.transform.lossyScale;
+                Size = Vector2.Scale(collider.size, new Vector2(Mathf.Abs(scale.x), Mathf.Abs(scale.y)));
+                Offset = collider.transform.TransformVector(collider.offset);
             }
-            return nearest < float.PositiveInfinity;
+
+            public Rect BoundsAt(Vector3 position) => new((Vector2)position + Offset - Size * 0.5f, Size);
         }
 
-        internal static bool IsSupportedAndClear(BoxCollider2D body)
-        {
-            return !HasSolidOverlap(body, body.transform.position)
-                && HasSupport(body, body.transform.position);
-        }
+        public static bool CanPlace(Body body, Vector3 position) =>
+            !HasSolidOverlap(body, position)
+            && !IsOccupiedByPlayer(body, position)
+            && HasSupport(body, position);
 
-        private static Vector2 WorldSize(BoxCollider2D body)
+        private static bool HasSolidOverlap(Body body, Vector3 position)
         {
-            Vector3 scale = body.transform.lossyScale;
-            return Vector2.Scale(body.size, new Vector2(Mathf.Abs(scale.x), Mathf.Abs(scale.y)));
-        }
-
-        private static bool HasSolidOverlap(BoxCollider2D body, Vector3 position)
-        {
-            Vector2 center = (Vector2)position + (Vector2)body.transform.TransformVector(body.offset);
-            Vector2 size = WorldSize(body) - Vector2.one * 0.02f;
-            foreach (Collider2D other in Physics2D.OverlapBoxAll(center, size, 0f, TerrainMask))
-                if (other != body && !other.isTrigger && !other.usedByEffector) return true;
+            Vector2 center = (Vector2)position + body.Offset;
+            Vector2 size = body.Size - Vector2.one * 0.02f;
+            int collisionMask = TerrainMask | (Physics2D.GetLayerCollisionMask(body.Collider.gameObject.layer) & ~PlayerMask);
+            foreach (Collider2D other in Physics2D.OverlapBoxAll(center, size, 0f, collisionMask))
+                if (!other.isTrigger && !other.transform.IsChildOf(body.Collider.transform)) return true;
             return false;
         }
 
-        private static bool HasSupport(BoxCollider2D body, Vector3 position)
+        private static bool IsOccupiedByPlayer(Body body, Vector3 position)
         {
-            Vector2 size = WorldSize(body);
-            Vector2 center = (Vector2)position + (Vector2)body.transform.TransformVector(body.offset);
-            Vector2 origin = center + Vector2.down * (size.y * 0.5f - 0.02f);
+            Vector2 center = (Vector2)position + body.Offset;
+            foreach (Collider2D other in Physics2D.OverlapBoxAll(center, body.Size, 0f, PlayerMask))
+                if (!other.isTrigger && !other.transform.IsChildOf(body.Collider.transform)
+                    && other.GetComponentInParent<NetworkPlayerState>() is { IsAlive: true }) return true;
+            return false;
+        }
+
+        private static bool HasSupport(Body body, Vector3 position)
+        {
+            Vector2 center = (Vector2)position + body.Offset;
+            Vector2 origin = center + Vector2.down * (body.Size.y * 0.5f - 0.02f);
             foreach (RaycastHit2D hit in Physics2D.BoxCastAll(origin,
-                         new Vector2(size.x * 0.8f, 0.01f), 0f, Vector2.down, 0.1f, TerrainMask))
+                         new Vector2(body.Size.x * 0.8f, 0.01f), 0f, Vector2.down, 0.1f, TerrainMask))
                 if (IsSupport(hit)) return true;
             return false;
         }

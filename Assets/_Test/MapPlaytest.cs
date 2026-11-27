@@ -106,7 +106,7 @@ namespace PiGame.Testing
         {
             if (!_testing) return;
             Transform spawn = _spawnPoints.GetChild(_spawnIndex);
-            _player.RespawnServer(spawn.position);
+            _player.TeleportForMapPlaytest(spawn.position);
             _player.GetComponent<Rigidbody2D>().angularVelocity = 0f;
             _player.SetInvulnerableServer(_invulnerable);
             Debug.Log($"[Teste de mapa] Spawn {_spawnIndex + 1}/{_spawnPoints.childCount}: {spawn.name}. Invencível: {_invulnerable}.", this);

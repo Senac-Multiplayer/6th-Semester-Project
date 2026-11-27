@@ -11,6 +11,7 @@ namespace PiGame.UI
     public class MatchSettingsPanelUI : MonoBehaviour
     {
         private const int DefaultDurationMinutes = 3;
+        private const float InfiniteDurationScale = 1.6f;
         private const LobbyMatchMode DefaultMode = LobbyMatchMode.Solo;
         private const int DefaultMinimumPlayers = 2;
 
@@ -65,6 +66,7 @@ namespace PiGame.UI
         private int _minimumPlayers = DefaultMinimumPlayers;
         private bool _requireUniqueCharacters;
         private LobbyMatchSettingsData _confirmedSettings;
+        private int? _durationFontSize;
 
         private void Awake()
         {
@@ -232,8 +234,11 @@ namespace PiGame.UI
 
         private void RefreshValues(float value = 0)
         {
-            _durationValue.text = SelectedDurationMinutes == 0
-                ? $"<size={_durationValue.fontSize * 2}>∞</size>" : $"{SelectedDurationMinutes} MIN";
+            int duration = SelectedDurationMinutes;
+            int fontSize = _durationFontSize ??= _durationValue.fontSize;
+            _durationValue.text = duration == 0 ? "∞" : $"{duration} MIN";
+            _durationValue.fontSize = duration == 0
+                ? Mathf.RoundToInt(fontSize * InfiniteDurationScale) : fontSize;
             _killLimitValue.text = ((int)_killLimitSlider.value).ToString();
         }
 

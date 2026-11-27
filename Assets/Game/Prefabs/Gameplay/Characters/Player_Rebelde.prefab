@@ -1922,9 +1922,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 1324757442989677250}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e96cb6065543e43c4a752faaa1468eb1, type: 3}
+  m_Script: {fileID: 11500000, guid: e39a9df74fc746718b18b8406371174a, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Components.NetworkTransform
+  m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.PlayerNetworkTransform
   ShowTopMostFoldoutHeaderGroup: 1
   NetworkTransformExpanded: 0
   AutoOwnerAuthorityTickOffset: 1
@@ -2002,7 +2002,7 @@ MonoBehaviour:
   _input: {fileID: 890000000000000001}
   _presentation: {fileID: 890000000000000002}
   _moveSpeed: 7
-  _jumpForce: 10
+  _jumpForce: 12
   _groundCheckDistance: 0.1
   _groundLayer:
     serializedVersion: 2
@@ -2086,7 +2086,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.NetworkPlayerState
   ShowTopMostFoldoutHeaderGroup: 1
   _maximumHealth: 3
-  _respawnInvulnerabilitySeconds: 1
+  _respawnInvulnerabilitySeconds: 2
   _respawnBlinkInterval: 0.1
   _deathPropPrefab: {fileID: 6841368190081493115, guid: e9acb8cfc71dcf344b2e3855a62df3d5, type: 3}
 --- !u!114 &880000000000000002
@@ -2158,6 +2158,7 @@ MonoBehaviour:
   _playerLabel: {fileID: 8809000000000113}
   _abilityBackground: {fileID: 8809000000000142}
   _abilityFill: {fileID: 8809000000000152}
+  _passiveAbilityIcon: {fileID: 0}
   _localHintLabel: {fileID: 8809000000000133}
   _localHintSeconds: 3
   _abilityOpacity: 0.7

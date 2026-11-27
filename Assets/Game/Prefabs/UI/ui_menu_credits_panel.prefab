@@ -1407,7 +1407,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "João Pedro Ribeiro Vivas\n<size=24><color=#86E6A5>Diretor de Som</color></size>\n\nThales Botosso de Carvalho\n\nAlex Santos Oliveira\n\nRenato\n\nKevin Zerwes Tremblay\n\nFrederico Anthony Soares\nLopes da Silva"
+  m_text: "João Pedro Ribeiro Vivas\n<size=24><color=#86E6A5>Diretor de Som</color></size>\n\nThales Botosso de Carvalho\n\nAlex Santos Oliveira\n\nRenato Cavalheiro Rodrigues de Almeida\n\nKevin Zerwes Tremblay\n\nFrederico Anthony Soares Lopes da Silva"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f0ad3b57ab90dca41b37402d61585a11, type: 2}
   m_sharedMaterial: {fileID: 8301420987674334106, guid: f0ad3b57ab90dca41b37402d61585a11, type: 2}

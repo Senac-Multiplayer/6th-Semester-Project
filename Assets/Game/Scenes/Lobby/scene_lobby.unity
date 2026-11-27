@@ -2020,22 +2020,6 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 2130000291, guid: 8119560d85964b94bd2352e029fad316, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -66
-      objectReference: {fileID: 0}
-    - target: {fileID: 2130000311, guid: 8119560d85964b94bd2352e029fad316, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -66
-      objectReference: {fileID: 0}
-    - target: {fileID: 2130000331, guid: 8119560d85964b94bd2352e029fad316, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -66
-      objectReference: {fileID: 0}
-    - target: {fileID: 2130000401, guid: 8119560d85964b94bd2352e029fad316, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -128
-      objectReference: {fileID: 0}
     - target: {fileID: 2130000501, guid: 8119560d85964b94bd2352e029fad316, type: 3}
       propertyPath: m_LocalScale.x
       value: 1.4
@@ -2047,10 +2031,6 @@ PrefabInstance:
     - target: {fileID: 2130000501, guid: 8119560d85964b94bd2352e029fad316, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: -209
-      objectReference: {fileID: 0}
-    - target: {fileID: 2330000021, guid: 8119560d85964b94bd2352e029fad316, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -66
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

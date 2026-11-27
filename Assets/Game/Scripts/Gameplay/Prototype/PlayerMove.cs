@@ -24,6 +24,7 @@ namespace PiGame.Gameplay
 
         [Header("Platforms")]
         [SerializeField, Min(0.1f)] private float _dropThroughTimeoutSeconds = 1f;
+        [SerializeField, Min(0f)] private float _platformJumpAssistHeight = 0.15f;
 
         [Header("Jump")]
         [SerializeField] private float _jumpBufferTime;
@@ -185,6 +186,7 @@ namespace PiGame.Gameplay
             if (!IsOwner || !IsSpawned)
                 return;
 
+            TryFinishPlatformJump();
             ApplyExtraFallGravity();
         }
         private void ApplyExtraFallGravity()
@@ -509,6 +511,40 @@ namespace PiGame.Gameplay
                 BeginPlatformPassThrough(hit.collider,
                     hit.point + Vector2.up * Physics2D.defaultContactOffset, true);
                 break;
+            }
+        }
+
+        private void TryFinishPlatformJump()
+        {
+            if (!_isJumping || !_passingPlatformUpwards || !_ignoredPlatform || _platformJumpAssistHeight <= 0f
+                || _isInputBlocked || _hasHorizontalMovementOverride || !_playerState.CanAct
+                || IsCrouching || _rigidbody.linearVelocity.y > 0f) return;
+
+            const float clearance = 0.025f;
+            Bounds body = _bodyCollider.bounds;
+            Vector2 probeStart = new(body.center.x, body.min.y + _platformJumpAssistHeight + clearance);
+            Vector2 probeSize = new(body.size.x * 0.75f, 0.01f);
+            var filter = new ContactFilter2D();
+            filter.SetLayerMask(_groundLayer);
+            filter.useTriggers = false;
+            int count = Physics2D.BoxCast(probeStart, probeSize, 0f, Vector2.down, filter,
+                _platformHits, _platformJumpAssistHeight + clearance);
+
+            for (int i = 0; i < count; i++)
+            {
+                RaycastHit2D hit = _platformHits[i];
+                float gap = hit.point.y - body.min.y;
+                if (hit.collider != _ignoredPlatform || hit.normal.y < 0.8f || hit.distance <= 0f
+                    || gap < 0f || gap > _platformJumpAssistHeight) continue;
+
+                Vector2 position = _rigidbody.position + Vector2.up * (gap + clearance);
+                var destination = new Vector3(position.x, position.y, transform.position.z);
+                if (!InitialSpawnPlacement.CanPlace(_playerState.StandingSpawnBody, destination)) return;
+
+                _rigidbody.position = position;
+                _rigidbody.linearVelocity = new Vector2(_rigidbody.linearVelocity.x, 0f);
+                RestorePlatformCollision();
+                return;
             }
         }
 

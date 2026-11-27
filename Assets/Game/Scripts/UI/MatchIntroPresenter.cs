@@ -19,8 +19,8 @@ namespace PiGame.Gameplay
         [SerializeField] private TMP_Text _countdownLabel;
         [SerializeField, Min(0.5f)] private float _closeupSize = 2.2f;
         [SerializeField, Min(0f)] private float _panDistance = 0.6f;
-        [Tooltip("Tempo de cada tentativa de encontrar apoio seguro. Após três falhas, a sala volta ao lobby.")]
-        [SerializeField, Min(0.5f)] private float _spawnSettleTimeoutSeconds = 5f;
+        [Tooltip("Tempo de simulação para os jogadores caírem do ponto de spawn antes da apresentação.")]
+        [SerializeField, Min(0f)] private float _initialSpawnFallDelaySeconds = 1f;
         [Tooltip("Ligue aqui os sons: recebe de 6 a 1 durante a apresentação, ou de 3 a 1 no modo separado, e 0 para JÁ. Executado localmente uma vez por etapa.")]
         [SerializeField] private UnityEvent<int> _countdownStepChanged = new UnityEvent<int>();
 
@@ -68,7 +68,7 @@ namespace PiGame.Gameplay
                 .Where(p => p.IsSpawned && p.PlayerSlot >= 0).OrderBy(p => p.PlayerSlot)
                 .ToArray();
             NetworkPlayerState localPlayer = _players.First(p => p.IsOwner);
-            yield return localPlayer.PrepareInitialSpawn(_spawnSettleTimeoutSeconds);
+            yield return localPlayer.PrepareInitialSpawn(_initialSpawnFallDelaySeconds);
             if (!localPlayer || !localPlayer.IsSpawned) yield break;
             if (!localPlayer.IsInitialSpawnPrepared)
             {

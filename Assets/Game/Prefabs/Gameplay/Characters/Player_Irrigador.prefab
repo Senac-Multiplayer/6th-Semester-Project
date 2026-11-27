@@ -2843,9 +2843,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 1324757442989677250}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e96cb6065543e43c4a752faaa1468eb1, type: 3}
+  m_Script: {fileID: 11500000, guid: e39a9df74fc746718b18b8406371174a, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Components.NetworkTransform
+  m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.PlayerNetworkTransform
   ShowTopMostFoldoutHeaderGroup: 1
   NetworkTransformExpanded: 0
   AutoOwnerAuthorityTickOffset: 1
@@ -2923,7 +2923,7 @@ MonoBehaviour:
   _input: {fileID: 890000000000000001}
   _presentation: {fileID: 890000000000000002}
   _moveSpeed: 7
-  _jumpForce: 10
+  _jumpForce: 12
   _groundCheckDistance: 0.1
   _groundLayer:
     serializedVersion: 2
@@ -2946,7 +2946,7 @@ MonoBehaviour:
   _wallJumpVerticalForce: 12
   _wallJumpControlLockTime: 0.2
   _crouchColliderOffset: -0.13125
-  _crouchColliderHeightMultiplier: 0.833333333
+  _crouchColliderHeightMultiplier: 0.8333333
 --- !u!61 &5033178508802715014
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -2984,7 +2984,7 @@ BoxCollider2D:
   m_Offset: {x: 0, y: -0.0375}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0.421875, y: 0.5}
+    pivot: {x: 0.421875, y: 0.5625}
     oldSize: {x: 2, y: 2}
     newSize: {x: 1, y: 2}
     adaptiveTilingThreshold: 0.5
@@ -3007,7 +3007,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.NetworkPlayerState
   ShowTopMostFoldoutHeaderGroup: 1
   _maximumHealth: 3
-  _respawnInvulnerabilitySeconds: 1
+  _respawnInvulnerabilitySeconds: 2
   _respawnBlinkInterval: 0.1
   _deathPropPrefab: {fileID: 6841368190081493115, guid: 73ba7564ec439a644b93c783509e84ea, type: 3}
 --- !u!114 &880000000000000002
@@ -3248,7 +3248,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 42d993b2d6902d841a84d5d5d0c34606, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.PlayerHudLayout
   _settings: {fileID: 11400000, guid: f966782b26c1c1f4f8903948834cbb30, type: 2}
   _marker: {fileID: 8809000000000102}

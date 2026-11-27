@@ -2354,7 +2354,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1453141490
+  GlobalObjectIdHash: 1910428715
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -2378,9 +2378,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 1324757442989677250}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e96cb6065543e43c4a752faaa1468eb1, type: 3}
+  m_Script: {fileID: 11500000, guid: e39a9df74fc746718b18b8406371174a, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Components.NetworkTransform
+  m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.PlayerNetworkTransform
   ShowTopMostFoldoutHeaderGroup: 1
   NetworkTransformExpanded: 0
   AutoOwnerAuthorityTickOffset: 1
@@ -2431,7 +2431,7 @@ MonoBehaviour:
   _input: {fileID: 890000000000000001}
   _presentation: {fileID: 890000000000000002}
   _moveSpeed: 6
-  _jumpForce: 10
+  _jumpForce: 12
   _groundCheckDistance: 0.1
   _groundLayer:
     serializedVersion: 2
@@ -2469,7 +2469,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PiGame.Gameplay.NetworkPlayerState
   ShowTopMostFoldoutHeaderGroup: 1
   _maximumHealth: 3
-  _respawnInvulnerabilitySeconds: 1
+  _respawnInvulnerabilitySeconds: 2
   _respawnBlinkInterval: 0.1
   _deathPropPrefab: {fileID: 6841368190081493115, guid: 91bd36171ff978646a15260b78902adc, type: 3}
 --- !u!114 &880000000000000002
@@ -2509,6 +2509,7 @@ MonoBehaviour:
   _playerLabel: {fileID: 8809000000000113}
   _abilityBackground: {fileID: 8809000000000142}
   _abilityFill: {fileID: 8809000000000152}
+  _passiveAbilityIcon: {fileID: 21300000, guid: 063496e22963477e9d38bb10d5e7bc16, type: 3}
   _localHintLabel: {fileID: 8809000000000133}
   _localHintSeconds: 3
   _abilityOpacity: 0.7
@@ -2576,7 +2577,7 @@ BoxCollider2D:
   m_Offset: {x: 0, y: 0}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0.484375, y: 0.546875}
+    pivot: {x: 0.484375, y: 0.5625}
     oldSize: {x: 2, y: 2}
     newSize: {x: 1, y: 2}
     adaptiveTilingThreshold: 0.5
@@ -2762,6 +2763,58 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &750885784796070611
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1324757442989677250}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8d0727d5ae3244e3b569694d3912374, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Components.NetworkAnimator
+  ShowTopMostFoldoutHeaderGroup: 1
+  NetworkAnimatorExpanded: 0
+  AuthorityMode: 1
+  m_Animator: {fileID: 5223907885845296469}
+  TransitionStateInfoList: []
+  AnimatorParameterEntries:
+    ParameterEntries:
+    - name: xVelocity
+      NameHash: -1879171339
+      Synchronize: 1
+      ParameterType: 1
+    - name: yVelocity
+      NameHash: -1736111434
+      Synchronize: 1
+      ParameterType: 1
+    - name: isJumping
+      NameHash: -357477766
+      Synchronize: 1
+      ParameterType: 4
+    - name: isCrouching
+      NameHash: 1035320983
+      Synchronize: 1
+      ParameterType: 4
+    - name: isWallSliding
+      NameHash: -1514754429
+      Synchronize: 1
+      ParameterType: 4
+    - name: isDead
+      NameHash: 1276664872
+      Synchronize: 1
+      ParameterType: 4
+    - name: isHit
+      NameHash: -1235987232
+      Synchronize: 1
+      ParameterType: 4
+    - name: isSkill
+      NameHash: 1462408521
+      Synchronize: 1
+      ParameterType: 4
+  AnimatorParametersExpanded: 0
 --- !u!1 &1364266427991100992
 GameObject:
   m_ObjectHideFlags: 0
@@ -3403,55 +3456,3 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &750885784796070611
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1324757442989677250}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e8d0727d5ae3244e3b569694d3912374, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Components.NetworkAnimator
-  ShowTopMostFoldoutHeaderGroup: 1
-  NetworkAnimatorExpanded: 0
-  AuthorityMode: 1
-  m_Animator: {fileID: 5223907885845296469}
-  TransitionStateInfoList: []
-  AnimatorParameterEntries:
-    ParameterEntries:
-    - name: xVelocity
-      NameHash: -1879171339
-      Synchronize: 1
-      ParameterType: 1
-    - name: yVelocity
-      NameHash: -1736111434
-      Synchronize: 1
-      ParameterType: 1
-    - name: isJumping
-      NameHash: -357477766
-      Synchronize: 1
-      ParameterType: 4
-    - name: isCrouching
-      NameHash: 1035320983
-      Synchronize: 1
-      ParameterType: 4
-    - name: isWallSliding
-      NameHash: -1514754429
-      Synchronize: 1
-      ParameterType: 4
-    - name: isDead
-      NameHash: 1276664872
-      Synchronize: 1
-      ParameterType: 4
-    - name: isHit
-      NameHash: -1235987232
-      Synchronize: 1
-      ParameterType: 4
-    - name: isSkill
-      NameHash: 1462408521
-      Synchronize: 1
-      ParameterType: 4
-  AnimatorParametersExpanded: 0

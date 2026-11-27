@@ -45,6 +45,7 @@ namespace PiGame.Gameplay
                 _matchController != null && _matchController.IsSpawned);
 
             _matchController.Initialize(_snapshot.MatchSettings);
+            _matchController.SetRespawnPoints(_spawnPoints);
             SpawnPlayers();
         }
 
@@ -55,20 +56,16 @@ namespace PiGame.Gameplay
                 return;
             }
 
-            List<int> availableSpawnPoints = new List<int>();
-            for (int i = 0; i < _spawnPoints.Length; i++)
-            {
-                if (_spawnPoints[i] != null)
-                {
-                    availableSpawnPoints.Add(i);
-                }
-            }
+            var availableSpawnPoints = new List<Transform>(_spawnPoints.Length);
+            foreach (Transform point in _spawnPoints)
+                if (point) availableSpawnPoints.Add(point);
 
             foreach (LobbyPlayerData playerData in _snapshot.Players)
             {
                 if (availableSpawnPoints.Count == 0)
                 {
                     Debug.LogWarning("Não há spawn points suficientes para todos os jogadores.");
+                    _matchController.AbortIntroServer();
                     return;
                 }
 
@@ -79,14 +76,13 @@ namespace PiGame.Gameplay
                     continue;
                 }
 
-                int randomIndex = Random.Range(0, availableSpawnPoints.Count);
-                int spawnPointIndex = availableSpawnPoints[randomIndex];
-                availableSpawnPoints.RemoveAt(randomIndex);
-
-                Transform spawnPoint = _spawnPoints[spawnPointIndex];
+                int index = Random.Range(0, availableSpawnPoints.Count);
+                Transform spawnPoint = availableSpawnPoints[index];
+                availableSpawnPoints.RemoveAt(index);
+                Vector3 spawnPosition = spawnPoint.position;
                 NetworkObject playerObject = Instantiate(
                     character.PlayerPrefab,
-                    spawnPoint.position,
+                    spawnPosition,
                     spawnPoint.rotation);
 
                 playerObject.SpawnAsPlayerObject(playerData.ClientId, true);
@@ -104,7 +100,7 @@ namespace PiGame.Gameplay
                 playerState.InitializeServer(
                     playerData,
                     PlayerSlotColors.Get(playerData.PlayerSlot));
-                _matchController.RegisterPlayer(playerState, spawnPoint.position, playerData);
+                _matchController.RegisterPlayer(playerState, spawnPosition, playerData);
             }
         }
 
